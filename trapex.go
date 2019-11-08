@@ -14,8 +14,6 @@ import (
 	g "github.com/damienstuart/gosnmp"
 )
 
-var listenAddr string = "0.0.0.0:9162"
-
 var trapDestList = []string{
 	"192.168.7.12:162",
 }
@@ -51,8 +49,11 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	//stats.trapCount = 0
-	//stats.filteredTraps = 0
+	// Get the configuration
+	//
+	getConfig()
+
+	fmt.Printf("Filters: %v\n", teConfig.filters)
 
 	tl := g.NewTrapListener()
 
@@ -61,27 +62,30 @@ func main() {
 	tl.Params.Community = ""
 
 	// Uncomment for debugging gosnmp
-	//tl.Params.Logger = log.New(os.Stdout, "", 0)
+	if teConfig.debug == true {
+		fmt.Println("DEBUG MODE ENABLED")
+		tl.Params.Logger = log.New(os.Stdout, "", 0)
+	}
 
 	// SNMP v3 stuff
 	tl.Params.SecurityModel = g.UserSecurityModel
 	tl.Params.MsgFlags = g.AuthPriv
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
-		UserName:                 "sguser",
-		AuthenticationProtocol:   g.SHA,
-		AuthenticationPassphrase: "sgpassword",
-		//PrivacyProtocol:          g.DES,
-		PrivacyProtocol:   g.AES,
-		PrivacyPassphrase: "sgpassword",
+		UserName:					teConfig.v3Params.username,
+		AuthenticationProtocol:		teConfig.v3Params.authProto,
+		AuthenticationPassphrase:	teConfig.v3Params.authPassword,
+		PrivacyProtocol:   			teConfig.v3Params.privacyProto,
+		PrivacyPassphrase:			teConfig.v3Params.privacyPassword,
 	}
 
 	makeTrapDests()
 
+	listenAddr := fmt.Sprintf("%s:%s", teConfig.listenAddr, teConfig.listenPort)
 	fmt.Println("Start trapex listener on " + listenAddr)
 	err := tl.Listen(listenAddr)
 	if err != nil {
-		log.Panicf("error in listen: %s", err)
+		log.Panicf("error in listen on %s: %s", listenAddr, err)
 	}
 }
 
@@ -195,9 +199,9 @@ func makeTrapDests() {
 			panic(err)
 		}
 		tDests[i] = td
-		trapDests = tDests
 		fmt.Printf("--Added trap destination: %s, port %s\n", s[0], s[1])
 	}
+	trapDests = tDests
 }
 
 // -DSS Temp - filteredTrap checks the incoming trap against various filters and will
