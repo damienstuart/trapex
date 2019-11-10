@@ -9,10 +9,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	g "github.com/damienstuart/gosnmp"
 )
+
+const myVersion string = "0.9.0-beta"
+
+var runLogger *log.Logger
 
 // teStats is a structure for holding trapex stats.
 type teStats struct {
@@ -33,6 +36,7 @@ type sgTrap struct {
 	trapVer    g.SnmpVersion
 	srcIP      net.IP
 	translated bool
+	dropped    bool
 }
 
 func main() {
@@ -41,6 +45,8 @@ func main() {
 		fmt.Printf("   %s\n", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 	}
+
+	runLogger = log.New(os.Stdout, "", 0)
 
 	// Get the configuration
 	//
@@ -55,7 +61,8 @@ func main() {
 	// Uncomment for debugging gosnmp
 	if teConfig.debug == true {
 		fmt.Println("DEBUG MODE ENABLED")
-		tl.Params.Logger = log.New(os.Stdout, "", 0)
+		//tl.Params.Logger = log.New(os.Stdout, "", 0)
+		tl.Params.Logger = runLogger
 	}
 
 	// SNMP v3 stuff
@@ -71,7 +78,8 @@ func main() {
 	}
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.listenAddr, teConfig.listenPort)
-	fmt.Println("Start trapex listener on " + listenAddr)
+	//fmt.Println("Start trapex listener on " + listenAddr)
+	runLogger.Println("Start trapex listener on " + listenAddr)
 	err := tl.Listen(listenAddr)
 	if err != nil {
 		log.Panicf("error in listen on %s: %s", listenAddr, err)
@@ -101,64 +109,71 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	if p.Version > g.Version1 {
 		err := translateToV1(&trap)
 		if err != nil {
-			fmt.Printf("Error translating to v1: %v\n", err)
+			runLogger.Printf("Error translating to v1: %v\n", err)
 		}
 	}
 
-	logTrap(&trap)
-
-	go processTrap(&trap)
-
+	processTrap(&trap)
 }
 
 // processTrap is the entry point to code that checks the incoming trap
 // against the filter list and processes the trap accordingly.
 //
 func processTrap(sgt *sgTrap) {
-	var dropped bool
 	for _, f := range teConfig.filters {
+		// If this trap is tagged to drop and the action is not log - or
+		// if logging dropped traps is not enabled, then continue.
+		if sgt.dropped && f.actionType != actionLog {
+			continue
+		}
 		// If matchAll is true, just process the action.
 		if f.matchAll == true {
 			// We don't expect to see this here (set a wide open filter for
 			// drop).... (but...)
 			if f.actionType == actionDrop {
-				return
+				sgt.dropped = true
+				continue
+				//break
 			} 
 			processAction(sgt, &f)
 		} else {
 			// Determine if this trap matches this filter
 			if isFilterMatch(sgt, &f) == true {
 				if f.actionType == actionDrop {
-					return
+					sgt.dropped = true
+					continue
+					//break
 				}
-				dropped = processAction(sgt, &f)
+				processAction(sgt, &f)
 			}
 		}
-		if dropped == true {
-			break
-		}
+
 	}
 }
 
-func processAction(sgt *sgTrap, f *trapexFilter) bool {
+func processAction(sgt *sgTrap, f *trapexFilter) {
 	switch f.actionType {
 	case actionDrop:
-		return true
+		sgt.dropped = true 
+		return
 	case actionNat:
-		if f.actionArg == "%srcIP" {
+		if f.actionArg == "$SRC_IP" {
 			sgt.data.AgentAddress = sgt.srcIP.String()
 		} else {
 			sgt.data.AgentAddress = f.actionArg
 		}
 	case actionForward:
 		f.action.(*trapForwarder).processTrap(sgt)
+	case actionLog:
+		if !sgt.dropped || teConfig.logDropped {
+			f.action.(*trapLogger).processTrap(sgt)
+		}
 	}
-	return false
 }
 
 func isFilterMatch(sgt *sgTrap, f *trapexFilter) bool {
 	// Assume true - until one of the filter items does not match
-	trap := sgt.data
+	trap := &(sgt.data)
 	for _, fo := range f.filterItems {
 		fval := fo.filterValue
 		switch fo.filterItem {
@@ -198,12 +213,16 @@ func isFilterMatch(sgt *sgTrap, f *trapexFilter) bool {
 // logTrap (for now) prints to stdout - a format that mimics the current
 // SG trapexploder log file format.
 //
+/*
 func logTrap(t *sgTrap) {
 	trap := &t.data
 
 	fmt.Printf("\nTrap: %v", stats.trapCount)
 	if t.translated == true {
 		fmt.Printf(" (translated from v%s)", t.trapVer.String())
+	}
+	if t.dropped == true {
+		fmt.Printf(" (DROPPED)")
 	}
 	fmt.Printf("\n\t%s\n", time.Now().Format(time.ANSIC))
 	fmt.Printf("\tSrc IP: %s\n", t.srcIP)
@@ -227,3 +246,4 @@ func logTrap(t *sgTrap) {
 		}
 	}
 }
+*/

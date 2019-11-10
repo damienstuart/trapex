@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -29,18 +28,19 @@ type trapForwarder struct {
 }
 
 type trapLogger struct {
-	logfile		*log.Logger
-	trap		*sgTrap
+	logFile			string
+	logHandle		*bufio.Writer
+	isBroken		bool
 }
 
 // Filter types
 const (
 	parseTypeAny int = iota	// Match anything (wildcard)
-	parseTypeString					// Direct String comparison
-	parseTypeInt					// Direct Integer comparison
-	parseTypeRegex					// Regular Expression
-	parseTypeCIDR					// CIDR IP/Netmask 
-	parseTypeRange					// Integer range x:y
+	parseTypeString			// Direct String comparison
+	parseTypeInt			// Direct Integer comparison
+	parseTypeRegex			// Regular Expression
+	parseTypeCIDR			// CIDR IP/Netmask 
+	parseTypeRange			// Integer range x:y
 )
 
 // Filter items
@@ -95,6 +95,7 @@ type trapexConfig struct {
 	v3Params	v3Params
 	filters		[]trapexFilter
 	debug 		bool
+	logDropped  bool
 }
 
 // Global vars
@@ -121,12 +122,28 @@ func (a *trapForwarder) initAction(dest string) {
 	if err != nil {
 		panic(err)
 	}
-	//fmt.Printf("--Added trap destination: %s, port %s\n", s[0], s[1])
+	runLogger.Printf(" -Added trap destination: %s, port %s\n", s[0], s[1])
 }
 
 func (a trapForwarder) processTrap(trap *sgTrap) error {
 	_, err := a.destination.SendTrap(trap.data)
 	return err
+}
+
+func (a *trapLogger) initAction(logfile string) {
+	fd, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	checkErr(err)
+	a.logFile = logfile
+	a.logHandle = bufio.NewWriter(fd)
+	runLogger.Printf(" -Added log destination: %s\n", logfile)
+}
+
+func (a *trapLogger) processTrap(trap *sgTrap) {
+	err := logr(trap, a.logHandle)
+	if err != nil && !a.isBroken {
+		runLogger.Printf("Error writing to logfile: %s\n", a.logFile)
+		a.isBroken = true
+	}
 }
 
 func checkErr(e error) {
@@ -146,6 +163,7 @@ Usage: trapex [-c <config_file>] [-b <bind_ip>] [-p <listen_port>] [-d] [-h]
   -c  - Override the location of the trapex configuration file.
   -d  - Enable debug mode - which produces verbose output.
   -p  - Override the UDP port on which to listen for incoming traps.
+  -v  - Print the version of trapex and exit.
   -h  - Show this help message.
 `
 	eprint(usageText)
@@ -157,8 +175,16 @@ func getConfig() {
 	cmdBindAddr := flag.String("b", "", "")
 	cmdListenPort := flag.String("p", "", "")
 	debugMode := flag.Bool("d", false, "")
+	showVersion := flag.Bool("v", false, "")
 
 	flag.Parse()
+
+	runLogger.Printf("This is trapex version %s.\n", myVersion)
+	if *showVersion {
+		os.Exit(0)
+	}
+
+	runLogger.Printf("-Reading configuration from: %s.\n", *configFile)
 
 	// First process the config file
 	cf, err := os.Open(*configFile)
@@ -279,13 +305,15 @@ func processFilterLine(f []string) error {
 		filter.action = &forwarder 
 	case "log":
 		filter.actionType = actionLog
-		// TODO: Finish me
+		logger := trapLogger{}
+		logger.initAction(actionArg)
+		filter.action = &logger
 	default:
 		return fmt.Errorf("unknown action: %s", f[5])
 	}
 
 	teConfig.filters = append(teConfig.filters, filter)
-	//fmt.Printf(">Line: filter %s\n", strings.Join(f," "))
+
 	return nil
 }
 
@@ -294,6 +322,8 @@ func processConfigLine(f []string) error {
 	switch f[0] {
 	case "debug":
 		teConfig.debug = true
+	case "logDroppedTraps":
+		teConfig.logDropped = true
 	case "listenAddress":
 		if flen < 2 {
 			return fmt.Errorf("missing value for listenAddr")
