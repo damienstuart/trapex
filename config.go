@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -91,6 +92,8 @@ type trapexConfig struct {
 	cmdArgs		cmdArgs
 	listenAddr	string
 	listenPort	string
+	runLogFile  string
+	runLogger	*log.Logger
 	configFile	string
 	v3Params	v3Params
 	filters		[]trapexFilter
@@ -158,13 +161,16 @@ func eprint(msg string) {
 
 func showUsage() {
 	usageText := `
-Usage: trapex [-c <config_file>] [-b <bind_ip>] [-p <listen_port>] [-d] [-h]
+Usage: trapex [-h] [-c <config_file>] [-b <bind_ip>] [-p <listen_port>]
+              [-d] [-r <runtime_logfil>] [-v]
+  -h  - Show this help message and exit.
   -b  - Override the bind IP address on which to listen for incoming traps.
   -c  - Override the location of the trapex configuration file.
-  -d  - Enable debug mode - which produces verbose output.
+  -d  - Enable debug mode (note: produces very verbose runtime output).
   -p  - Override the UDP port on which to listen for incoming traps.
+  -r  - Speficy the run logfile (runtime and debug output). If not
+        set, output goes to stdout.
   -v  - Print the version of trapex and exit.
-  -h  - Show this help message.
 `
 	eprint(usageText)
 }
@@ -174,16 +180,26 @@ func getConfig() {
 	configFile := flag.String("c", "/etc/trapex.conf", "")
 	cmdBindAddr := flag.String("b", "", "")
 	cmdListenPort := flag.String("p", "", "")
+	cmdRunLogFile := flag.String("r", "", "")
 	debugMode := flag.Bool("d", false, "")
 	showVersion := flag.Bool("v", false, "")
 
 	flag.Parse()
 
-	runLogger.Printf("This is trapex version %s.\n", myVersion)
 	if *showVersion {
+		fmt.Printf("This is trapex version %s.\n", myVersion)
 		os.Exit(0)
 	}
 
+	if *cmdRunLogFile != "" {
+		fd, err := os.OpenFile(*cmdRunLogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		checkErr(err)
+		runLogger = log.New(fd, "", 0)
+	} else {
+		runLogger = log.New(os.Stdout, "", 0)
+	}
+
+	runLogger.Printf("This is trapex version %s.\n", myVersion)
 	runLogger.Printf("-Reading configuration from: %s.\n", *configFile)
 
 	// First process the config file

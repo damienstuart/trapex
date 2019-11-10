@@ -46,7 +46,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	runLogger = log.New(os.Stdout, "", 0)
+	//runLogger = log.New(os.Stdout, "", 0)
 
 	// Get the configuration
 	//
@@ -60,9 +60,8 @@ func main() {
 
 	// Uncomment for debugging gosnmp
 	if teConfig.debug == true {
-		fmt.Println("DEBUG MODE ENABLED")
-		//tl.Params.Logger = log.New(os.Stdout, "", 0)
-		tl.Params.Logger = runLogger
+		runLogger.Println("*DEBUG MODE ENABLED")
+		tl.Params.Logger = teConfig.runLogger
 	}
 
 	// SNMP v3 stuff
@@ -113,6 +112,9 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 		}
 	}
 
+	if teConfig.debug {
+		runLogger.Printf(makeTrapLogEntry(&trap).String())
+	}
 	processTrap(&trap)
 }
 
