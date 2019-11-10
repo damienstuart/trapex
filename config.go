@@ -33,6 +33,7 @@ type trapLogger struct {
 	trap		*sgTrap
 }
 
+// Filter types
 const (
 	parseTypeAny int = iota	// Match anything (wildcard)
 	parseTypeString					// Direct String comparison
@@ -42,12 +43,13 @@ const (
 	parseTypeRange					// Integer range x:y
 )
 
+// Filter items
 const (
 	srcIP int = iota
 	agentAddr
-	enterprise
 	genericType
 	specificType
+	enterprise
 )
 
 const (
@@ -58,13 +60,13 @@ const (
 )
 
 type filterObj struct {
-	Item	int
-	Type	int
-	Value	interface{}		// string, regex, or CIDR as uint32
+	filterItem	int
+	filterType	int
+	filterValue	interface{}		// string, *regex.Regexp, *network, int
 }
 
 type trapexFilter struct {
-	items		[]filterObj
+	filterItems	[]filterObj
 	matchAll	bool
 	action		interface{}
 	actionType	int
@@ -119,7 +121,7 @@ func (a *trapForwarder) initAction(dest string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("--Added trap destination: %s, port %s\n", s[0], s[1])
+	//fmt.Printf("--Added trap destination: %s, port %s\n", s[0], s[1])
 }
 
 func (a trapForwarder) processTrap(trap *sgTrap) error {
@@ -226,33 +228,33 @@ func processFilterLine(f []string) error {
 			if fi == "*" {
 				continue
 			}
-			fObj.Item = i
+			fObj.filterItem = i
 			if i < 2 { // This is an IP address type
 				if strings.Contains(fi, "/") {
-					fObj.Type = parseTypeCIDR
-					fObj.Value, err = newNetwork(fi)
+					fObj.filterType = parseTypeCIDR
+					fObj.filterValue, err = newNetwork(fi)
 					if err != nil {
 						return fmt.Errorf("invalid IP/CIDR: %s", fi)
 					}
 				} else {
-					fObj.Type = parseTypeString
-					fObj.Value = fi
+					fObj.filterType = parseTypeString
+					fObj.filterValue = fi
 				}
 			} else if i > 1 && i < 4 { // Generic and Specific type
 				val, e := strconv.Atoi(fi)
 				if e != nil {
 					return fmt.Errorf("invalid integer value: %s: %s", fi, e)
 				}
-				fObj.Type = parseTypeInt
-				fObj.Value = val
+				fObj.filterType = parseTypeInt
+				fObj.filterValue = val
 			} else { // The enterprise OID
-				fObj.Type = parseTypeRegex
-				fObj.Value, err = regexp.Compile(fi)
+				fObj.filterType = parseTypeRegex
+				fObj.filterValue, err = regexp.Compile(fi)
 				if err != nil {
 					return fmt.Errorf("unable to compile regexp for: %s: %s", fi, err)
 				}
 			}
-			filter.items = append(filter.items, fObj)
+			filter.filterItems = append(filter.filterItems, fObj)
 		}
 	}
 	// Process the filter action
@@ -283,7 +285,7 @@ func processFilterLine(f []string) error {
 	}
 
 	teConfig.filters = append(teConfig.filters, filter)
-	fmt.Printf(">Line: filter %s\n", strings.Join(f," "))
+	//fmt.Printf(">Line: filter %s\n", strings.Join(f," "))
 	return nil
 }
 

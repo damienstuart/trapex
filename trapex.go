@@ -7,16 +7,12 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strconv"
+	"regexp"
 	"strings"
 	"time"
 
 	g "github.com/damienstuart/gosnmp"
 )
-
-var trapDestList = []string{
-	"192.168.7.12:162",
-}
 
 // teStats is a structure for holding trapex stats.
 type teStats struct {
@@ -28,9 +24,6 @@ type teStats struct {
 }
 
 var stats teStats
-
-// Trap destinations
-var trapDests []*g.GoSNMP
 
 // sgTrap holds a pointer to a trap and the source IP of
 // the incoming trap.
@@ -52,8 +45,6 @@ func main() {
 	// Get the configuration
 	//
 	getConfig()
-
-	fmt.Printf("Filters: %v\n", teConfig.filters)
 
 	tl := g.NewTrapListener()
 
@@ -79,8 +70,6 @@ func main() {
 		PrivacyPassphrase:			teConfig.v3Params.privacyPassword,
 	}
 
-	makeTrapDests()
-
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.listenAddr, teConfig.listenPort)
 	fmt.Println("Start trapex listener on " + listenAddr)
 	err := tl.Listen(listenAddr)
@@ -91,13 +80,6 @@ func main() {
 
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	stats.trapCount++
-	/*
-		if filteredTrap(p, addr.IP) {
-			//fmt.Printf("*** Filtered trap %s from %s\n", p.Enterprise, addr.IP)
-			trapsFiltered++
-			return
-		}
-	*/
 
 	// Make the trap
 	trap := sgTrap{
@@ -125,18 +107,92 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 
 	logTrap(&trap)
 
-	go forwardTrap(&trap)
+	go processTrap(&trap)
+
 }
 
-// forwardTrap sends the incoming trap to the configured trap destinations.
+// processTrap is the entry point to code that checks the incoming trap
+// against the filter list and processes the trap accordingly.
 //
-func forwardTrap(trap *sgTrap) {
-	for _, td := range trapDests {
-		_, err := td.SendTrap(trap.data)
-		if err != nil {
-			fmt.Printf("SendTrap() error sending to %s: trap# %v: %v\n", td.Target, stats.trapCount, err)
+func processTrap(sgt *sgTrap) {
+	var dropped bool
+	for _, f := range teConfig.filters {
+		// If matchAll is true, just process the action.
+		if f.matchAll == true {
+			// We don't expect to see this here (set a wide open filter for
+			// drop).... (but...)
+			if f.actionType == actionDrop {
+				return
+			} 
+			processAction(sgt, &f)
+		} else {
+			// Determine if this trap matches this filter
+			if isFilterMatch(sgt, &f) == true {
+				if f.actionType == actionDrop {
+					return
+				}
+				dropped = processAction(sgt, &f)
+			}
+		}
+		if dropped == true {
+			break
 		}
 	}
+}
+
+func processAction(sgt *sgTrap, f *trapexFilter) bool {
+	switch f.actionType {
+	case actionDrop:
+		return true
+	case actionNat:
+		if f.actionArg == "%srcIP" {
+			sgt.data.AgentAddress = sgt.srcIP.String()
+		} else {
+			sgt.data.AgentAddress = f.actionArg
+		}
+	case actionForward:
+		f.action.(*trapForwarder).processTrap(sgt)
+	}
+	return false
+}
+
+func isFilterMatch(sgt *sgTrap, f *trapexFilter) bool {
+	// Assume true - until one of the filter items does not match
+	trap := sgt.data
+	for _, fo := range f.filterItems {
+		fval := fo.filterValue
+		switch fo.filterItem {
+		case srcIP:
+			if fo.filterType == parseTypeString && fval.(string) != sgt.srcIP.String() {
+				return false
+			} else if fo.filterType == parseTypeCIDR && !fval.(*network).contains(sgt.srcIP) {
+				return false
+			}
+		case agentAddr:
+			if fo.filterType == parseTypeString && fval.(string) != trap.AgentAddress {
+				return false
+			}
+			if fo.filterType == parseTypeCIDR && !fval.(*network).contains(net.ParseIP(trap.AgentAddress)) {
+				return false
+			}
+		case enterprise:
+			if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(strings.TrimLeft(trap.Enterprise,".")) {
+				return false
+			} 
+			if fo.filterType == parseTypeString && fval.(string) != strings.TrimLeft(trap.Enterprise,".") {
+				return false
+			} 
+		case genericType:
+			if fo.filterType == parseTypeInt && fval.(int) != trap.GenericTrap {
+				return false
+			}
+		case specificType:
+			if fo.filterType == parseTypeInt && fval.(int) != trap.SpecificTrap {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // logTrap (for now) prints to stdout - a format that mimics the current
@@ -170,60 +226,4 @@ func logTrap(t *sgTrap) {
 			fmt.Printf("\tObject:%s Value:%v\n", vbName, v.Value)
 		}
 	}
-}
-
-// makeTrapDests populates the trapDest array with the list
-// of trap destinations and ports.
-//
-func makeTrapDests() {
-	tDests := make([]*g.GoSNMP, len(trapDestList))
-	for i, d := range trapDestList {
-		s := strings.Split(d, ":")
-		port, err := strconv.Atoi(s[1])
-		if err != nil {
-			panic("Invalid destination port: " + d)
-		}
-		td := &g.GoSNMP{
-			Target:             s[0],
-			Port:               uint16(port),
-			Transport:          "udp",
-			Community:          "",
-			Version:            g.Version1,
-			Timeout:            time.Duration(2) * time.Second,
-			Retries:            3,
-			ExponentialTimeout: true,
-			MaxOids:            g.MaxOids,
-		}
-		err = td.Connect()
-		if err != nil {
-			panic(err)
-		}
-		tDests[i] = td
-		fmt.Printf("--Added trap destination: %s, port %s\n", s[0], s[1])
-	}
-	trapDests = tDests
-}
-
-// -DSS Temp - filteredTrap checks the incoming trap against various filters and will
-// return true if the trap should be filtered (ignored)
-func filteredTrap(p *g.SnmpPacket, ip net.IP) bool {
-	if len(p.Enterprise) > 1 && strings.Trim(p.Enterprise, ".") == "1.3.6.1.4.1.546.1.1" {
-		return true
-	}
-	return false
-}
-
-// cleanOctets takes an array of bytes and removes non-ascii (or rather
-// printable) characters. It will allow for tab and newline characters
-// however. The result is returned as a string.
-//
-func cleanOctets(indat []byte) string {
-	n := 0
-	for _, c := range indat {
-		if c >= 32 && c < 127 && c != 10 && c != 9 {
-			indat[n] = c
-			n++
-		}
-	}
-	return string(indat[:n])
 }
