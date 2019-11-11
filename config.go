@@ -283,9 +283,6 @@ func getConfig() {
 	if teConfig.logMaxBackups == 0 {
 		teConfig.logMaxBackups = defLogfileMaxBackups
 	}
-	if *cmdRunLogFile != "" {
-		runLogger.SetOutput(makeLogger(*cmdRunLogFile))
-	}
 	if teConfig.v3Params.username == "" {
 		teConfig.v3Params.username = defV3user
 	}
@@ -307,6 +304,11 @@ func getConfig() {
 	}
 	if teConfig.v3Params.msgFlags == g.AuthPriv && teConfig.v3Params.privacyProto < 2 {
 		checkErr(fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode"))
+	}
+	// Finally set log rotation on the command run file as log as we are
+	// not in debug mode
+	if *cmdRunLogFile != "" {
+		runLogger.SetOutput(makeLogger(*cmdRunLogFile))
 	}
 }
 

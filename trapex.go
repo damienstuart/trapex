@@ -58,7 +58,7 @@ func main() {
 
 	// Uncomment for debugging gosnmp
 	if teConfig.debug == true {
-		runLogger.Println("*DEBUG MODE ENABLED")
+		runLogger.Println("*DEBUG MODE ENABLED*")
 		tl.Params.Logger = teConfig.runLogger
 	}
 

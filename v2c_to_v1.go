@@ -26,6 +26,9 @@ func translateToV1(t *sgTrap) error {
 	}
 
 	trap := &t.data
+	if len(trap.Variables) < 2 {
+		return fmt.Errorf("got invalid v2 trap with less than 2 varbinds: %v", trap)
+	}
 	vb0 := trap.Variables[0]
 	vb1 := trap.Variables[1]
 
