@@ -74,8 +74,6 @@ func main() {
 		PrivacyPassphrase:			teConfig.v3Params.privacyPassword,
 	}
 
-	fmt.Printf("SNMPv3 security Params: %v\n", teConfig.v3Params)
-
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.listenAddr, teConfig.listenPort)
 	fmt.Printf("Start trapex listener on %s\n", listenAddr)
 	err := tl.Listen(listenAddr)
