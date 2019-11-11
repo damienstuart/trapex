@@ -15,7 +15,7 @@ import (
 
 const myVersion string = "0.9.0-beta"
 
-var runLogger *log.Logger
+//var runLogger *log.Logger
 
 // teStats is a structure for holding trapex stats.
 type teStats struct {
@@ -58,8 +58,8 @@ func main() {
 
 	// Uncomment for debugging gosnmp
 	if teConfig.debug == true {
-		runLogger.Println("*DEBUG MODE ENABLED*")
-		tl.Params.Logger = teConfig.runLogger
+		fmt.Println("*DEBUG MODE ENABLED*")
+		tl.Params.Logger = log.New(os.Stdout, "", 0)
 	}
 
 	// SNMP v3 stuff
@@ -74,10 +74,10 @@ func main() {
 		PrivacyPassphrase:			teConfig.v3Params.privacyPassword,
 	}
 
-	runLogger.Printf("SNMPv3 security Params: %v\n", teConfig.v3Params)
+	fmt.Printf("SNMPv3 security Params: %v\n", teConfig.v3Params)
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.listenAddr, teConfig.listenPort)
-	runLogger.Printf("Start trapex listener on %s\n", listenAddr)
+	fmt.Printf("Start trapex listener on %s\n", listenAddr)
 	err := tl.Listen(listenAddr)
 	if err != nil {
 		log.Panicf("error in listen on %s: %s", listenAddr, err)
@@ -107,12 +107,12 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	if p.Version > g.Version1 {
 		err := translateToV1(&trap)
 		if err != nil {
-			runLogger.Printf("Error translating to v1: %v\n", err)
+			fmt.Printf("Error translating to v1: %v\n", err)
 		}
 	}
 
 	if teConfig.debug {
-		logTrap(&trap, runLogger)
+		fmt.Printf(makeTrapLogEntry(&trap).String())
 	}
 	processTrap(&trap)
 }

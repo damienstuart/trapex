@@ -31,8 +31,11 @@ func (n *network) contains (ip net.IP) bool {
 	return n.net.Contains(ip)
 }
 
-//func makeTrapLogEntry(sgt *sgTrap) *(strings.Builder) {
 func logTrap(sgt *sgTrap, l *log.Logger) {
+	l.Printf(makeTrapLogEntry(sgt).String())
+}
+
+func makeTrapLogEntry(sgt *sgTrap) *(strings.Builder) {
 	var b strings.Builder
 	trap := sgt.data
 
@@ -63,5 +66,5 @@ func logTrap(sgt *sgTrap, l *log.Logger) {
 			b.WriteString(fmt.Sprintf("\tObject:%s Value:%v\n", vbName, v.Value))
 		}
 	}
-	l.Printf(b.String())
+	return &b
 }

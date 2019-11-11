@@ -107,7 +107,6 @@ type trapexConfig struct {
 	listenAddr		string
 	listenPort		string
 	runLogFile		string
-	runLogger		*log.Logger
 	configFile		string
 	v3Params		v3Params
 	filters			[]trapexFilter
@@ -143,7 +142,7 @@ func (a *trapForwarder) initAction(dest string) {
 	if err != nil {
 		panic(err)
 	}
-	runLogger.Printf(" -Added trap destination: %s, port %s\n", s[0], s[1])
+	fmt.Printf(" -Added trap destination: %s, port %s\n", s[0], s[1])
 }
 
 func (a trapForwarder) processTrap(trap *sgTrap) error {
@@ -157,7 +156,7 @@ func (a *trapLogger) initAction(logfile string) {
 	a.logFile = logfile
 	a.logHandle = log.New(fd, "", 0)
 	a.logHandle.SetOutput(makeLogger(logfile))
-	runLogger.Printf(" -Added log destination: %s\n", logfile)
+	fmt.Printf(" -Added log destination: %s\n", logfile)
 }
 
 func (a *trapLogger) processTrap(trap *sgTrap) {
@@ -165,7 +164,6 @@ func (a *trapLogger) processTrap(trap *sgTrap) {
 }
 
 func makeLogger(logfile string) *lumberjack.Logger {
-	// --DSS TODO: use config params
 	l := lumberjack.Logger{
 		Filename:	logfile,
 		MaxSize: 	teConfig.logMaxSize,
@@ -194,8 +192,6 @@ Usage: trapex [-h] [-c <config_file>] [-b <bind_ip>] [-p <listen_port>]
   -c  - Override the location of the trapex configuration file.
   -d  - Enable debug mode (note: produces very verbose runtime output).
   -p  - Override the UDP port on which to listen for incoming traps.
-  -r  - Speficy the run logfile (runtime and debug output). If not
-        set, output goes to stdout.
   -v  - Print the version of trapex and exit.
 `
 	eprint(usageText)
@@ -206,7 +202,6 @@ func getConfig() {
 	configFile := flag.String("c", "/etc/trapex.conf", "")
 	cmdBindAddr := flag.String("b", "", "")
 	cmdListenPort := flag.String("p", "", "")
-	cmdRunLogFile := flag.String("r", "", "")
 	debugMode := flag.Bool("d", false, "")
 	showVersion := flag.Bool("v", false, "")
 
@@ -217,16 +212,8 @@ func getConfig() {
 		os.Exit(0)
 	}
 
-	if *cmdRunLogFile != "" {
-		fd, err := os.OpenFile(*cmdRunLogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		checkErr(err)
-		runLogger = log.New(fd, "", 0)
-	} else {
-		runLogger = log.New(os.Stdout, "", 0)
-	}
-
-	runLogger.Printf("This is trapex version %s.\n", myVersion)
-	runLogger.Printf("-Reading configuration from: %s.\n", *configFile)
+	fmt.Printf("This is trapex version %s.\n", myVersion)
+	fmt.Printf("-Reading configuration from: %s.\n", *configFile)
 
 	// First process the config file
 	cf, err := os.Open(*configFile)
@@ -304,11 +291,6 @@ func getConfig() {
 	}
 	if teConfig.v3Params.msgFlags == g.AuthPriv && teConfig.v3Params.privacyProto < 2 {
 		checkErr(fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode"))
-	}
-	// Finally set log rotation on the command run file as log as we are
-	// not in debug mode
-	if *cmdRunLogFile != "" {
-		runLogger.SetOutput(makeLogger(*cmdRunLogFile))
 	}
 }
 
