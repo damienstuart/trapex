@@ -46,8 +46,6 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	//runLogger = log.New(os.Stdout, "", 0)
-
 	// Get the configuration
 	//
 	getConfig()
@@ -66,7 +64,7 @@ func main() {
 
 	// SNMP v3 stuff
 	tl.Params.SecurityModel = g.UserSecurityModel
-	tl.Params.MsgFlags = g.AuthPriv
+	tl.Params.MsgFlags = teConfig.v3Params.msgFlags
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
 		UserName:					teConfig.v3Params.username,
@@ -76,9 +74,10 @@ func main() {
 		PrivacyPassphrase:			teConfig.v3Params.privacyPassword,
 	}
 
+	runLogger.Printf("SNMPv3 security Params: %v\n", teConfig.v3Params)
+
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.listenAddr, teConfig.listenPort)
-	//fmt.Println("Start trapex listener on " + listenAddr)
-	runLogger.Println("Start trapex listener on " + listenAddr)
+	runLogger.Printf("Start trapex listener on %s\n", listenAddr)
 	err := tl.Listen(listenAddr)
 	if err != nil {
 		log.Panicf("error in listen on %s: %s", listenAddr, err)
@@ -113,7 +112,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	}
 
 	if teConfig.debug {
-		runLogger.Printf(makeTrapLogEntry(&trap).String())
+		logTrap(&trap, runLogger)
 	}
 	processTrap(&trap)
 }
@@ -211,41 +210,3 @@ func isFilterMatch(sgt *sgTrap, f *trapexFilter) bool {
 	}
 	return true
 }
-
-// logTrap (for now) prints to stdout - a format that mimics the current
-// SG trapexploder log file format.
-//
-/*
-func logTrap(t *sgTrap) {
-	trap := &t.data
-
-	fmt.Printf("\nTrap: %v", stats.trapCount)
-	if t.translated == true {
-		fmt.Printf(" (translated from v%s)", t.trapVer.String())
-	}
-	if t.dropped == true {
-		fmt.Printf(" (DROPPED)")
-	}
-	fmt.Printf("\n\t%s\n", time.Now().Format(time.ANSIC))
-	fmt.Printf("\tSrc IP: %s\n", t.srcIP)
-	fmt.Printf("\tAgent: %s\n", trap.AgentAddress)
-	//fmt.Printf("\tVersion: %s\n", t.trapVer.String())
-	fmt.Printf("\tTrap Type: %v\n", trap.GenericTrap)
-	fmt.Printf("\tSpecific Type: %v\n", trap.SpecificTrap)
-	fmt.Printf("\tEnterprise: %s\n", strings.Trim(trap.Enterprise, "."))
-	fmt.Printf("\tTimestamp: %v\n", trap.Timestamp)
-
-	// Process the Varbinds.
-	for _, v := range trap.Variables {
-		vbName := strings.Trim(v.Name, ".")
-		switch v.Type {
-		case g.OctetString:
-			//b := v.Value.([]byte)
-			//fmt.Printf("\tObject:%s Value:%s\n", vbName, cleanOctets(b))
-			fmt.Printf("\tObject:%s Value:%s\n", vbName, string(v.Value.([]byte)))
-		default:
-			fmt.Printf("\tObject:%s Value:%v\n", vbName, v.Value)
-		}
-	}
-}
-*/

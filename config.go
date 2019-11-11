@@ -11,13 +11,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/damienstuart/lumberjack"
 	g "github.com/damienstuart/gosnmp"
 )
 
 // Default fallback values
 //
-const defBindAddr string = "0.0.0.0"
-const defListenPort string = "162"
+const (
+	defBindAddr string = "0.0.0.0"
+	defListenPort string = "162"
+	defLogfileMaxSize int = 1024
+	defLogfileMaxBackups int = 7
+	defCompressRotatedLogs bool = false
+	defV3MsgFlag g.SnmpV3MsgFlags = g.NoAuthNoPriv
+	defV3user string = "_v3user"
+	defV3authProtocol g.SnmpV3AuthProtocol = g.NoAuth
+	defV3authPassword string = "_v3password"
+	defV3privacyProtocol g.SnmpV3PrivProtocol =  g.NoPriv
+	defV3privacyPassword string =  "_v3password"
+)
 
 type trapAction interface {
 	initAction(data string)
@@ -30,7 +42,8 @@ type trapForwarder struct {
 
 type trapLogger struct {
 	logFile			string
-	logHandle		*bufio.Writer
+	//logHandle		*bufio.Writer
+	logHandle		*log.Logger
 	isBroken		bool
 }
 
@@ -81,6 +94,7 @@ type cmdArgs struct {
 }
 
 type v3Params struct {
+	msgFlags		g.SnmpV3MsgFlags
 	username		string
 	authProto		g.SnmpV3AuthProtocol
 	authPassword	string
@@ -89,16 +103,20 @@ type v3Params struct {
 }
 
 type trapexConfig struct {
-	cmdArgs		cmdArgs
-	listenAddr	string
-	listenPort	string
-	runLogFile  string
-	runLogger	*log.Logger
-	configFile	string
-	v3Params	v3Params
-	filters		[]trapexFilter
-	debug 		bool
-	logDropped  bool
+	cmdArgs			cmdArgs
+	listenAddr		string
+	listenPort		string
+	runLogFile		string
+	runLogger		*log.Logger
+	configFile		string
+	v3Params		v3Params
+	filters			[]trapexFilter
+	debug			bool
+	logDropped	 	bool
+	logMaxSize		int
+	logMaxBackups	int
+	logMaxAge		int
+	logCompress		bool
 }
 
 // Global vars
@@ -137,16 +155,24 @@ func (a *trapLogger) initAction(logfile string) {
 	fd, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	checkErr(err)
 	a.logFile = logfile
-	a.logHandle = bufio.NewWriter(fd)
+	a.logHandle = log.New(fd, "", 0)
+	a.logHandle.SetOutput(makeLogger(logfile))
 	runLogger.Printf(" -Added log destination: %s\n", logfile)
 }
 
 func (a *trapLogger) processTrap(trap *sgTrap) {
-	err := logr(trap, a.logHandle)
-	if err != nil && !a.isBroken {
-		runLogger.Printf("Error writing to logfile: %s\n", a.logFile)
-		a.isBroken = true
+	logTrap(trap, a.logHandle)
+}
+
+func makeLogger(logfile string) *lumberjack.Logger {
+	// --DSS TODO: use config params
+	l := lumberjack.Logger{
+		Filename:	logfile,
+		MaxSize: 	teConfig.logMaxSize,
+		MaxBackups: teConfig.logMaxBackups,
+		Compress:	teConfig.logCompress,
 	}
+	return &l
 }
 
 func checkErr(e error) {
@@ -249,6 +275,38 @@ func getConfig() {
 	}
 	if *debugMode == true {
 		teConfig.debug = true
+	}
+	// Other config fallbacks
+	if teConfig.logMaxSize == 0 {
+		teConfig.logMaxSize = defLogfileMaxSize
+	}
+	if teConfig.logMaxBackups == 0 {
+		teConfig.logMaxBackups = defLogfileMaxBackups
+	}
+	if *cmdRunLogFile != "" {
+		runLogger.SetOutput(makeLogger(*cmdRunLogFile))
+	}
+	if teConfig.v3Params.username == "" {
+		teConfig.v3Params.username = defV3user
+	}
+	if teConfig.v3Params.authProto == 0 {
+		teConfig.v3Params.authProto = defV3authProtocol
+	}
+	if teConfig.v3Params.authPassword == "" {
+		teConfig.v3Params.authPassword = defV3authPassword
+	}
+	if teConfig.v3Params.privacyProto == 0 {
+		teConfig.v3Params.privacyProto = defV3privacyProtocol
+	}
+	if teConfig.v3Params.privacyPassword == "" {
+		teConfig.v3Params.privacyPassword = defV3privacyPassword
+	}
+	// Now we need to sanity-check the v3 params
+	if (teConfig.v3Params.msgFlags & g.AuthPriv) == 1 && teConfig.v3Params.authProto < 2 {
+		checkErr(fmt.Errorf("v3 config error: no auth protocol set when msgFlags specifies an Auth mode"))
+	}
+	if teConfig.v3Params.msgFlags == g.AuthPriv && teConfig.v3Params.privacyProto < 2 {
+		checkErr(fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode"))
 	}
 }
 
@@ -354,6 +412,20 @@ func processConfigLine(f []string) error {
 			return fmt.Errorf("invalid listenPort value: %s", err)
 		}
 		teConfig.listenPort = f[1]
+	case "v3msgFlags":
+		if flen < 2 {
+			return fmt.Errorf("missing value for v3msgFlags")
+		}
+		switch f[1] {
+		case "NoAuthNoPriv":
+			teConfig.v3Params.msgFlags = g.NoAuthNoPriv
+		case "AuthNoPriv":
+			teConfig.v3Params.msgFlags = g.AuthNoPriv
+		case "AuthPriv":
+			teConfig.v3Params.msgFlags = g.AuthPriv
+		default:
+			return fmt.Errorf("unsupported or invalid value (%s) for v3msgFlags", f[1])
+		}
 	case "v3user":
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3user")
@@ -391,6 +463,26 @@ func processConfigLine(f []string) error {
 			return fmt.Errorf("missing value for v3privacyPassword")
 		}
 		teConfig.v3Params.privacyPassword = f[1]
+	case "logfileMaxSize":
+		if flen < 2 {
+			return fmt.Errorf("missing value for logfileMaxSize")
+		}
+		p, err := strconv.Atoi(f[1])
+		if err != nil || p < 1 {
+			return fmt.Errorf("invalid logfileMaxSize value: %s", err)
+		}
+		teConfig.logMaxSize = p
+	case "logfileMaxBackups":
+		if flen < 2 {
+			return fmt.Errorf("missing value for logfileMaxBackups")
+		}
+		p, err := strconv.Atoi(f[1])
+		if err != nil || p < 1 {
+			return fmt.Errorf("invalid logfileMaxBackups value: %s", err)
+		}
+		teConfig.logMaxBackups = p
+	case "compressRotatedLogs":
+		teConfig.logCompress = true
 	default:
 		return fmt.Errorf("Unknown/unsuppported configuration option: %s", f[0])
 	}

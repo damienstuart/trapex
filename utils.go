@@ -1,8 +1,9 @@
 package main
 
 import (
-	"bufio"
+	//"bufio"
 	"fmt"
+	"log"
 	"net"
 	"strings"
 	"time"
@@ -30,35 +31,8 @@ func (n *network) contains (ip net.IP) bool {
 	return n.net.Contains(ip)
 }
 
-/*
-func inetAtoN (ipStr string) uint32 {
-	var ipInt uint32
-	for i, b := range net.ParseIP(ipStr).To4() {
-		ipInt |= uint32(b)
-		if i < 3 {
-			ipInt <<= 8
-		}
-	}
-	return ipInt
-}
-
-func inetNtoA(ip uint32) string {
-	return fmt.Sprintf("%d.%d.%d.%d", byte(ip>>24), byte(ip>>16), byte(ip>>8),
-		byte(ip))
-}
-*/
-
-func logr(sgt *sgTrap, fd *bufio.Writer) error {
-	le := makeTrapLogEntry(sgt)
-	fd.WriteString(le.String())
-	err := fd.Flush()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func makeTrapLogEntry(sgt *sgTrap) *(strings.Builder) {
+//func makeTrapLogEntry(sgt *sgTrap) *(strings.Builder) {
+func logTrap(sgt *sgTrap, l *log.Logger) {
 	var b strings.Builder
 	trap := sgt.data
 
@@ -89,22 +63,5 @@ func makeTrapLogEntry(sgt *sgTrap) *(strings.Builder) {
 			b.WriteString(fmt.Sprintf("\tObject:%s Value:%v\n", vbName, v.Value))
 		}
 	}
-	return &b
+	l.Printf(b.String())
 }
-
-// cleanOctets takes an array of bytes and removes non-ascii (or rather
-// printable) characters. It will allow for tab and newline characters
-// however. The result is returned as a string.
-//
-/*
-func cleanOctets(indat []byte) string {
-	n := 0
-	for _, c := range indat {
-		if c >= 32 && c < 127 && c != 10 && c != 9 {
-			indat[n] = c
-			n++
-		}
-	}
-	return string(indat[:n])
-}
-*/
