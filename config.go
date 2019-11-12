@@ -186,12 +186,12 @@ func eprint(msg string) {
 func showUsage() {
 	usageText := `
 Usage: trapex [-h] [-c <config_file>] [-b <bind_ip>] [-p <listen_port>]
-              [-d] [-r <runtime_logfil>] [-v]
+              [-d] [-v]
   -h  - Show this help message and exit.
-  -b  - Override the bind IP address on which to listen for incoming traps.
   -c  - Override the location of the trapex configuration file.
-  -d  - Enable debug mode (note: produces very verbose runtime output).
+  -b  - Override the bind IP address on which to listen for incoming traps.
   -p  - Override the UDP port on which to listen for incoming traps.
+  -d  - Enable debug mode (note: produces very verbose runtime output).
   -v  - Print the version of trapex and exit.
 `
 	eprint(usageText)
