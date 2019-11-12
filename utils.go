@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"bufio"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net"
@@ -59,9 +59,13 @@ func makeTrapLogEntry(sgt *sgTrap) *(strings.Builder) {
 		vbName := strings.Trim(v.Name, ".")
 		switch v.Type {
 		case g.OctetString:
-			//b := v.Value.([]byte)
-			//fd.WriteString(fmt.Printf("\tObject:%s Value:%s\n", vbName, cleanOctets(b)))
-			b.WriteString(fmt.Sprintf("\tObject:%s Value:%s\n", vbName, string(v.Value.([]byte))))
+			val := v.Value.([]byte)
+			// Non-printable/Non-ascii strings will be dumped as a hex string.
+			if len(val) > 0 && (val[0] < 32 || val[0] > 127) {
+				b.WriteString(fmt.Sprintf("\tObject:%s Value:%v\n", vbName, hex.EncodeToString(val)))
+			} else {
+				b.WriteString(fmt.Sprintf("\tObject:%s Value:%s\n", vbName, string(val)))
+			}
 		default:
 			b.WriteString(fmt.Sprintf("\tObject:%s Value:%v\n", vbName, v.Value))
 		}
