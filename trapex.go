@@ -6,37 +6,44 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"path/filepath"
-	"regexp"
-	"strings"
+	"syscall"
 
 	g "github.com/damienstuart/gosnmp"
 )
 
-const myVersion string = "0.9.0-beta"
-
-//var runLogger *log.Logger
-
 // teStats is a structure for holding trapex stats.
+//
 type teStats struct {
-	startTime     uint32
-	trapCount     uint64
-	filteredTraps uint64
-	fromV2c       uint64
-	fromV3        uint64
+	startTime		uint32
+	trapCount		uint64
+	filteredTraps	uint64
+	fromV2c			uint64
+	fromV3			uint64
 }
-
 var stats teStats
 
 // sgTrap holds a pointer to a trap and the source IP of
 // the incoming trap.
 //
 type sgTrap struct {
-	data       g.SnmpTrap
-	trapVer    g.SnmpVersion
-	srcIP      net.IP
-	translated bool
-	dropped    bool
+	trapNumber	uint64
+	data		g.SnmpTrap
+	trapVer		g.SnmpVersion
+	srcIP		net.IP
+	translated	bool
+	dropped		bool
+}
+
+func sigHandler(sigCh chan os.Signal) {
+	for {
+		select {
+		case <-sigCh:
+			fmt.Printf("Got SIGHUP\n")
+			getConfig()
+		}
+	}
 }
 
 func main() {
@@ -46,9 +53,18 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	// Get the configuration
+	// Process the command-line and get the configuration.
 	//
-	getConfig()
+	processCommandLine()
+
+	if err := getConfig(); err != nil {
+		panic(err)
+	}
+
+	// Setup signal handler
+	sigHupCh := make(chan os.Signal, 1)
+	signal.Notify(sigHupCh, syscall.SIGHUP)
+	go sigHandler(sigHupCh)
 
 	tl := g.NewTrapListener()
 
@@ -82,6 +98,8 @@ func main() {
 	}
 }
 
+// trapHandler is the callback for handling traps received by the listener.
+//
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	stats.trapCount++
 
@@ -110,8 +128,9 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	}
 
 	if teConfig.debug {
-		fmt.Printf(makeTrapLogEntry(&trap).String())
+		fmt.Printf(makeTrapLogEntry(&trap))
 	}
+
 	processTrap(&trap)
 }
 
@@ -132,79 +151,19 @@ func processTrap(sgt *sgTrap) {
 			if f.actionType == actionDrop {
 				sgt.dropped = true
 				continue
-				//break
 			} 
-			processAction(sgt, &f)
+			f.processAction(sgt)
 		} else {
 			// Determine if this trap matches this filter
-			if isFilterMatch(sgt, &f) == true {
+			//if isFilterMatch(sgt, &f) == true {
+			if f.isFilterMatch(sgt) {
 				if f.actionType == actionDrop {
 					sgt.dropped = true
 					continue
-					//break
 				}
-				processAction(sgt, &f)
+				f.processAction(sgt)
 			}
 		}
 
 	}
-}
-
-func processAction(sgt *sgTrap, f *trapexFilter) {
-	switch f.actionType {
-	case actionDrop:
-		sgt.dropped = true 
-		return
-	case actionNat:
-		if f.actionArg == "$SRC_IP" {
-			sgt.data.AgentAddress = sgt.srcIP.String()
-		} else {
-			sgt.data.AgentAddress = f.actionArg
-		}
-	case actionForward:
-		f.action.(*trapForwarder).processTrap(sgt)
-	case actionLog:
-		if !sgt.dropped || teConfig.logDropped {
-			f.action.(*trapLogger).processTrap(sgt)
-		}
-	}
-}
-
-func isFilterMatch(sgt *sgTrap, f *trapexFilter) bool {
-	// Assume true - until one of the filter items does not match
-	trap := &(sgt.data)
-	for _, fo := range f.filterItems {
-		fval := fo.filterValue
-		switch fo.filterItem {
-		case srcIP:
-			if fo.filterType == parseTypeString && fval.(string) != sgt.srcIP.String() {
-				return false
-			} else if fo.filterType == parseTypeCIDR && !fval.(*network).contains(sgt.srcIP) {
-				return false
-			}
-		case agentAddr:
-			if fo.filterType == parseTypeString && fval.(string) != trap.AgentAddress {
-				return false
-			}
-			if fo.filterType == parseTypeCIDR && !fval.(*network).contains(net.ParseIP(trap.AgentAddress)) {
-				return false
-			}
-		case enterprise:
-			if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(strings.TrimLeft(trap.Enterprise,".")) {
-				return false
-			} 
-			if fo.filterType == parseTypeString && fval.(string) != strings.TrimLeft(trap.Enterprise,".") {
-				return false
-			} 
-		case genericType:
-			if fo.filterType == parseTypeInt && fval.(int) != trap.GenericTrap {
-				return false
-			}
-		case specificType:
-			if fo.filterType == parseTypeInt && fval.(int) != trap.SpecificTrap {
-				return false
-			}
-		}
-	}
-	return true
 }

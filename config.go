@@ -9,11 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/damienstuart/lumberjack"
 	g "github.com/damienstuart/gosnmp"
 )
 
-// Default fallback values
+// Various default configuration fallback values
 //
 const (
 	defBindAddr string = "0.0.0.0"
@@ -29,12 +28,6 @@ const (
 	defV3privacyPassword string =  "_v3password"
 )
 
-type cmdArgs struct {
-	bindAddr	string
-	listenPort	string
-	configFile	string
-}
-
 type v3Params struct {
 	msgFlags		g.SnmpV3MsgFlags
 	username		string
@@ -45,7 +38,6 @@ type v3Params struct {
 }
 
 type trapexConfig struct {
-	cmdArgs			cmdArgs
 	listenAddr		string
 	listenPort		string
 	runLogFile		string
@@ -58,20 +50,20 @@ type trapexConfig struct {
 	logMaxBackups	int
 	logMaxAge		int
 	logCompress		bool
+	teConfigured	bool
+}
+
+type trapexCommandLine struct {
+	configFile		string
+	bindAddr		string
+	listenPort		string
+	debugMode		bool
 }
 
 // Global vars
-var teConfig trapexConfig
-
-func makeLogger(logfile string) *lumberjack.Logger {
-	l := lumberjack.Logger{
-		Filename:	logfile,
-		MaxSize: 	teConfig.logMaxSize,
-		MaxBackups: teConfig.logMaxBackups,
-		Compress:	teConfig.logCompress,
-	}
-	return &l
-}
+//
+var teConfig 	*trapexConfig
+var teCmdLine	trapexCommandLine
 
 func showUsage() {
 	usageText := `
@@ -84,15 +76,15 @@ Usage: trapex [-h] [-c <config_file>] [-b <bind_ip>] [-p <listen_port>]
   -d  - Enable debug mode (note: produces very verbose runtime output).
   -v  - Print the version of trapex and exit.
 `
-	eprint(usageText)
+	fmt.Println(usageText)
 }
 
-func getConfig() {
+func processCommandLine() {
 	flag.Usage = showUsage
-	configFile := flag.String("c", "/etc/trapex.conf", "")
-	cmdBindAddr := flag.String("b", "", "")
-	cmdListenPort := flag.String("p", "", "")
-	debugMode := flag.Bool("d", false, "")
+	c := flag.String("c", "/etc/trapex.conf", "")
+	b := flag.String("b", "", "")
+	p := flag.String("p", "", "")
+	d := flag.Bool("d", false, "")
 	showVersion := flag.Bool("v", false, "")
 
 	flag.Parse()
@@ -102,12 +94,28 @@ func getConfig() {
 		os.Exit(0)
 	}
 
-	fmt.Printf("This is trapex version %s.\n", myVersion)
-	fmt.Printf("-Reading configuration from: %s.\n", *configFile)
+	teCmdLine.configFile = *c
+	teCmdLine.bindAddr = *b
+	teCmdLine.listenPort = *p
+	teCmdLine.debugMode = *d
+}
+
+func getConfig() error {
+	// If this is a reconfig close any current handles
+	if teConfig != nil && teConfig.teConfigured {
+		fmt.Printf("Reloading ")
+		closeTrapexHandles()
+	} else {
+		fmt.Printf("Loading ")
+	}
+	fmt.Printf("configuration for trapex version %s from: %s.\n", myVersion, teCmdLine.configFile)
+
+	var newConfig trapexConfig
+
 
 	// First process the config file
-	cf, err := os.Open(*configFile)
-	checkErr(err)
+	cf, err := os.Open(teCmdLine.configFile)
+	if err != nil { return err }
 	defer cf.Close()
 
 	cfSkipRe := regexp.MustCompile(`^\s*#|^\s*$`)
@@ -123,68 +131,81 @@ func getConfig() {
 		f := strings.Fields(line)
 
 		if f[0] == "filter" {
-			err := processFilterLine(f[1:])
-			checkErr(err)
+			if err := processFilterLine(f[1:], &newConfig); err != nil {
+				return err
+			}
 		} else {
-			err := processConfigLine(f)
-			checkErr(err)
+			if err := processConfigLine(f, &newConfig); err != nil {
+				return err
+			}
 		}
 	}
 
 	// Residual config file scan error?
 	if err := scanner.Err(); err != nil {
-		checkErr(err)
+		return(err)
 	}
 
 	// Override the listen address:port if they were specified on the
 	// command line.  If not and the listener values were not set in
 	// the config file, fallback to defaults.
 	//
-	if *cmdBindAddr != "" {
-		teConfig.listenAddr = *cmdBindAddr
-	} else if teConfig.listenAddr == "" {
-			teConfig.listenAddr = defBindAddr
+	if teCmdLine.bindAddr != "" {
+		newConfig.listenAddr = teCmdLine.bindAddr
+	} else if newConfig.listenAddr == "" {
+			newConfig.listenAddr = defBindAddr
 	}
-	if *cmdListenPort != "" {
-		teConfig.listenPort = *cmdListenPort
-	} else if teConfig.listenPort == "" {
-		teConfig.listenPort = defListenPort
+	if teCmdLine.listenPort != "" {
+		newConfig.listenPort = teCmdLine.listenPort
+	} else if newConfig.listenPort == "" {
+		newConfig.listenPort = defListenPort
 	}
-	if *debugMode == true {
-		teConfig.debug = true
+	if teCmdLine.debugMode {
+		newConfig.debug = true
 	}
 	// Other config fallbacks
-	if teConfig.logMaxSize == 0 {
-		teConfig.logMaxSize = defLogfileMaxSize
+	//
+	if newConfig.logMaxSize == 0 {
+		newConfig.logMaxSize = defLogfileMaxSize
 	}
-	if teConfig.logMaxBackups == 0 {
-		teConfig.logMaxBackups = defLogfileMaxBackups
+	if newConfig.logMaxBackups == 0 {
+		newConfig.logMaxBackups = defLogfileMaxBackups
 	}
-	if teConfig.v3Params.username == "" {
-		teConfig.v3Params.username = defV3user
+	if newConfig.v3Params.username == "" {
+		newConfig.v3Params.username = defV3user
 	}
-	if teConfig.v3Params.authProto == 0 {
-		teConfig.v3Params.authProto = defV3authProtocol
+	if newConfig.v3Params.authProto == 0 {
+		newConfig.v3Params.authProto = defV3authProtocol
 	}
-	if teConfig.v3Params.authPassword == "" {
-		teConfig.v3Params.authPassword = defV3authPassword
+	if newConfig.v3Params.authPassword == "" {
+		newConfig.v3Params.authPassword = defV3authPassword
 	}
-	if teConfig.v3Params.privacyProto == 0 {
-		teConfig.v3Params.privacyProto = defV3privacyProtocol
+	if newConfig.v3Params.privacyProto == 0 {
+		newConfig.v3Params.privacyProto = defV3privacyProtocol
 	}
-	if teConfig.v3Params.privacyPassword == "" {
-		teConfig.v3Params.privacyPassword = defV3privacyPassword
+	if newConfig.v3Params.privacyPassword == "" {
+		newConfig.v3Params.privacyPassword = defV3privacyPassword
 	}
-	// Now we need to sanity-check the v3 params
-	if (teConfig.v3Params.msgFlags & g.AuthPriv) == 1 && teConfig.v3Params.authProto < 2 {
-		checkErr(fmt.Errorf("v3 config error: no auth protocol set when msgFlags specifies an Auth mode"))
+	// Sanity-check the v3 params
+	//
+	if (newConfig.v3Params.msgFlags & g.AuthPriv) == 1 && newConfig.v3Params.authProto < 2 {
+		return fmt.Errorf("v3 config error: no auth protocol set when msgFlags specifies an Auth mode")
 	}
-	if teConfig.v3Params.msgFlags == g.AuthPriv && teConfig.v3Params.privacyProto < 2 {
-		checkErr(fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode"))
+	if newConfig.v3Params.msgFlags == g.AuthPriv && newConfig.v3Params.privacyProto < 2 {
+		return fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode")
 	}
+
+	// Set our global config pointer to this configuration
+	newConfig.teConfigured = true
+	teConfig = &newConfig
+
+	return nil
 }
 
-func processFilterLine(f []string) error {
+// processFIlterLine parsed a "filter" line from the config file and sets
+// the appropriate values in the corresponding trapexFilter struct.
+//
+func processFilterLine(f []string, newConfig *trapexConfig) error {
 	var err error
 	if len(f) < 6 {
 		return fmt.Errorf("not enough fields in filter line: %s", "filter " + strings.Join(f, " "))
@@ -203,8 +224,14 @@ func processFilterLine(f []string) error {
 				continue
 			}
 			fObj.filterItem = i
-			if i < 2 { // This is an IP address type
-				if strings.Contains(fi, "/") {
+			if i < 2 { // Either of the first 2 is an IP address type
+				if strings.HasPrefix(fi, "/") { // If starts with a "/", it's a regex
+					fObj.filterType = parseTypeRegex
+					fObj.filterValue, err = regexp.Compile(fi[1:])
+					if err != nil {
+						return fmt.Errorf("unable to compile regexp for IP: %s: %s", fi, err)
+					}
+				} else if strings.Contains(fi, "/") {
 					fObj.filterType = parseTypeCIDR
 					fObj.filterValue, err = newNetwork(fi)
 					if err != nil {
@@ -225,7 +252,7 @@ func processFilterLine(f []string) error {
 				fObj.filterType = parseTypeRegex
 				fObj.filterValue, err = regexp.Compile(fi)
 				if err != nil {
-					return fmt.Errorf("unable to compile regexp for: %s: %s", fi, err)
+					return fmt.Errorf("unable to compile regexp for OID: %s: %s", fi, err)
 				}
 			}
 			filter.filterItems = append(filter.filterItems, fObj)
@@ -249,34 +276,38 @@ func processFilterLine(f []string) error {
 	case "forward":
 		filter.actionType = actionForward
 		forwarder := trapForwarder{}
-		forwarder.initAction(actionArg)
+		if err := forwarder.initAction(actionArg); err != nil {
+			return err
+		}
 		filter.action = &forwarder 
 	case "log":
 		filter.actionType = actionLog
 		logger := trapLogger{}
-		logger.initAction(actionArg)
+		if err := logger.initAction(actionArg, newConfig); err != nil {
+			return err
+		}
 		filter.action = &logger
 	default:
 		return fmt.Errorf("unknown action: %s", f[5])
 	}
 
-	teConfig.filters = append(teConfig.filters, filter)
+	newConfig.filters = append(newConfig.filters, filter)
 
 	return nil
 }
 
-func processConfigLine(f []string) error {
+func processConfigLine(f []string, newConfig *trapexConfig) error {
 	flen := len(f)
 	switch f[0] {
 	case "debug":
-		teConfig.debug = true
+		newConfig.debug = true
 	case "logDroppedTraps":
-		teConfig.logDropped = true
+		newConfig.logDropped = true
 	case "listenAddress":
 		if flen < 2 {
 			return fmt.Errorf("missing value for listenAddr")
 		}
-		teConfig.listenAddr = f[1]
+		newConfig.listenAddr = f[1]
 	case "listenPort":
 		if flen < 2 {
 			return fmt.Errorf("missing value for listenPort")
@@ -285,18 +316,18 @@ func processConfigLine(f []string) error {
 		if err != nil || p < 1 || p > 65535 {
 			return fmt.Errorf("invalid listenPort value: %s", err)
 		}
-		teConfig.listenPort = f[1]
+		newConfig.listenPort = f[1]
 	case "v3msgFlags":
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3msgFlags")
 		}
 		switch f[1] {
 		case "NoAuthNoPriv":
-			teConfig.v3Params.msgFlags = g.NoAuthNoPriv
+			newConfig.v3Params.msgFlags = g.NoAuthNoPriv
 		case "AuthNoPriv":
-			teConfig.v3Params.msgFlags = g.AuthNoPriv
+			newConfig.v3Params.msgFlags = g.AuthNoPriv
 		case "AuthPriv":
-			teConfig.v3Params.msgFlags = g.AuthPriv
+			newConfig.v3Params.msgFlags = g.AuthPriv
 		default:
 			return fmt.Errorf("unsupported or invalid value (%s) for v3msgFlags", f[1])
 		}
@@ -304,16 +335,16 @@ func processConfigLine(f []string) error {
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3user")
 		}
-		teConfig.v3Params.username = f[1]
+		newConfig.v3Params.username = f[1]
 	case "v3authProtocol":
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3authProtocol")
 		}
 		switch f[1] {
 		case "SHA":
-			teConfig.v3Params.authProto = g.SHA
+			newConfig.v3Params.authProto = g.SHA
 		case "MD5":
-			teConfig.v3Params.authProto = g.MD5
+			newConfig.v3Params.authProto = g.MD5
 		default:
 			return fmt.Errorf("invalid value for v3authProtocol")
 		}
@@ -321,16 +352,16 @@ func processConfigLine(f []string) error {
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3authPassword")
 		}
-		teConfig.v3Params.authPassword = f[1]
+		newConfig.v3Params.authPassword = f[1]
 	case "v3privacyProtocol":
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3privacyProtocol")
 		}
 		switch f[1] {
 		case "AES":
-			teConfig.v3Params.privacyProto = g.AES
+			newConfig.v3Params.privacyProto = g.AES
 		case "DES":
-			teConfig.v3Params.privacyProto = g.DES
+			newConfig.v3Params.privacyProto = g.DES
 		default:
 			return fmt.Errorf("invalid value for v3privacyProtocol")
 		}
@@ -338,7 +369,7 @@ func processConfigLine(f []string) error {
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3privacyPassword")
 		}
-		teConfig.v3Params.privacyPassword = f[1]
+		newConfig.v3Params.privacyPassword = f[1]
 	case "logfileMaxSize":
 		if flen < 2 {
 			return fmt.Errorf("missing value for logfileMaxSize")
@@ -347,7 +378,7 @@ func processConfigLine(f []string) error {
 		if err != nil || p < 1 {
 			return fmt.Errorf("invalid logfileMaxSize value: %s", err)
 		}
-		teConfig.logMaxSize = p
+		newConfig.logMaxSize = p
 	case "logfileMaxBackups":
 		if flen < 2 {
 			return fmt.Errorf("missing value for logfileMaxBackups")
@@ -356,11 +387,19 @@ func processConfigLine(f []string) error {
 		if err != nil || p < 1 {
 			return fmt.Errorf("invalid logfileMaxBackups value: %s", err)
 		}
-		teConfig.logMaxBackups = p
+		newConfig.logMaxBackups = p
 	case "compressRotatedLogs":
-		teConfig.logCompress = true
+		newConfig.logCompress = true
 	default:
 		return fmt.Errorf("Unknown/unsuppported configuration option: %s", f[0])
 	}
 	return nil
+}
+
+func closeTrapexHandles() {
+	for _, f := range teConfig.filters {
+		if f.actionType == actionForward {
+			f.action.(*trapForwarder).close()
+		}
+	} 
 }

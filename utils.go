@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"strings"
 	"strconv"
 	"time"
 
+	"github.com/damienstuart/lumberjack"
 	g "github.com/damienstuart/gosnmp"
 )
 
+// trapType is an array of trap Generic Type human-friendly names
+// ordered by the type value.
+//
 var trapType = [...]string {
 	"Cold Start",
 	"Warm Start",
@@ -23,11 +26,17 @@ var trapType = [...]string {
 	"Vendor Specific",
 }
 
+// network stuct holds the data parsed from a CIDR representation of a
+// subnet.
+//
 type network struct {
 	ip	net.IP
 	net	*net.IPNet
 }
 
+// newNetwork initializes the network stuct based on the given CIDR
+// formatted subnet.
+//
 func newNetwork(cidr string) (*network, error) {
 	nm := network{}
 	i, n, err := net.ParseCIDR(cidr)
@@ -39,25 +48,47 @@ func newNetwork(cidr string) (*network, error) {
 	return &nm, nil
 }
 
+// Returns true if the given IP falls within the subnet contained
+// in the network object.
+//
 func (n *network) contains (ip net.IP) bool {
 	return n.net.Contains(ip)
 }
 
+// logTrap takes care of logging the given trap to the given trapLogger
+// destination.
+//
 func logTrap(sgt *sgTrap, l *log.Logger) {
-	l.Printf(makeTrapLogEntry(sgt).String())
+	l.Printf(makeTrapLogEntry(sgt))
 }
 
-func checkErr(e error) {
+// panicOnError check an error pointer and panics if it is not nil.
+//
+/*
+*/
+func panicOnError(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
-
-func eprint(msg string) {
-	fmt.Fprintf(os.Stderr, "%s\n", msg)
+// makeLogger initializes and returns a lumberjack.Logger (logger with
+// built-in log rotation management).
+//
+func makeLogger(logfile string, teConf *trapexConfig) *lumberjack.Logger {
+	l := lumberjack.Logger{
+		Filename:	logfile,
+		MaxSize: 	teConf.logMaxSize,
+		MaxBackups: teConf.logMaxBackups,
+		Compress:	teConf.logCompress,
+	}
+	return &l
 }
 
-func makeTrapLogEntry(sgt *sgTrap) *(strings.Builder) {
+// makeTrapLogEntry creates a log entry string for the given trap data.
+// Note that this particulare implementation expects to be dealing with
+// only v1 traps.
+//
+func makeTrapLogEntry(sgt *sgTrap) string {
 	var b strings.Builder
 	var genTrapType string
 	trap := sgt.data
@@ -82,23 +113,24 @@ func makeTrapLogEntry(sgt *sgTrap) *(strings.Builder) {
 	b.WriteString(fmt.Sprintf("\tEnterprise: %s\n", strings.Trim(trap.Enterprise, ".")))
 	b.WriteString(fmt.Sprintf("\tTimestamp: %v\n", trap.Timestamp))
 
-	// Process the Varbinds.
+	// Process the Varbinds for this trap.
 	for _, v := range trap.Variables {
 		vbName := strings.Trim(v.Name, ".")
 		switch v.Type {
 		case g.OctetString:
-			var nonAscii bool
+			var nonASCII bool
 			val := v.Value.([]byte)
 			if len(val) > 0 {
 				for i:=0; i<len(val); i++ {
 					if (val[i] < 32 || val[i] > 127) && val[i] != 9 && val[i] != 10 {
-						nonAscii = true
+						nonASCII = true
 						break
 					}
 				}
 			}
-			// Non-printable/Non-ascii strings will be dumped as a hex string.
-			if nonAscii {
+			// Strings with non-printable/non-ascii characters will be dumped
+			// as a hex string. Otherwise, just as a plain string.
+			if nonASCII {
 				b.WriteString(fmt.Sprintf("\tObject:%s Value:%v\n", vbName, hex.EncodeToString(val)))
 			} else {
 				b.WriteString(fmt.Sprintf("\tObject:%s Value:%s\n", vbName, string(val)))
@@ -107,5 +139,5 @@ func makeTrapLogEntry(sgt *sgTrap) *(strings.Builder) {
 			b.WriteString(fmt.Sprintf("\tObject:%s Value:%v\n", vbName, v.Value))
 		}
 	}
-	return &b
+	return b.String()
 }
