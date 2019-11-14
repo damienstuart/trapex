@@ -4,12 +4,10 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/damienstuart/lumberjack"
 	g "github.com/damienstuart/gosnmp"
@@ -30,62 +28,6 @@ const (
 	defV3privacyProtocol g.SnmpV3PrivProtocol =  g.NoPriv
 	defV3privacyPassword string =  "_v3password"
 )
-
-type trapAction interface {
-	initAction(data string)
-	processTrap(*sgTrap)
-}
-
-type trapForwarder struct {
-	destination	*g.GoSNMP
-}
-
-type trapLogger struct {
-	logFile			string
-	//logHandle		*bufio.Writer
-	logHandle		*log.Logger
-	isBroken		bool
-}
-
-// Filter types
-const (
-	parseTypeAny int = iota	// Match anything (wildcard)
-	parseTypeString			// Direct String comparison
-	parseTypeInt			// Direct Integer comparison
-	parseTypeRegex			// Regular Expression
-	parseTypeCIDR			// CIDR IP/Netmask 
-	parseTypeRange			// Integer range x:y
-)
-
-// Filter items
-const (
-	srcIP int = iota
-	agentAddr
-	genericType
-	specificType
-	enterprise
-)
-
-const (
-	actionDrop int = iota
-	actionNat
-	actionForward
-	actionLog
-)
-
-type filterObj struct {
-	filterItem	int
-	filterType	int
-	filterValue	interface{}		// string, *regex.Regexp, *network, int
-}
-
-type trapexFilter struct {
-	filterItems	[]filterObj
-	matchAll	bool
-	action		interface{}
-	actionType	int
-	actionArg	string
-}
 
 type cmdArgs struct {
 	bindAddr	string
@@ -121,48 +63,6 @@ type trapexConfig struct {
 // Global vars
 var teConfig trapexConfig
 
-func (a *trapForwarder) initAction(dest string) {
-	s := strings.Split(dest, ":")
-	port, err := strconv.Atoi(s[1])
-	if err != nil {
-		panic("Invalid destination port: " + s[1])
-	}
-	a.destination = &g.GoSNMP{
-		Target:             s[0],
-		Port:               uint16(port),
-		Transport:          "udp",
-		Community:          "",
-		Version:            g.Version1,
-		Timeout:            time.Duration(2) * time.Second,
-		Retries:            3,
-		ExponentialTimeout: true,
-		MaxOids:            g.MaxOids,
-	}
-	err = a.destination.Connect()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf(" -Added trap destination: %s, port %s\n", s[0], s[1])
-}
-
-func (a trapForwarder) processTrap(trap *sgTrap) error {
-	_, err := a.destination.SendTrap(trap.data)
-	return err
-}
-
-func (a *trapLogger) initAction(logfile string) {
-	fd, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	checkErr(err)
-	a.logFile = logfile
-	a.logHandle = log.New(fd, "", 0)
-	a.logHandle.SetOutput(makeLogger(logfile))
-	fmt.Printf(" -Added log destination: %s\n", logfile)
-}
-
-func (a *trapLogger) processTrap(trap *sgTrap) {
-	logTrap(trap, a.logHandle)
-}
-
 func makeLogger(logfile string) *lumberjack.Logger {
 	l := lumberjack.Logger{
 		Filename:	logfile,
@@ -171,16 +71,6 @@ func makeLogger(logfile string) *lumberjack.Logger {
 		Compress:	teConfig.logCompress,
 	}
 	return &l
-}
-
-func checkErr(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
-func eprint(msg string) {
-	fmt.Fprintf(os.Stderr, "%s\n", msg)
 }
 
 func showUsage() {
@@ -419,11 +309,12 @@ func processConfigLine(f []string) error {
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3authProtocol")
 		}
-		if f[1] == "SHA" {
+		switch f[1] {
+		case "SHA":
 			teConfig.v3Params.authProto = g.SHA
-		} else if f[1] == "MD5" {
+		case "MD5":
 			teConfig.v3Params.authProto = g.MD5
-		} else {
+		default:
 			return fmt.Errorf("invalid value for v3authProtocol")
 		}
 	case "v3authPassword":
@@ -435,11 +326,12 @@ func processConfigLine(f []string) error {
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3privacyProtocol")
 		}
-		if f[1] == "AES" {
+		switch f[1] {
+		case "AES":
 			teConfig.v3Params.privacyProto = g.AES
-		} else if f[1] == "DES" {
+		case "DES":
 			teConfig.v3Params.privacyProto = g.DES
-		} else {
+		default:
 			return fmt.Errorf("invalid value for v3privacyProtocol")
 		}
 	case "v3privacyPassword":

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"strings"
 	"strconv"
 	"time"
@@ -44,6 +45,16 @@ func (n *network) contains (ip net.IP) bool {
 
 func logTrap(sgt *sgTrap, l *log.Logger) {
 	l.Printf(makeTrapLogEntry(sgt).String())
+}
+
+func checkErr(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+func eprint(msg string) {
+	fmt.Fprintf(os.Stderr, "%s\n", msg)
 }
 
 func makeTrapLogEntry(sgt *sgTrap) *(strings.Builder) {
