@@ -6,9 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/signal"
 	"path/filepath"
-	"syscall"
 
 	g "github.com/damienstuart/gosnmp"
 )
@@ -36,15 +34,6 @@ type sgTrap struct {
 	dropped		bool
 }
 
-func sigHandler(sigCh chan os.Signal) {
-	for {
-		select {
-		case <-sigCh:
-			fmt.Printf("Got SIGHUP\n")
-			getConfig()
-		}
-	}
-}
 
 func main() {
 	flag.Usage = func() {
@@ -61,10 +50,7 @@ func main() {
 		panic(err)
 	}
 
-	// Setup signal handler
-	sigHupCh := make(chan os.Signal, 1)
-	signal.Notify(sigHupCh, syscall.SIGHUP)
-	go sigHandler(sigHupCh)
+	initSigHandlers()
 
 	tl := g.NewTrapListener()
 
