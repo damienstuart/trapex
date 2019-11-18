@@ -15,55 +15,55 @@ import (
 // Various default configuration fallback values
 //
 const (
-	defBindAddr string = "0.0.0.0"
-	defListenPort string = "162"
-	defLogfileMaxSize int = 1024
-	defLogfileMaxBackups int = 7
-	defCompressRotatedLogs bool = false
-	defV3MsgFlag g.SnmpV3MsgFlags = g.NoAuthNoPriv
-	defV3user string = "_v3user"
-	defV3authProtocol g.SnmpV3AuthProtocol = g.NoAuth
-	defV3authPassword string = "_v3password"
-	defV3privacyProtocol g.SnmpV3PrivProtocol =  g.NoPriv
-	defV3privacyPassword string =  "_v3password"
+	defBindAddr            string               = "0.0.0.0"
+	defListenPort          string               = "162"
+	defLogfileMaxSize      int                  = 1024
+	defLogfileMaxBackups   int                  = 7
+	defCompressRotatedLogs bool                 = false
+	defV3MsgFlag           g.SnmpV3MsgFlags     = g.NoAuthNoPriv
+	defV3user              string               = "_v3user"
+	defV3authProtocol      g.SnmpV3AuthProtocol = g.NoAuth
+	defV3authPassword      string               = "_v3password"
+	defV3privacyProtocol   g.SnmpV3PrivProtocol = g.NoPriv
+	defV3privacyPassword   string               = "_v3password"
 )
 
 type v3Params struct {
-	msgFlags		g.SnmpV3MsgFlags
-	username		string
-	authProto		g.SnmpV3AuthProtocol
-	authPassword	string
-	privacyProto	g.SnmpV3PrivProtocol
-	privacyPassword	string
+	msgFlags        g.SnmpV3MsgFlags
+	username        string
+	authProto       g.SnmpV3AuthProtocol
+	authPassword    string
+	privacyProto    g.SnmpV3PrivProtocol
+	privacyPassword string
 }
 
 type trapexConfig struct {
-	listenAddr		string
-	listenPort		string
-	runLogFile		string
-	configFile		string
-	v3Params		v3Params
-	filters			[]trapexFilter
-	debug			bool
-	logDropped	 	bool
-	logMaxSize		int
-	logMaxBackups	int
-	logMaxAge		int
-	logCompress		bool
-	teConfigured	bool
+	listenAddr    string
+	listenPort    string
+	runLogFile    string
+	configFile    string
+	v3Params      v3Params
+	filters       []trapexFilter
+	debug         bool
+	logDropped    bool
+	logMaxSize    int
+	logMaxBackups int
+	logMaxAge     int
+	logCompress   bool
+	teConfigured  bool
 }
 
 type trapexCommandLine struct {
-	configFile		string
-	bindAddr		string
-	listenPort		string
-	debugMode		bool
+	configFile string
+	bindAddr   string
+	listenPort string
+	debugMode  bool
 }
 
 // Global vars
 //
-var teConfig 	*trapexConfig
-var teCmdLine	trapexCommandLine
+var teConfig *trapexConfig
+var teCmdLine trapexCommandLine
 
 func showUsage() {
 	usageText := `
@@ -112,18 +112,21 @@ func getConfig() error {
 
 	var newConfig trapexConfig
 
-
 	// First process the config file
 	cf, err := os.Open(teCmdLine.configFile)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer cf.Close()
 
 	cfSkipRe := regexp.MustCompile(`^\s*#|^\s*$`)
 
+	var lineNumber uint = 0
 	scanner := bufio.NewScanner(cf)
-	for scanner.Scan(){
+	for scanner.Scan() {
 		// Scan in the lines from the config file
 		line := scanner.Text()
+		lineNumber++
 		if cfSkipRe.MatchString(line) {
 			continue
 		}
@@ -131,7 +134,7 @@ func getConfig() error {
 		f := strings.Fields(line)
 
 		if f[0] == "filter" {
-			if err := processFilterLine(f[1:], &newConfig); err != nil {
+			if err := processFilterLine(f[1:], &newConfig, lineNumber); err != nil {
 				return err
 			}
 		} else {
@@ -143,7 +146,7 @@ func getConfig() error {
 
 	// Residual config file scan error?
 	if err := scanner.Err(); err != nil {
-		return(err)
+		return (err)
 	}
 
 	// Override the listen address:port if they were specified on the
@@ -153,7 +156,7 @@ func getConfig() error {
 	if teCmdLine.bindAddr != "" {
 		newConfig.listenAddr = teCmdLine.bindAddr
 	} else if newConfig.listenAddr == "" {
-			newConfig.listenAddr = defBindAddr
+		newConfig.listenAddr = defBindAddr
 	}
 	if teCmdLine.listenPort != "" {
 		newConfig.listenPort = teCmdLine.listenPort
@@ -188,7 +191,7 @@ func getConfig() error {
 	}
 	// Sanity-check the v3 params
 	//
-	if (newConfig.v3Params.msgFlags & g.AuthPriv) == 1 && newConfig.v3Params.authProto < 2 {
+	if (newConfig.v3Params.msgFlags&g.AuthPriv) == 1 && newConfig.v3Params.authProto < 2 {
 		return fmt.Errorf("v3 config error: no auth protocol set when msgFlags specifies an Auth mode")
 	}
 	if newConfig.v3Params.msgFlags == g.AuthPriv && newConfig.v3Params.privacyProto < 2 {
@@ -205,15 +208,17 @@ func getConfig() error {
 // processFIlterLine parsed a "filter" line from the config file and sets
 // the appropriate values in the corresponding trapexFilter struct.
 //
-func processFilterLine(f []string, newConfig *trapexConfig) error {
+func processFilterLine(f []string, newConfig *trapexConfig, lineNum uint) error {
 	var err error
 	if len(f) < 6 {
-		return fmt.Errorf("not enough fields in filter line: %s", "filter " + strings.Join(f, " "))
+		return fmt.Errorf("error: config line: %v - not enough fields in filter", lineNum)
 	}
 
 	// Process the filter criteria
 	//
 	filter := trapexFilter{}
+	filter.lineNumber = lineNum
+	filter.filterLine = strings.Join(f, " ")
 	if strings.HasPrefix(strings.Join(f, " "), "* * * * *") {
 		filter.matchAll = true
 	} else {
@@ -229,13 +234,13 @@ func processFilterLine(f []string, newConfig *trapexConfig) error {
 					fObj.filterType = parseTypeRegex
 					fObj.filterValue, err = regexp.Compile(fi[1:])
 					if err != nil {
-						return fmt.Errorf("unable to compile regexp for IP: %s: %s", fi, err)
+						return fmt.Errorf("error: config line: %v - unable to compile regexp for IP: %s: %s", lineNum, fi, err)
 					}
 				} else if strings.Contains(fi, "/") {
 					fObj.filterType = parseTypeCIDR
 					fObj.filterValue, err = newNetwork(fi)
 					if err != nil {
-						return fmt.Errorf("invalid IP/CIDR: %s", fi)
+						return fmt.Errorf("error: config line: %v - invalid IP/CIDR: %s", lineNum, fi)
 					}
 				} else {
 					fObj.filterType = parseTypeString
@@ -244,7 +249,7 @@ func processFilterLine(f []string, newConfig *trapexConfig) error {
 			} else if i > 1 && i < 4 { // Generic and Specific type
 				val, e := strconv.Atoi(fi)
 				if e != nil {
-					return fmt.Errorf("invalid integer value: %s: %s", fi, e)
+					return fmt.Errorf("error: config line: %v - invalid integer value: %s: %s", lineNum, fi, e)
 				}
 				fObj.filterType = parseTypeInt
 				fObj.filterValue = val
@@ -252,7 +257,7 @@ func processFilterLine(f []string, newConfig *trapexConfig) error {
 				fObj.filterType = parseTypeRegex
 				fObj.filterValue, err = regexp.Compile(fi)
 				if err != nil {
-					return fmt.Errorf("unable to compile regexp for OID: %s: %s", fi, err)
+					return fmt.Errorf("error: config line: %v - unable to compile regexp for OID: %s: %s", lineNum, fi, err)
 				}
 			}
 			filter.filterItems = append(filter.filterItems, fObj)
@@ -260,7 +265,7 @@ func processFilterLine(f []string, newConfig *trapexConfig) error {
 	}
 	// Process the filter action
 	//
-	var actionArg string 
+	var actionArg string
 	if len(f) > 6 {
 		actionArg = f[6]
 	}
@@ -279,7 +284,7 @@ func processFilterLine(f []string, newConfig *trapexConfig) error {
 		if err := forwarder.initAction(actionArg); err != nil {
 			return err
 		}
-		filter.action = &forwarder 
+		filter.action = &forwarder
 	case "log":
 		filter.actionType = actionLog
 		logger := trapLogger{}
@@ -312,7 +317,7 @@ func processConfigLine(f []string, newConfig *trapexConfig) error {
 		if flen < 2 {
 			return fmt.Errorf("missing value for listenPort")
 		}
-		p, err := strconv.ParseUint(f[1],10,16)
+		p, err := strconv.ParseUint(f[1], 10, 16)
 		if err != nil || p < 1 || p > 65535 {
 			return fmt.Errorf("invalid listenPort value: %s", err)
 		}
@@ -401,5 +406,5 @@ func closeTrapexHandles() {
 		if f.actionType == actionForward {
 			f.action.(*trapForwarder).close()
 		}
-	} 
+	}
 }

@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/damienstuart/lumberjack"
 	g "github.com/damienstuart/gosnmp"
+	"github.com/damienstuart/lumberjack"
 )
 
 // trapType is an array of trap Generic Type human-friendly names
 // ordered by the type value.
 //
-var trapType = [...]string {
+var trapType = [...]string{
 	"Cold Start",
 	"Warm Start",
 	"Link Down",
@@ -30,8 +30,8 @@ var trapType = [...]string {
 // subnet.
 //
 type network struct {
-	ip	net.IP
-	net	*net.IPNet
+	ip  net.IP
+	net *net.IPNet
 }
 
 // newNetwork initializes the network stuct based on the given CIDR
@@ -51,7 +51,7 @@ func newNetwork(cidr string) (*network, error) {
 // Returns true if the given IP falls within the subnet contained
 // in the network object.
 //
-func (n *network) contains (ip net.IP) bool {
+func (n *network) contains(ip net.IP) bool {
 	return n.net.Contains(ip)
 }
 
@@ -65,21 +65,22 @@ func logTrap(sgt *sgTrap, l *log.Logger) {
 // panicOnError check an error pointer and panics if it is not nil.
 //
 /*
-*/
+ */
 func panicOnError(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
+
 // makeLogger initializes and returns a lumberjack.Logger (logger with
 // built-in log rotation management).
 //
 func makeLogger(logfile string, teConf *trapexConfig) *lumberjack.Logger {
 	l := lumberjack.Logger{
-		Filename:	logfile,
-		MaxSize: 	teConf.logMaxSize,
+		Filename:   logfile,
+		MaxSize:    teConf.logMaxSize,
 		MaxBackups: teConf.logMaxBackups,
-		Compress:	teConf.logCompress,
+		Compress:   teConf.logCompress,
 	}
 	return &l
 }
@@ -98,7 +99,7 @@ func makeTrapLogEntry(sgt *sgTrap) string {
 	} else {
 		genTrapType = strconv.Itoa(trap.GenericTrap)
 	}
-	b.WriteString(fmt.Sprintf("\nTrap: %v", stats.trapCount))
+	b.WriteString(fmt.Sprintf("\nTrap: %v", stats.TrapCount))
 	if sgt.translated == true {
 		b.WriteString(fmt.Sprintf(" (translated from v%s)", sgt.trapVer.String()))
 	}
@@ -121,7 +122,7 @@ func makeTrapLogEntry(sgt *sgTrap) string {
 			var nonASCII bool
 			val := v.Value.([]byte)
 			if len(val) > 0 {
-				for i:=0; i<len(val); i++ {
+				for i := 0; i < len(val); i++ {
 					if (val[i] < 32 || val[i] > 127) && val[i] != 9 && val[i] != 10 {
 						nonASCII = true
 						break
@@ -140,4 +141,26 @@ func makeTrapLogEntry(sgt *sgTrap) string {
 		}
 	}
 	return b.String()
+}
+
+// secondsToDuration converts the given number of seconds into a more
+// human-readable formatted string.
+//
+func secondsToDuration(s uint) string {
+	var d uint
+	var h uint
+	var m uint
+	if s >= 86400 {
+		d = s / 86400
+		s %= 86400
+	}
+	if s >= 3600 {
+		h = s / 3600
+		s %= 3600
+	}
+	if s >= 60 {
+		m = s / 60
+		s %= 60
+	}
+	return fmt.Sprintf("%vd-%vh-%vm-%vs", d, h, m, s)
 }

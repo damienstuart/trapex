@@ -7,33 +7,48 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"time"
 
 	g "github.com/damienstuart/gosnmp"
 )
 
+type teTrapRates struct {
+	TrapRate1Min  uint
+	TrapRate5Min  uint
+	TrapRate15Min uint
+	TrapRate60Min uint
+	lastCount1    uint
+	lastCount5    uint
+	lastCount15   uint
+	lastCount60   uint
+}
+
 // teStats is a structure for holding trapex stats.
 //
 type teStats struct {
-	startTime		uint32
-	trapCount		uint64
-	filteredTraps	uint64
-	fromV2c			uint64
-	fromV3			uint64
+	StartTime         time.Time
+	UptimeInt         int64
+	Uptime            string
+	TrapCount         uint64
+	DroppedTraps      uint64
+	TranslatedFromV2c uint64
+	TranslatedFromV3  uint64
+	TrapRates         teTrapRates
 }
+
 var stats teStats
 
 // sgTrap holds a pointer to a trap and the source IP of
 // the incoming trap.
 //
 type sgTrap struct {
-	trapNumber	uint64
-	data		g.SnmpTrap
-	trapVer		g.SnmpVersion
-	srcIP		net.IP
-	translated	bool
-	dropped		bool
+	trapNumber uint64
+	data       g.SnmpTrap
+	trapVer    g.SnmpVersion
+	srcIP      net.IP
+	translated bool
+	dropped    bool
 }
-
 
 func main() {
 	flag.Usage = func() {
@@ -52,6 +67,10 @@ func main() {
 
 	initSigHandlers()
 
+	stats.StartTime = time.Now()
+
+	go httpListener(8008)
+
 	tl := g.NewTrapListener()
 
 	tl.OnNewTrap = trapHandler
@@ -69,11 +88,11 @@ func main() {
 	tl.Params.MsgFlags = teConfig.v3Params.msgFlags
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
-		UserName:					teConfig.v3Params.username,
-		AuthenticationProtocol:		teConfig.v3Params.authProto,
-		AuthenticationPassphrase:	teConfig.v3Params.authPassword,
-		PrivacyProtocol:   			teConfig.v3Params.privacyProto,
-		PrivacyPassphrase:			teConfig.v3Params.privacyPassword,
+		UserName:                 teConfig.v3Params.username,
+		AuthenticationProtocol:   teConfig.v3Params.authProto,
+		AuthenticationPassphrase: teConfig.v3Params.authPassword,
+		PrivacyProtocol:          teConfig.v3Params.privacyProto,
+		PrivacyPassphrase:        teConfig.v3Params.privacyPassword,
 	}
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.listenAddr, teConfig.listenPort)
@@ -87,7 +106,7 @@ func main() {
 // trapHandler is the callback for handling traps received by the listener.
 //
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
-	stats.trapCount++
+	stats.TrapCount++
 
 	// Make the trap
 	trap := sgTrap{
@@ -136,15 +155,16 @@ func processTrap(sgt *sgTrap) {
 			// drop).... (but...)
 			if f.actionType == actionDrop {
 				sgt.dropped = true
+				stats.DroppedTraps++
 				continue
-			} 
+			}
 			f.processAction(sgt)
 		} else {
 			// Determine if this trap matches this filter
-			//if isFilterMatch(sgt, &f) == true {
 			if f.isFilterMatch(sgt) {
 				if f.actionType == actionDrop {
 					sgt.dropped = true
+					stats.DroppedTraps++
 					continue
 				}
 				f.processAction(sgt)
