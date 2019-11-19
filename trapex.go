@@ -12,32 +12,6 @@ import (
 	g "github.com/damienstuart/gosnmp"
 )
 
-type teTrapRates struct {
-	TrapRate1Min  uint
-	TrapRate5Min  uint
-	TrapRate15Min uint
-	TrapRate60Min uint
-	lastCount1    uint
-	lastCount5    uint
-	lastCount15   uint
-	lastCount60   uint
-}
-
-// teStats is a structure for holding trapex stats.
-//
-type teStats struct {
-	StartTime         time.Time
-	UptimeInt         int64
-	Uptime            string
-	TrapCount         uint64
-	DroppedTraps      uint64
-	TranslatedFromV2c uint64
-	TranslatedFromV3  uint64
-	TrapRates         teTrapRates
-}
-
-var stats teStats
-
 // sgTrap holds a pointer to a trap and the source IP of
 // the incoming trap.
 //
