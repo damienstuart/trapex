@@ -42,6 +42,14 @@ func handleStats(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	stats.UptimeInt = now.Unix() - stats.StartTime.Unix()
 	stats.Uptime = secondsToDuration(uint(stats.UptimeInt))
+	stats.TrapsPerSecond.Last1min = trapRateTracker.getRate(1)
+	stats.TrapsPerSecond.Last5min = trapRateTracker.getRate(5)
+	stats.TrapsPerSecond.Last15min = trapRateTracker.getRate(15)
+	stats.TrapsPerSecond.Last1hour = trapRateTracker.getRate(60)
+	stats.TrapsPerSecond.Last4hour = trapRateTracker.getRate(240)
+	stats.TrapsPerSecond.Last8hour = trapRateTracker.getRate(480)
+	stats.TrapsPerSecond.Last1day = trapRateTracker.getRate(1440)
+	stats.TrapsPerSecond.SinceStart = trapRateTracker.getRate(0)
 	sendResponse(w, stats)
 }
 

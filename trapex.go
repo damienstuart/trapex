@@ -24,6 +24,8 @@ type sgTrap struct {
 	dropped    bool
 }
 
+var trapRateTracker *tcountRingBuf = newTrapRateTracker()
+
 func main() {
 	flag.Usage = func() {
 		fmt.Printf("Usage:\n")
@@ -42,6 +44,8 @@ func main() {
 	initSigHandlers()
 
 	stats.StartTime = time.Now()
+
+	go trapRateTracker.start()
 
 	go httpListener(8008)
 
