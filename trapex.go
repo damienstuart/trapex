@@ -24,7 +24,7 @@ type sgTrap struct {
 	dropped    bool
 }
 
-var trapRateTracker *tcountRingBuf = newTrapRateTracker()
+var trapRateTracker = newTrapRateTracker()
 
 func main() {
 	flag.Usage = func() {
