@@ -63,17 +63,6 @@ The options are as follows:
 *-v*::
     Print the *trapex* version and exit.
 
-..........................
-    random data (16 digits)
-    username
-    timestamp
-    software version
-    mode (command mode (0) or access mode (1))
-    if command mode => command to execute
-    else access mode  => IP,proto,port
-    message digest (SHA512 / SHA384 / SHA256 / SHA1 / MD5 / SHA3_256 / SHA3_512)
-..........................
-
 
 TRAPEX CONFIGURATION FILE
 -------------------------
