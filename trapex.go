@@ -14,26 +14,26 @@ import (
 // teStats is a structure for holding trapex stats.
 //
 type teStats struct {
-	startTime		uint32
-	trapCount		uint64
-	filteredTraps	uint64
-	fromV2c			uint64
-	fromV3			uint64
+	startTime     uint32
+	trapCount     uint64
+	filteredTraps uint64
+	fromV2c       uint64
+	fromV3        uint64
 }
+
 var stats teStats
 
 // sgTrap holds a pointer to a trap and the source IP of
 // the incoming trap.
 //
 type sgTrap struct {
-	trapNumber	uint64
-	data		g.SnmpTrap
-	trapVer		g.SnmpVersion
-	srcIP		net.IP
-	translated	bool
-	dropped		bool
+	trapNumber uint64
+	data       g.SnmpTrap
+	trapVer    g.SnmpVersion
+	srcIP      net.IP
+	translated bool
+	dropped    bool
 }
-
 
 func main() {
 	flag.Usage = func() {
@@ -69,11 +69,11 @@ func main() {
 	tl.Params.MsgFlags = teConfig.v3Params.msgFlags
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
-		UserName:					teConfig.v3Params.username,
-		AuthenticationProtocol:		teConfig.v3Params.authProto,
-		AuthenticationPassphrase:	teConfig.v3Params.authPassword,
-		PrivacyProtocol:   			teConfig.v3Params.privacyProto,
-		PrivacyPassphrase:			teConfig.v3Params.privacyPassword,
+		UserName:                 teConfig.v3Params.username,
+		AuthenticationProtocol:   teConfig.v3Params.authProto,
+		AuthenticationPassphrase: teConfig.v3Params.authPassword,
+		PrivacyProtocol:          teConfig.v3Params.privacyProto,
+		PrivacyPassphrase:        teConfig.v3Params.privacyPassword,
 	}
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.listenAddr, teConfig.listenPort)
@@ -87,6 +87,14 @@ func main() {
 // trapHandler is the callback for handling traps received by the listener.
 //
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
+	// First thing to do is check for ignored versions
+	// these won't be counted at all.
+	for _, ignoreVer := range teConfig.ignoreVersions {
+		if p.Version == ignoreVer {
+			return
+		}
+	}
+
 	stats.trapCount++
 
 	// Make the trap
@@ -137,7 +145,7 @@ func processTrap(sgt *sgTrap) {
 			if f.actionType == actionDrop {
 				sgt.dropped = true
 				continue
-			} 
+			}
 			f.processAction(sgt)
 		} else {
 			// Determine if this trap matches this filter

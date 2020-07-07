@@ -15,55 +15,56 @@ import (
 // Various default configuration fallback values
 //
 const (
-	defBindAddr string = "0.0.0.0"
-	defListenPort string = "162"
-	defLogfileMaxSize int = 1024
-	defLogfileMaxBackups int = 7
-	defCompressRotatedLogs bool = false
-	defV3MsgFlag g.SnmpV3MsgFlags = g.NoAuthNoPriv
-	defV3user string = "_v3user"
-	defV3authProtocol g.SnmpV3AuthProtocol = g.NoAuth
-	defV3authPassword string = "_v3password"
-	defV3privacyProtocol g.SnmpV3PrivProtocol =  g.NoPriv
-	defV3privacyPassword string =  "_v3password"
+	defBindAddr            string               = "0.0.0.0"
+	defListenPort          string               = "162"
+	defLogfileMaxSize      int                  = 1024
+	defLogfileMaxBackups   int                  = 7
+	defCompressRotatedLogs bool                 = false
+	defV3MsgFlag           g.SnmpV3MsgFlags     = g.NoAuthNoPriv
+	defV3user              string               = "_v3user"
+	defV3authProtocol      g.SnmpV3AuthProtocol = g.NoAuth
+	defV3authPassword      string               = "_v3password"
+	defV3privacyProtocol   g.SnmpV3PrivProtocol = g.NoPriv
+	defV3privacyPassword   string               = "_v3password"
 )
 
 type v3Params struct {
-	msgFlags		g.SnmpV3MsgFlags
-	username		string
-	authProto		g.SnmpV3AuthProtocol
-	authPassword	string
-	privacyProto	g.SnmpV3PrivProtocol
-	privacyPassword	string
+	msgFlags        g.SnmpV3MsgFlags
+	username        string
+	authProto       g.SnmpV3AuthProtocol
+	authPassword    string
+	privacyProto    g.SnmpV3PrivProtocol
+	privacyPassword string
 }
 
 type trapexConfig struct {
-	listenAddr		string
-	listenPort		string
-	runLogFile		string
-	configFile		string
-	v3Params		v3Params
-	filters			[]trapexFilter
-	debug			bool
-	logDropped	 	bool
-	logMaxSize		int
-	logMaxBackups	int
-	logMaxAge		int
-	logCompress		bool
-	teConfigured	bool
+	listenAddr     string
+	listenPort     string
+	ignoreVersions []g.SnmpVersion
+	runLogFile     string
+	configFile     string
+	v3Params       v3Params
+	filters        []trapexFilter
+	debug          bool
+	logDropped     bool
+	logMaxSize     int
+	logMaxBackups  int
+	logMaxAge      int
+	logCompress    bool
+	teConfigured   bool
 }
 
 type trapexCommandLine struct {
-	configFile		string
-	bindAddr		string
-	listenPort		string
-	debugMode		bool
+	configFile string
+	bindAddr   string
+	listenPort string
+	debugMode  bool
 }
 
 // Global vars
 //
-var teConfig 	*trapexConfig
-var teCmdLine	trapexCommandLine
+var teConfig *trapexConfig
+var teCmdLine trapexCommandLine
 
 func showUsage() {
 	usageText := `
@@ -112,16 +113,17 @@ func getConfig() error {
 
 	var newConfig trapexConfig
 
-
 	// First process the config file
 	cf, err := os.Open(teCmdLine.configFile)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer cf.Close()
 
 	cfSkipRe := regexp.MustCompile(`^\s*#|^\s*$`)
 
 	scanner := bufio.NewScanner(cf)
-	for scanner.Scan(){
+	for scanner.Scan() {
 		// Scan in the lines from the config file
 		line := scanner.Text()
 		if cfSkipRe.MatchString(line) {
@@ -143,7 +145,7 @@ func getConfig() error {
 
 	// Residual config file scan error?
 	if err := scanner.Err(); err != nil {
-		return(err)
+		return (err)
 	}
 
 	// Override the listen address:port if they were specified on the
@@ -153,7 +155,7 @@ func getConfig() error {
 	if teCmdLine.bindAddr != "" {
 		newConfig.listenAddr = teCmdLine.bindAddr
 	} else if newConfig.listenAddr == "" {
-			newConfig.listenAddr = defBindAddr
+		newConfig.listenAddr = defBindAddr
 	}
 	if teCmdLine.listenPort != "" {
 		newConfig.listenPort = teCmdLine.listenPort
@@ -188,7 +190,7 @@ func getConfig() error {
 	}
 	// Sanity-check the v3 params
 	//
-	if (newConfig.v3Params.msgFlags & g.AuthPriv) == 1 && newConfig.v3Params.authProto < 2 {
+	if (newConfig.v3Params.msgFlags&g.AuthPriv) == 1 && newConfig.v3Params.authProto < 2 {
 		return fmt.Errorf("v3 config error: no auth protocol set when msgFlags specifies an Auth mode")
 	}
 	if newConfig.v3Params.msgFlags == g.AuthPriv && newConfig.v3Params.privacyProto < 2 {
@@ -208,7 +210,7 @@ func getConfig() error {
 func processFilterLine(f []string, newConfig *trapexConfig) error {
 	var err error
 	if len(f) < 6 {
-		return fmt.Errorf("not enough fields in filter line: %s", "filter " + strings.Join(f, " "))
+		return fmt.Errorf("not enough fields in filter line: %s", "filter "+strings.Join(f, " "))
 	}
 
 	// Process the filter criteria
@@ -260,7 +262,7 @@ func processFilterLine(f []string, newConfig *trapexConfig) error {
 	}
 	// Process the filter action
 	//
-	var actionArg string 
+	var actionArg string
 	if len(f) > 6 {
 		actionArg = f[6]
 	}
@@ -279,7 +281,7 @@ func processFilterLine(f []string, newConfig *trapexConfig) error {
 		if err := forwarder.initAction(actionArg); err != nil {
 			return err
 		}
-		filter.action = &forwarder 
+		filter.action = &forwarder
 	case "log":
 		filter.actionType = actionLog
 		logger := trapLogger{}
@@ -312,11 +314,31 @@ func processConfigLine(f []string, newConfig *trapexConfig) error {
 		if flen < 2 {
 			return fmt.Errorf("missing value for listenPort")
 		}
-		p, err := strconv.ParseUint(f[1],10,16)
+		p, err := strconv.ParseUint(f[1], 10, 16)
 		if err != nil || p < 1 || p > 65535 {
 			return fmt.Errorf("invalid listenPort value: %s", err)
 		}
 		newConfig.listenPort = f[1]
+	case "ignoreVersions":
+		if flen < 2 {
+			return fmt.Errorf("missing value for ignoreVersions")
+		}
+		// split on commas (if any)
+		for _, v := range strings.Split(f[1], ",") {
+			switch strings.ToLower(v) {
+			case "v1", "1":
+				newConfig.ignoreVersions = append(newConfig.ignoreVersions, g.Version1)
+			case "v2c", "2c", "2":
+				newConfig.ignoreVersions = append(newConfig.ignoreVersions, g.Version2c)
+			case "v3", "3":
+				newConfig.ignoreVersions = append(newConfig.ignoreVersions, g.Version3)
+			default:
+				return fmt.Errorf("unsupported or invalid value (%s) for ignoreVersion", v)
+			}
+		}
+		if len(newConfig.ignoreVersions) > 2 {
+			return fmt.Errorf("All 3 SNMP versions are ignored. There will be no traps to process")
+		}
 	case "v3msgFlags":
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3msgFlags")
@@ -401,5 +423,5 @@ func closeTrapexHandles() {
 		if f.actionType == actionForward {
 			f.action.(*trapForwarder).close()
 		}
-	} 
+	}
 }

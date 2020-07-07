@@ -15,12 +15,12 @@ import (
 
 // Filter types
 const (
-	parseTypeAny int = iota	// Match anything (wildcard)
-	parseTypeString			// Direct String comparison
-	parseTypeInt			// Direct Integer comparison
-	parseTypeRegex			// Regular Expression
-	parseTypeCIDR			// CIDR IP/Netmask 
-	parseTypeRange			// Integer range x:y
+	parseTypeAny    int = iota // Match anything (wildcard)
+	parseTypeString            // Direct String comparison
+	parseTypeInt               // Direct Integer comparison
+	parseTypeRegex             // Regular Expression
+	parseTypeCIDR              // CIDR IP/Netmask
+	parseTypeRange             // Integer range x:y
 )
 
 // Filter object items
@@ -45,33 +45,33 @@ const (
 // and Enterprise OID).
 //
 type filterObj struct {
-	filterItem	int
-	filterType	int
-	filterValue	interface{}		// string, *regex.Regexp, *network, int
+	filterItem  int
+	filterType  int
+	filterValue interface{} // string, *regex.Regexp, *network, int
 }
 
 // trapexFilter holds the filter data and action for a specfic
 // filter line from the config file.
 type trapexFilter struct {
-	filterItems	[]filterObj
-	matchAll	bool
-	action		interface{}
-	actionType	int
-	actionArg	string
+	filterItems []filterObj
+	matchAll    bool
+	action      interface{}
+	actionType  int
+	actionArg   string
 }
 
 // trapForwarder is an instance of a forward destination.
 //
 type trapForwarder struct {
-	destination	*g.GoSNMP
+	destination *g.GoSNMP
 }
 
 // trapLogger is an instace of a trap logfile destination.
 //
 type trapLogger struct {
-	logFile			string
-	logHandle		*log.Logger
-	isBroken		bool
+	logFile   string
+	logHandle *log.Logger
+	isBroken  bool
 }
 
 // Initialize a trapForwarder instance.
@@ -95,7 +95,7 @@ func (a *trapForwarder) initAction(dest string) error {
 	}
 	err = a.destination.Connect()
 	if err != nil {
-		return(err)
+		return (err)
 	}
 	fmt.Printf(" -Added trap destination: %s, port %s\n", s[0], s[1])
 	return nil
@@ -151,7 +151,7 @@ func (f *trapexFilter) isFilterMatch(sgt *sgTrap) bool {
 				return false
 			} else if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(sgt.srcIP.String()) {
 				return false
-			} 
+			}
 		case agentAddr:
 			if fo.filterType == parseTypeString && fval.(string) != trap.AgentAddress {
 				return false
@@ -160,12 +160,12 @@ func (f *trapexFilter) isFilterMatch(sgt *sgTrap) bool {
 				return false
 			}
 		case enterprise:
-			if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(strings.TrimLeft(trap.Enterprise,".")) {
+			if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(strings.TrimLeft(trap.Enterprise, ".")) {
 				return false
-			} 
-			if fo.filterType == parseTypeString && fval.(string) != strings.TrimLeft(trap.Enterprise,".") {
+			}
+			if fo.filterType == parseTypeString && fval.(string) != strings.TrimLeft(trap.Enterprise, ".") {
 				return false
-			} 
+			}
 		case genericType:
 			if fo.filterType == parseTypeInt && fval.(int) != trap.GenericTrap {
 				return false
@@ -185,7 +185,7 @@ func (f *trapexFilter) isFilterMatch(sgt *sgTrap) bool {
 func (f *trapexFilter) processAction(sgt *sgTrap) {
 	switch f.actionType {
 	case actionDrop:
-		sgt.dropped = true 
+		sgt.dropped = true
 		return
 	case actionNat:
 		if f.actionArg == "$SRC_IP" {
