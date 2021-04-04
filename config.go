@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	g "github.com/damienstuart/gosnmp"
+	g "github.com/gosnmp/gosnmp"
 )
 
 // Various default configuration fallback values
@@ -37,20 +37,24 @@ type v3Params struct {
 	privacyPassword string
 }
 
+type ipSet map[string]bool
+
 type trapexConfig struct {
-	listenAddr    string
-	listenPort    string
-	runLogFile    string
-	configFile    string
-	v3Params      v3Params
-	filters       []trapexFilter
-	debug         bool
-	logDropped    bool
-	logMaxSize    int
-	logMaxBackups int
-	logMaxAge     int
-	logCompress   bool
-	teConfigured  bool
+	listenAddr     string
+	listenPort     string
+	ignoreVersions []g.SnmpVersion
+	runLogFile     string
+	configFile     string
+	v3Params       v3Params
+	filters        []trapexFilter
+	debug          bool
+	logMaxSize     int
+	logMaxBackups  int
+	logMaxAge      int
+	logCompress    bool
+	teConfigured   bool
+	trapexHost     string
+	ipSets         map[string]ipSet
 }
 
 type trapexCommandLine struct {
@@ -90,7 +94,7 @@ func processCommandLine() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("This is trapex version %s.\n", myVersion)
+		fmt.Printf("This is trapex version %s (rel %v).\n", myVersion, myRelease)
 		os.Exit(0)
 	}
 
@@ -104,13 +108,14 @@ func getConfig() error {
 	// If this is a reconfig close any current handles
 	if teConfig != nil && teConfig.teConfigured {
 		fmt.Printf("Reloading ")
-		closeTrapexHandles()
 	} else {
 		fmt.Printf("Loading ")
 	}
-	fmt.Printf("configuration for trapex version %s from: %s.\n", myVersion, teCmdLine.configFile)
+	fmt.Printf("configuration for trapex version %s-%v from: %s.\n", myVersion, myRelease, teCmdLine.configFile)
 
 	var newConfig trapexConfig
+
+	newConfig.ipSets = make(map[string]ipSet)
 
 	// First process the config file
 	cf, err := os.Open(teCmdLine.configFile)
@@ -120,8 +125,12 @@ func getConfig() error {
 	defer cf.Close()
 
 	cfSkipRe := regexp.MustCompile(`^\s*#|^\s*$`)
+	ipRe := regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
 
 	var lineNumber uint = 0
+	var processingIPSet bool = false
+	var ipsName string
+
 	scanner := bufio.NewScanner(cf)
 	for scanner.Scan() {
 		// Scan in the lines from the config file
@@ -130,15 +139,39 @@ func getConfig() error {
 		if cfSkipRe.MatchString(line) {
 			continue
 		}
+
 		// Split the line into fields
 		f := strings.Fields(line)
 
-		if f[0] == "filter" {
+		if processingIPSet {
+			if f[0] == "}" {
+				processingIPSet = false
+				fmt.Printf("IP count: %v\n", len(newConfig.ipSets[ipsName]))
+				continue
+			}
+			// Assume all fields are IP addresses
+			for _, ip := range f {
+				if ipRe.MatchString(ip) {
+					newConfig.ipSets[ipsName][ip] = true
+				} else {
+					return fmt.Errorf("Invalid IP address (%s) in ipset: %s at line: %v", ip, ipsName, lineNumber)
+				}
+			}
+		} else if f[0] == "ipset" {
+			if len(f) < 3 || f[2] != "{" {
+				return fmt.Errorf("Invalid format for ipset at line: %v: '%s'", lineNumber, line)
+			}
+			ipsName = f[1]
+			newConfig.ipSets[ipsName] = make(map[string]bool)
+			processingIPSet = true
+			fmt.Printf(" -Add IPSet: %s - ", ipsName)
+			continue
+		} else if f[0] == "filter" {
 			if err := processFilterLine(f[1:], &newConfig, lineNumber); err != nil {
 				return err
 			}
 		} else {
-			if err := processConfigLine(f, &newConfig); err != nil {
+			if err := processConfigLine(f, &newConfig, lineNumber); err != nil {
 				return err
 			}
 		}
@@ -168,6 +201,14 @@ func getConfig() error {
 	}
 	// Other config fallbacks
 	//
+	if newConfig.trapexHost == "" {
+		myName, err := os.Hostname()
+		if err != nil {
+			newConfig.trapexHost = "_undefined"
+		} else {
+			newConfig.trapexHost = myName
+		}
+	}
 	if newConfig.logMaxSize == 0 {
 		newConfig.logMaxSize = defLogfileMaxSize
 	}
@@ -198,6 +239,10 @@ func getConfig() error {
 		return fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode")
 	}
 
+	// If this is a reconfigure, close the old handles here
+	if teConfig != nil && teConfig.teConfigured {
+		closeTrapexHandles()
+	}
 	// Set our global config pointer to this configuration
 	newConfig.teConfigured = true
 	teConfig = &newConfig
@@ -205,51 +250,68 @@ func getConfig() error {
 	return nil
 }
 
-// processFIlterLine parsed a "filter" line from the config file and sets
+// processFilterLine parsed a "filter" line from the config file and sets
 // the appropriate values in the corresponding trapexFilter struct.
 //
-func processFilterLine(f []string, newConfig *trapexConfig, lineNum uint) error {
+func processFilterLine(f []string, newConfig *trapexConfig, lineNumber uint) error {
 	var err error
-	if len(f) < 6 {
-		return fmt.Errorf("error: config line: %v - not enough fields in filter", lineNum)
+	if len(f) < 7 {
+		return fmt.Errorf("not enough fields in filter line(%v): %s", lineNumber, "filter "+strings.Join(f, " "))
 	}
 
 	// Process the filter criteria
 	//
 	filter := trapexFilter{}
-	filter.lineNumber = lineNum
-	filter.filterLine = strings.Join(f, " ")
-	if strings.HasPrefix(strings.Join(f, " "), "* * * * *") {
+	if strings.HasPrefix(strings.Join(f, " "), "* * * * * *") {
 		filter.matchAll = true
 	} else {
 		fObj := filterObj{}
 		// Construct the filter criteria
-		for i, fi := range f[:5] {
+		for i, fi := range f[:6] {
 			if fi == "*" {
 				continue
 			}
 			fObj.filterItem = i
-			if i < 2 { // Either of the first 2 is an IP address type
-				if strings.HasPrefix(fi, "/") { // If starts with a "/", it's a regex
+			if i == 0 {
+				switch strings.ToLower(fi) {
+				case "v1", "1":
+					fObj.filterValue = g.Version1
+				case "v2c", "2c", "2":
+					fObj.filterValue = g.Version2c
+				case "v3", "3":
+					fObj.filterValue = g.Version3
+				default:
+					return fmt.Errorf("unsupported or invalid SNMP version (%s) on line %v for filter", fi, lineNumber)
+				}
+				fObj.filterType = parseTypeInt // Just because we should set this to something.
+			} else if i == 1 || i == 2 { // Either of the first 2 is an IP address type
+				if strings.HasPrefix(fi, "ipset:") { // If starts with a "ipset:"" it's an IP set
+					fObj.filterType = parseTypeIPSet
+					if _, ok := newConfig.ipSets[fi[6:]]; ok {
+						fObj.filterValue = fi[6:]
+					} else {
+						return fmt.Errorf("Invalid ipset name specified on line %v: %s", lineNumber, fi)
+					}
+				} else if strings.HasPrefix(fi, "/") { // If starts with a "/", it's a regex
 					fObj.filterType = parseTypeRegex
 					fObj.filterValue, err = regexp.Compile(fi[1:])
 					if err != nil {
-						return fmt.Errorf("error: config line: %v - unable to compile regexp for IP: %s: %s", lineNum, fi, err)
+						return fmt.Errorf("unable to compile regexp for IP on line %v: %s: %s", lineNumber, fi, err)
 					}
 				} else if strings.Contains(fi, "/") {
 					fObj.filterType = parseTypeCIDR
 					fObj.filterValue, err = newNetwork(fi)
 					if err != nil {
-						return fmt.Errorf("error: config line: %v - invalid IP/CIDR: %s", lineNum, fi)
+						return fmt.Errorf("invalid IP/CIDR at line %v: %s", lineNumber, fi)
 					}
 				} else {
 					fObj.filterType = parseTypeString
 					fObj.filterValue = fi
 				}
-			} else if i > 1 && i < 4 { // Generic and Specific type
+			} else if i > 2 && i < 5 { // Generic and Specific type
 				val, e := strconv.Atoi(fi)
 				if e != nil {
-					return fmt.Errorf("error: config line: %v - invalid integer value: %s: %s", lineNum, fi, e)
+					return fmt.Errorf("invalid integer value at line %v: %s: %s", lineNumber, fi, e)
 				}
 				fObj.filterType = parseTypeInt
 				fObj.filterValue = val
@@ -257,7 +319,7 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNum uint) error 
 				fObj.filterType = parseTypeRegex
 				fObj.filterValue, err = regexp.Compile(fi)
 				if err != nil {
-					return fmt.Errorf("error: config line: %v - unable to compile regexp for OID: %s: %s", lineNum, fi, err)
+					return fmt.Errorf("unable to compile regexp at line %v for OID: %s: %s", lineNumber, fi, err)
 				}
 			}
 			filter.filterItems = append(filter.filterItems, fObj)
@@ -266,34 +328,63 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNum uint) error 
 	// Process the filter action
 	//
 	var actionArg string
-	if len(f) > 6 {
-		actionArg = f[6]
+	var breakAfter bool
+	if len(f) > 8 && f[8] == "break" {
+		breakAfter = true
+	} else {
+		breakAfter = false
 	}
-	switch f[5] {
+
+	var action = f[6]
+
+	if len(f) > 7 {
+		actionArg = f[7]
+	}
+
+	switch action {
 	case "break", "drop":
-		filter.actionType = actionDrop
+		filter.actionType = actionBreak
 	case "nat":
 		filter.actionType = actionNat
 		if actionArg == "" {
-			return fmt.Errorf("missing nat argument")
+			return fmt.Errorf("missing nat argument at line %v", lineNumber)
 		}
 		filter.actionArg = actionArg
 	case "forward":
-		filter.actionType = actionForward
+		if breakAfter {
+			filter.actionType = actionForwardBreak
+		} else {
+			filter.actionType = actionForward
+		}
 		forwarder := trapForwarder{}
 		if err := forwarder.initAction(actionArg); err != nil {
 			return err
 		}
 		filter.action = &forwarder
 	case "log":
-		filter.actionType = actionLog
+		if breakAfter {
+			filter.actionType = actionLogBreak
+		} else {
+			filter.actionType = actionLog
+		}
 		logger := trapLogger{}
 		if err := logger.initAction(actionArg, newConfig); err != nil {
 			return err
 		}
 		filter.action = &logger
+	case "csv":
+		if breakAfter {
+			filter.actionType = actionCsvBreak
+		} else {
+			filter.actionType = actionCsv
+		}
+		csvLogger := trapCsvLogger{}
+		if err := csvLogger.initAction(actionArg, newConfig); err != nil {
+			return err
+		}
+		filter.action = &csvLogger
 	default:
-		return fmt.Errorf("unknown action: %s", f[5])
+		return fmt.Errorf("unknown action: %s at line %v", action, lineNumber)
 	}
 
 	newConfig.filters = append(newConfig.filters, filter)
@@ -301,30 +392,53 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNum uint) error 
 	return nil
 }
 
-func processConfigLine(f []string, newConfig *trapexConfig) error {
+func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) error {
 	flen := len(f)
 	switch f[0] {
 	case "debug":
 		newConfig.debug = true
-	case "logDroppedTraps":
-		newConfig.logDropped = true
+	case "trapexHost":
+		if flen < 2 {
+			return fmt.Errorf("missing value for trapexHost at line %v", lineNumber)
+		}
+		newConfig.trapexHost = f[1]
 	case "listenAddress":
 		if flen < 2 {
-			return fmt.Errorf("missing value for listenAddr")
+			return fmt.Errorf("missing value for listenAddr at line %v", lineNumber)
 		}
 		newConfig.listenAddr = f[1]
 	case "listenPort":
 		if flen < 2 {
-			return fmt.Errorf("missing value for listenPort")
+			return fmt.Errorf("missing value for listenPort at line %v", lineNumber)
 		}
 		p, err := strconv.ParseUint(f[1], 10, 16)
 		if err != nil || p < 1 || p > 65535 {
-			return fmt.Errorf("invalid listenPort value: %s", err)
+			return fmt.Errorf("invalid listenPort value: %s at line %v", err, lineNumber)
 		}
 		newConfig.listenPort = f[1]
+	case "ignoreVersions":
+		if flen < 2 {
+			return fmt.Errorf("missing value for ignoreVersions at line %v", lineNumber)
+		}
+		// split on commas (if any)
+		for _, v := range strings.Split(f[1], ",") {
+			switch strings.ToLower(v) {
+			case "v1", "1":
+				newConfig.ignoreVersions = append(newConfig.ignoreVersions, g.Version1)
+			case "v2c", "2c", "2":
+				newConfig.ignoreVersions = append(newConfig.ignoreVersions, g.Version2c)
+			case "v3", "3":
+				newConfig.ignoreVersions = append(newConfig.ignoreVersions, g.Version3)
+			default:
+				return fmt.Errorf("unsupported or invalid value (%s) for ignoreVersion at line %v", v, lineNumber)
+			}
+		}
+		if len(newConfig.ignoreVersions) > 2 {
+			return fmt.Errorf("All 3 SNMP versions are ignored at line %v. There will be no traps to process", lineNumber)
+		}
 	case "v3msgFlags":
 		if flen < 2 {
-			return fmt.Errorf("missing value for v3msgFlags")
+			return fmt.Errorf("missing value for v3msgFlags at line %v", lineNumber)
 		}
 		switch f[1] {
 		case "NoAuthNoPriv":
@@ -334,16 +448,16 @@ func processConfigLine(f []string, newConfig *trapexConfig) error {
 		case "AuthPriv":
 			newConfig.v3Params.msgFlags = g.AuthPriv
 		default:
-			return fmt.Errorf("unsupported or invalid value (%s) for v3msgFlags", f[1])
+			return fmt.Errorf("unsupported or invalid value (%s) for v3msgFlags at line %v", f[1], lineNumber)
 		}
 	case "v3user":
 		if flen < 2 {
-			return fmt.Errorf("missing value for v3user")
+			return fmt.Errorf("missing value for v3user at line %v", lineNumber)
 		}
 		newConfig.v3Params.username = f[1]
 	case "v3authProtocol":
 		if flen < 2 {
-			return fmt.Errorf("missing value for v3authProtocol")
+			return fmt.Errorf("missing value for v3authProtocol at line %v", lineNumber)
 		}
 		switch f[1] {
 		case "SHA":
@@ -351,16 +465,16 @@ func processConfigLine(f []string, newConfig *trapexConfig) error {
 		case "MD5":
 			newConfig.v3Params.authProto = g.MD5
 		default:
-			return fmt.Errorf("invalid value for v3authProtocol")
+			return fmt.Errorf("invalid value for v3authProtocol at line %v", lineNumber)
 		}
 	case "v3authPassword":
 		if flen < 2 {
-			return fmt.Errorf("missing value for v3authPassword")
+			return fmt.Errorf("missing value for v3authPassword at line %v", lineNumber)
 		}
 		newConfig.v3Params.authPassword = f[1]
 	case "v3privacyProtocol":
 		if flen < 2 {
-			return fmt.Errorf("missing value for v3privacyProtocol")
+			return fmt.Errorf("missing value for v3privacyProtocol at line %v", lineNumber)
 		}
 		switch f[1] {
 		case "AES":
@@ -368,43 +482,49 @@ func processConfigLine(f []string, newConfig *trapexConfig) error {
 		case "DES":
 			newConfig.v3Params.privacyProto = g.DES
 		default:
-			return fmt.Errorf("invalid value for v3privacyProtocol")
+			return fmt.Errorf("invalid value for v3privacyProtocol at line %v", lineNumber)
 		}
 	case "v3privacyPassword":
 		if flen < 2 {
-			return fmt.Errorf("missing value for v3privacyPassword")
+			return fmt.Errorf("missing value for v3privacyPassword at line %v", lineNumber)
 		}
 		newConfig.v3Params.privacyPassword = f[1]
 	case "logfileMaxSize":
 		if flen < 2 {
-			return fmt.Errorf("missing value for logfileMaxSize")
+			return fmt.Errorf("missing value for logfileMaxSize at line %v", lineNumber)
 		}
 		p, err := strconv.Atoi(f[1])
 		if err != nil || p < 1 {
-			return fmt.Errorf("invalid logfileMaxSize value: %s", err)
+			return fmt.Errorf("invalid logfileMaxSize value: %s at line %v", err, lineNumber)
 		}
 		newConfig.logMaxSize = p
 	case "logfileMaxBackups":
 		if flen < 2 {
-			return fmt.Errorf("missing value for logfileMaxBackups")
+			return fmt.Errorf("missing value for logfileMaxBackups at line %v", lineNumber)
 		}
 		p, err := strconv.Atoi(f[1])
 		if err != nil || p < 1 {
-			return fmt.Errorf("invalid logfileMaxBackups value: %s", err)
+			return fmt.Errorf("invalid logfileMaxBackups value: %s at line %v", err, lineNumber)
 		}
 		newConfig.logMaxBackups = p
 	case "compressRotatedLogs":
 		newConfig.logCompress = true
 	default:
-		return fmt.Errorf("Unknown/unsuppported configuration option: %s", f[0])
+		return fmt.Errorf("Unknown/unsuppported configuration option: %s at line %v", f[0], lineNumber)
 	}
 	return nil
 }
 
 func closeTrapexHandles() {
 	for _, f := range teConfig.filters {
-		if f.actionType == actionForward {
+		if f.actionType == actionForward || f.actionType == actionForwardBreak {
 			f.action.(*trapForwarder).close()
+		}
+		if f.actionType == actionLog || f.actionType == actionLogBreak {
+			f.action.(*trapLogger).close()
+		}
+		if f.actionType == actionCsv || f.actionType == actionCsvBreak {
+			f.action.(*trapCsvLogger).close()
 		}
 	}
 }

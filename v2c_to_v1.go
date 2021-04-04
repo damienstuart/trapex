@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	g "github.com/damienstuart/gosnmp"
+	g "github.com/gosnmp/gosnmp"
 )
 
 // OID constants we will need for v2c to v1 conversion.

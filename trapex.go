@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	g "github.com/damienstuart/gosnmp"
+	g "github.com/gosnmp/gosnmp"
 )
 
 // sgTrap holds a pointer to a trap and the source IP of
@@ -23,6 +23,8 @@ type sgTrap struct {
 	translated bool
 	dropped    bool
 }
+
+var trapRateTracker = newTrapRateTracker()
 
 func main() {
 	flag.Usage = func() {
@@ -43,7 +45,7 @@ func main() {
 
 	stats.StartTime = time.Now()
 
-	go httpListener(8008)
+	go trapRateTracker.start()
 
 	tl := g.NewTrapListener()
 
@@ -80,7 +82,17 @@ func main() {
 // trapHandler is the callback for handling traps received by the listener.
 //
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
+	// Count every trap received
 	stats.TrapCount++
+
+	// First thing to do is check for ignored versions
+	if isIgnoredVersion(p.Version) {
+		stats.IgnoredTraps++
+		return
+	}
+
+	// Also keep track of traps we handle
+	stats.HandledTraps++
 
 	// Make the trap
 	trap := sgTrap{
@@ -103,6 +115,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 		err := translateToV1(&trap)
 		if err != nil {
 			fmt.Printf("Error translating to v1: %v\n", err)
+			fmt.Printf(makeTrapLogEntry(&trap))
 		}
 	}
 
@@ -118,32 +131,40 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 //
 func processTrap(sgt *sgTrap) {
 	for _, f := range teConfig.filters {
-		// If this trap is tagged to drop and the action is not log - or
-		// if logging dropped traps is not enabled, then continue.
-		if sgt.dropped && f.actionType != actionLog {
+		// If this trap is tagged to drop, then continue.
+		if sgt.dropped {
 			continue
 		}
 		// If matchAll is true, just process the action.
 		if f.matchAll == true {
 			// We don't expect to see this here (set a wide open filter for
 			// drop).... (but...)
-			if f.actionType == actionDrop {
+			if f.actionType == actionBreak {
 				sgt.dropped = true
 				stats.DroppedTraps++
 				continue
 			}
 			f.processAction(sgt)
+			if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
+				sgt.dropped = true
+				stats.DroppedTraps++
+				continue
+			}
 		} else {
 			// Determine if this trap matches this filter
 			if f.isFilterMatch(sgt) {
-				if f.actionType == actionDrop {
+				if f.actionType == actionBreak {
 					sgt.dropped = true
 					stats.DroppedTraps++
 					continue
 				}
 				f.processAction(sgt)
+				if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
+					sgt.dropped = true
+					stats.DroppedTraps++
+					continue
+				}
 			}
 		}
-
 	}
 }
