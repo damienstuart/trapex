@@ -1,0 +1,449 @@
+'\" t
+.\"     Title: trapex
+.\"    Author: [see the "AUTHORS" section]
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 04/04/2021
+.\"    Manual: Trapex
+.\"    Source: Trapex
+.\"  Language: English
+.\"
+.TH "TRAPEX" "8" "04/04/2021" "Trapex" "Trapex"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+trapex \- An SNMP trap forwarder with filtering and translation capability
+.SH "SYNOPSIS"
+.sp
+\fBtrapex\fR [\fB\-h\fR] [\fB\-c\fR <config_file>] [\fB\-b\fR <bind_ip>] [\fB\-p\fR <listen_port>] [\fB\-d\fR] [\fB\-v\fR]
+.SH "DESCRIPTION"
+.sp
+The \fBtrapex\fR program an SNMP Trap proxy/forwarder\&. It can receive, filter, manipulate, log, and forward SNMP traps to zero or mulitple destinations\&. It can receive and process SNMPv1, SNMPv2c, or SNMPv3 traps\&.
+.sp
+\fBTrapex\fR is modeled after, and closely resembles a commercial product called \fIeHealth Trap Exploder\fR\&. The legacy \fItrapexploder\fR program does not support SNMP v3 traps, and may no longer be suppored\&. \fBTrapex\fR was written to provide a suitable replacement for \fItrapexploder\fR\&.
+.sp
+Presently, all v2c and v3 traps are converted to v1 before they are logged and/or forwarded\&. Support for sending other versions may be added in a future release\&.
+.SH "ARGUMENTS"
+.sp
+The command\-line arguments supported by \fBtrapex\fR are optional if the \fBtrapex\fR configuration file is in it default location (\fI/etc/trapex\&.conf\fR), and the remaining configuration options are set there\&. Note that any options set via the command\-line will override their corresponding values in the configuration file\&.
+.sp
+The options are as follows:
+.PP
+\fB\-h\fR
+.RS 4
+Print a usage summary message and exit\&.
+.RE
+.PP
+\fB\-c\fR \fI</path/to/trapex\&.conf>\fR
+.RS 4
+Specify/override the location of the trapex configuration file\&. If not set, the default is */etc/trapex\&.conf"
+.RE
+.PP
+\fB\-b\fR \fI<bind_ip>\fR
+.RS 4
+By default,
+\fBtrapex\fR
+will listen on all active interfaces for incoming traps\&. This option allow for specifying a specific IP on witch to listen\&.
+.RE
+.PP
+\fB\-p\fR \fI<port>\fR
+.RS 4
+Specify the UDP port on which to listen for incoming traps\&. The default is port 162\&.
+.RE
+.PP
+\fB\-d\fR
+.RS 4
+Enable
+\fIdebug\fR
+mode\&. This causes
+\fBtrapex\fR
+to print very verbose information on the incoming traps as well as the trap log entries to STDOUT\&.
+.RE
+.PP
+\fB\-v\fR
+.RS 4
+Print the
+\fBtrapex\fR
+version and exit\&.
+.RE
+.SH "TRAPEX CONFIGURATION FILE"
+.sp
+The \fBtrapex\fR configuration file (\fItrapex\&.conf\fR) is used to set the various runtime options as well as the filtering, forwarding, and logging directives\&.
+.sp
+Blank lines are allowed, and those that start with \fI"#"\fR are for comments\&.
+.sp
+There are 3 types of directives in the \fItrapex\&.conf\fR file:
+.PP
+Configuration directives \-
+.RS 4
+These are lines in the file that have
+\fBtrapex\fR
+configuration options and their values\&. In most cases these line will have a parameter/option name and its corresponding value\&. Some directives (like
+\fIdebug\fR) do not have a value and are a boolean that is true when that entry is uncommented\&.
+.RE
+.PP
+IP Set definitions \-
+.RS 4
+These are lines the define name lists of IP addresses that can be used in the filter directive IP address fields (Source IP and Agent Address)\&. Unlike the Configuration and Filter directives, IP Set definitions will span multiple lines and the list of IPs will be contained within curly\-brackets ({})\&.
+.RE
+.PP
+Filter directives \-
+.RS 4
+These are the lines that define a filter for matching incoming traps and specifying an
+\fIaction\fR
+for traps that match the filter\&. All of these directives start with the word "\fIfilter\fR"\&.
+.RE
+.SH "CONFIGURATION DIRECTIVES"
+.sp
+\fB\fIGeneral Options:\fR\fR
+.PP
+\fBdebug\fR
+.RS 4
+Enable
+\fIdebug\fR
+mode\&. This causes
+\fBtrapex\fR
+to print very verbose information on the incoming traps as well as the trap log entries to STDOUT\&.
+.RE
+.PP
+\fBtrapexHost\fR \fI<hostname>\fR
+.RS 4
+Set/overide the hostname for this trapex instance\&. If not specified,
+\fBtrapex\fR
+will attempt to determine the local hostname and use that\&. Currently, this data is only used for the CSV log data\&.
+.RE
+.PP
+\fBlistenAddress\fR \fI<bind_ip>\fR
+.RS 4
+Specify the IP address on which to bind to listen for incoming traps\&. When set to a specific IP, only traps coming in to the network interface that has that IP will be received and processed\&. If not specified here or on the command\-line, the default is
+\fI0\&.0\&.0\&.0\fR
+(all IPs)\&.
+.RE
+.PP
+\fBlistenPort\fR \fI<port>\fR
+.RS 4
+Specify the UDP port on which to listen for incoming traps\&. If not set here or on the command\-line, the default is 162\&.
+.RE
+.PP
+\fBignoreVersions\fR \fI<SNMP Version>[,<SNMP Version>]\fR
+.RS 4
+Specify one or more SNMP versions to ignore\&. Any traps that have a version that matches any listed here will be ignored and dropped by trapex\&. Valid versions are:
+\fIv1\fR,
+\fIv2c\fR, and
+\fIv3\fR
+(or just
+\fI1\fR,
+\fI2\fR,
+\fI3\fR
+would suffice as well)\&. Multiple entries are separated by a comma (no spaces)\&.
+
+
+\fBNote:\fR
+Specifying all 3 versions will cause trapex to complain and exit at startup because no traps would be processed at all in that case\&.
+.RE
+.sp
+\fB\fILog File Handling:\fR\fR
+.sp
+Note that these directive affect only the regular log files\&. They do not apply to the CSV\-based logs\&.
+.PP
+\fBlogfileMaxSize\fR \fI<value in MB>\fR
+.RS 4
+Specify the maximum size in MB the log files can grow before they are rotated\&.
+.RE
+.PP
+\fBlogfileMaxBackups\fR \fI<value>\fR
+.RS 4
+Specify how many backup (rotated) log files to keep\&. Older backups beyond this number will be removed\&. The backup log files are renamed with a date\- time stamp\&.
+.RE
+.PP
+\fBcompressRotatedLogs\fR
+.RS 4
+When uncommented, this option causes backup log files to be compressed with gzip after they are rotated\&.
+.RE
+.sp
+\fB\fISNMP v3 Setting\fR\fR
+.sp
+These are options for receiving SNMP v3 traps\&. Note that \fBtrapex\fR currently only supports the SNMP v3 \fIUser\-based Security Model\fR (USM)\&.
+.PP
+\fBv3msgFlags\fR \fI<AuthPriv|AuthNoPriv|NoAuthNoPriv>\fR
+.RS 4
+This specifies the
+\fISNMP v3 Message Flags\fR\&. Currently,
+\fBTrapex\fR
+supports only the
+\fIAuth\fR
+(Authentication) and
+\fIPriv\fR
+(Privacy) flags\&. These are set via a single string as follows:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBAuthPriv\fR
+\- Authentication and privacy
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBAuthNoPriv\fR
+\- Authentication and no privacy
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+\fBNoAuthNoPriv\fR
+\- No authentication, and no privacy
+.RE
+.RE
+.PP
+\fBv3User\fR \fI<username>\fR
+.RS 4
+Set the SNMP v3 username\&. This is required for v3\&.
+.RE
+.PP
+\fBv3authProtocol\fR \fI<MD5|SHA>\fR
+.RS 4
+Set the SNMP v3
+\fIauthentication protocol\fR\&. Valid values are
+\fIMD5\fR
+or
+\fISHA\fR
+(default)\&. Note that this parameter is required if the Auth
+\fIMsg Flag\fR
+is set (v3msgFlags =
+\fIAuthNoPriv\fR
+or
+\fIAuthPriv\fR)\&.
+.RE
+.PP
+\fBv3authPassword\fR \fI<password>\fR
+.RS 4
+Set the SNMP v3 authentication password\&. This is required if Auth mode is set\&.
+.RE
+.PP
+\fBv3privProtocol\fR \fI<AES|DES>\fR
+.RS 4
+Set the SNMP v3
+\fIauthentication protocol\fR\&. Valid values are
+\fIAES\fR
+(default) or
+\fIDES\fR\&. Note that this parameter is required if Priv mode
+\fIMsg Flag\fR
+is set (v3msgFlags =
+\fIAuthPriv\fR)\&.
+.RE
+.PP
+\fBv3authPassword\fR \fI<password>\fR
+.RS 4
+Set the SNMP v3 privacy password\&. This is required if Priv mode is set\&.
+.RE
+.SH "IP SETS"
+.sp
+An IP Set is a named list of IP addresses that can be referenced in the filter entries for the Source IP or Agent IP fields\&. The format is:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  ipset <ipset_name> {
+      10\&.1\&.3\&.4
+      10\&.1\&.3\&.5
+      100\&.3\&.66\&.4
+  }
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+You can also put multiple (whitespace\-separated) IPs on a single line
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+  ipset <ipset_name2> {
+      10\&.1\&.3\&.4 10\&.1\&.3\&.5 100\&.3\&.66\&.4
+      192\&.168\&.3\&.4 192\&.168\&.3\&.5 200\&.4\&.99\&.1 200\&.4\&.99\&.26
+      10\&.222\&.121\&.7
+  }
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+In the filter lines, you can then use "\fIipset:<ipset_name>\fR" in either or both the \fISource IP\fR or \fIAgent Address\fR fields\&.
+.SH "FILTER DIRECTIVES"
+.sp
+The \fBtrapex\fR configuration \fIfilter\fR directives are used for specifying which traps are processed and what action is taken for traps that match the filter\&.
+.sp
+Each \fIfilter\fR line starts with the word "\fIfilter\fR" followed by the \fIfilter expressions\fR, the \fIaction\fR for that filter, and for some actions, an option argument for that action\&.
+.sp
+\fB\fIFilter Expressions\fR\fR
+.sp
+The \fIfilter expression\fR is a space separated set of 6 filter criteria for trap data fields in the following order:
+.PP
+\fBSNMP Version\fR
+.RS 4
+The SNMP version\&. Only incoming traps that match this version are processed by this filter\&. Valid values are
+\fIv1\fR,
+\fIv2c\fR, or
+\fIv3\fR\&.
+.RE
+.PP
+\fBSource IP\fR
+.RS 4
+The source IP of the incoming trap packet\&. This can be a string match for a single IP address, a subnet in CIDR notation, or a regular expression\&.
+.RE
+.PP
+\fBAgent Address\fR
+.RS 4
+The SNMNP v1 AgentAddr IP address\&. This can be a string match for a single IP address, a subnet in CIDR notation, or a regular expression\&.
+.RE
+.PP
+\fBGeneric Type\fR
+.RS 4
+The trap
+\fIGeneric Type\fR
+(integer: 0\-6)\&.
+.RE
+.PP
+\fBSpecific Type\fR
+.RS 4
+The trap
+\fISpecific Type\fR
+(integer: 0\-n)\&.
+.RE
+.PP
+\fBEnterprise OID\fR
+.RS 4
+The trap
+\fIEnterprise OID\fR
+value\&. This uses a regular expression for matching\&.
+.RE
+.sp
+An asterisk (\fB*\fR) can be used as a wildcard to indicate that any value for that field matches\&. For instance, a filter that would match all traps and forward them to 192\&.168\&.1\&.1 port 162 would look like this:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+filter * * * * * * forward 192\&.168\&.1\&.1:162
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+If multiple fields are set to a non\-wildcard value, then all of them have to match (logical AND) in order for the trap to match and trigger the action\&.
+.sp
+\fB\fIFilter Actions\fR\fR
+.sp
+The \fIactions\fR that are currenly supported by \fBtrapex\fR are:
+.PP
+\fBforward\fR <ip_address:port> [break]
+.RS 4
+Forward the trap to the specified IP address and port\&.
+\fBWARNING:\fR
+Do not specify the trapex host and port as a destination or you will create a trap forwarding loop! Note that this action also supports an optional second argument:
+\fIbreak\fR\&. This tells trapex to stop processing this trap after the forward operation\&.
+.RE
+.PP
+\fBnat\fR <ip_address|$SRC_IP>
+.RS 4
+Set the trap
+\fIAgentAddress\fR
+value to the specified IP address or use "\fI$SRC_IP\fR" to set it to the source IP of the trap packet\&.
+.RE
+.PP
+\fBlog\fR </path/to/log/file> [break]
+.RS 4
+Save the trap data to the specified log file\&. Any files created by log actions are subject to the log file handling configuration directives\&. Note that this action also supports an optional second argument:
+\fIbreak\fR\&. This tells trapex to stop processing this trap after the log operation\&.
+.RE
+.PP
+\fBcsv\fR </path/to/csv/file> [break]
+.RS 4
+Save the trap data to the specified file in a CSV format that is meant specifically for feeding directly to a Clickhouse database\&. This feature is specific to the SungardAS snmp_trap table in Sungard\(cqs internal Clickhouse implementation\&.
+.RE
+.PP
+\fBbreak\fR
+.RS 4
+The
+\fIbreak\fR
+action means ignore this trap from this point forward \- do not forward it or take any other actions \- halt further filter processing and drop it\&.
+.RE
+.sp
+\fB\fIFilter Processing\fR\fR
+.sp
+The order of the filter directives in the configuration file is important\&.
+.sp
+The filters are processed in the order they appear in the configuration file\&. When a trap is received, it is checked against each filter in order\&. If it matches a filter, the trap data is processed by the \fIaction\fR for that filter, and that trap is checked against the next filter, and so on (unless the action is \fIbreak\fR \- where the trap is dropped and ignored from that point on)\&.
+.SH "AUTHORS"
+.sp
+\fBTrapex\fR was written by Damien Stuart <damien\&.stuart@sungardas\&.com>\&.
+.SH "ACKNOWLEDGEMENTS"
+.sp
+\fBTrapex\fR is written in Go and uses open\-source \fIGo packages\fR for some of its core functionality\&. Special thanks goes to the the following for their work on these packages:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Sonia Hamilton <sonia@snowfrog\&.net> for the
+\fIgosnmp\fR
+package which provides the SNMP packet receiving, parsing, and trap sending functionality\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Nate Finch <nate\&.finch@gmail\&.com> for the
+\fIlumberjack\fR
+go package which is used for the log file handling\&.
+.RE
+.SH "BUGS"
+.sp
+Bound to be some\&...
+.sp
+Send questions or bug reports to damien\&.stuart@sungardas\&.com Suggestions and/or comments are always welcome as well\&.
