@@ -10,22 +10,25 @@ import (
 	"strings"
 	"time"
 
-	g "github.com/damienstuart/gosnmp"
+	g "github.com/gosnmp/gosnmp"
+	"github.com/natefinch/lumberjack"
 )
 
 // Filter types
 const (
-	parseTypeAny    int = iota // Match anything (wildcard)
-	parseTypeString            // Direct String comparison
-	parseTypeInt               // Direct Integer comparison
-	parseTypeRegex             // Regular Expression
-	parseTypeCIDR              // CIDR IP/Netmask
-	parseTypeRange             // Integer range x:y
+	parseTypeAny      int = iota // Match anything (wildcard)
+	parseTypeString              // Direct String comparison
+	parseTypeInt                 // Direct Integer comparison
+	parseTypeRegex               // Regular Expression
+	parseTypeCIDR                // CIDR IP/Netmask
+	parseTypeIPSet               // A set of IP addresses
+	parseTypeIntRange            // Integer range x:y or x,y,z
 )
 
 // Filter object items
 const (
-	srcIP int = iota
+	version int = iota
+	srcIP
 	agentAddr
 	genericType
 	specificType
@@ -34,10 +37,14 @@ const (
 
 // Supported action types
 const (
-	actionDrop int = iota
+	actionBreak int = iota
 	actionNat
 	actionForward
+	actionForwardBreak
 	actionLog
+	actionLogBreak
+	actionCsv
+	actionCsvBreak
 )
 
 // filterObj represents one of the filterable items in a filter line from
@@ -70,6 +77,17 @@ type trapForwarder struct {
 //
 type trapLogger struct {
 	logFile   string
+	fd        *os.File
+	logHandle *log.Logger
+	isBroken  bool
+}
+
+// trapCsvLogger is an instace of a trap CSV logfile destination.
+//
+type trapCsvLogger struct {
+	logFile   string
+	fd        *os.File
+	logger    *lumberjack.Logger
 	logHandle *log.Logger
 	isBroken  bool
 }
@@ -122,6 +140,7 @@ func (a *trapLogger) initAction(logfile string, teConf *trapexConfig) error {
 	if err != nil {
 		return err
 	}
+	a.fd = fd
 	a.logFile = logfile
 	a.logHandle = log.New(fd, "", 0)
 	a.logHandle.SetOutput(makeLogger(logfile, teConf))
@@ -135,6 +154,50 @@ func (a *trapLogger) processTrap(trap *sgTrap) {
 	logTrap(trap, a.logHandle)
 }
 
+// Close a trap logger handle
+//
+func (a *trapLogger) close() {
+	a.fd.Close()
+}
+
+// Initialize a trapCsvLogger instance.
+//
+func (a *trapCsvLogger) initAction(logfile string, teConf *trapexConfig) error {
+	fd, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	a.fd = fd
+	a.logFile = logfile
+	a.logHandle = log.New(fd, "", 0)
+	a.logger = makeCsvLogger(logfile, teConf)
+	a.logHandle.SetOutput(a.logger)
+	fmt.Printf(" -Added CSV log destination: %s\n", logfile)
+	return nil
+}
+
+// Hook for logging a trap for this instance of a log action.
+//
+func (a *trapCsvLogger) processTrap(trap *sgTrap) {
+	logCsvTrap(trap, a.logHandle)
+}
+
+// Get this logger's file name
+func (a *trapCsvLogger) logfileName() string {
+	return a.logFile
+}
+
+// Force a CSV log rotation
+func (a *trapCsvLogger) rotateLog() {
+	a.logger.Rotate()
+}
+
+// Close a trap logger handle
+//
+func (a *trapCsvLogger) close() {
+	a.fd.Close()
+}
+
 // isFilterMatch checks trap data against a trapexFilter and returns a boolean
 // to indicate whether or not the trap data matches the filter criteria.
 //
@@ -144,6 +207,10 @@ func (f *trapexFilter) isFilterMatch(sgt *sgTrap) bool {
 	for _, fo := range f.filterItems {
 		fval := fo.filterValue
 		switch fo.filterItem {
+		case version:
+			if fval != sgt.trapVer {
+				return false
+			}
 		case srcIP:
 			if fo.filterType == parseTypeString && fval.(string) != sgt.srcIP.String() {
 				return false
@@ -151,19 +218,29 @@ func (f *trapexFilter) isFilterMatch(sgt *sgTrap) bool {
 				return false
 			} else if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(sgt.srcIP.String()) {
 				return false
+			} else if fo.filterType == parseTypeIPSet {
+				_, ok := teConfig.ipSets[fval.(string)][sgt.srcIP.String()]
+				if ok != true {
+					return false
+				}
 			}
 		case agentAddr:
 			if fo.filterType == parseTypeString && fval.(string) != trap.AgentAddress {
 				return false
-			}
-			if fo.filterType == parseTypeCIDR && !fval.(*network).contains(net.ParseIP(trap.AgentAddress)) {
+			} else if fo.filterType == parseTypeCIDR && !fval.(*network).contains(net.ParseIP(trap.AgentAddress)) {
 				return false
+			} else if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(trap.AgentAddress) {
+				return false
+			} else if fo.filterType == parseTypeIPSet {
+				_, ok := teConfig.ipSets[fval.(string)][trap.AgentAddress]
+				if ok != true {
+					return false
+				}
 			}
 		case enterprise:
 			if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(strings.TrimLeft(trap.Enterprise, ".")) {
 				return false
-			}
-			if fo.filterType == parseTypeString && fval.(string) != strings.TrimLeft(trap.Enterprise, ".") {
+			} else if fo.filterType == parseTypeString && fval.(string) != strings.TrimLeft(trap.Enterprise, ".") {
 				return false
 			}
 		case genericType:
@@ -184,7 +261,7 @@ func (f *trapexFilter) isFilterMatch(sgt *sgTrap) bool {
 //
 func (f *trapexFilter) processAction(sgt *sgTrap) {
 	switch f.actionType {
-	case actionDrop:
+	case actionBreak:
 		sgt.dropped = true
 		return
 	case actionNat:
@@ -195,9 +272,29 @@ func (f *trapexFilter) processAction(sgt *sgTrap) {
 		}
 	case actionForward:
 		f.action.(*trapForwarder).processTrap(sgt)
+	case actionForwardBreak:
+		f.action.(*trapForwarder).processTrap(sgt)
+		sgt.dropped = true
+		return
 	case actionLog:
-		if !sgt.dropped || teConfig.logDropped {
+		if !sgt.dropped {
 			f.action.(*trapLogger).processTrap(sgt)
 		}
+	case actionLogBreak:
+		if !sgt.dropped {
+			f.action.(*trapLogger).processTrap(sgt)
+		}
+		sgt.dropped = true
+		return
+	case actionCsv:
+		if !sgt.dropped {
+			f.action.(*trapCsvLogger).processTrap(sgt)
+		}
+	case actionCsvBreak:
+		if !sgt.dropped {
+			f.action.(*trapCsvLogger).processTrap(sgt)
+		}
+		sgt.dropped = true
+		return
 	}
 }
