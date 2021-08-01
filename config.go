@@ -21,11 +21,11 @@ const (
 	defLogfileMaxBackups   int                  = 7
 	defCompressRotatedLogs bool                 = false
 	defV3MsgFlag           g.SnmpV3MsgFlags     = g.NoAuthNoPriv
-	defV3user              string               = "_v3user"
+	defV3user              string               = "XXv3Username"
 	defV3authProtocol      g.SnmpV3AuthProtocol = g.NoAuth
-	defV3authPassword      string               = "_v3password"
+	defV3authPassword      string               = "XXv3authPass"
 	defV3privacyProtocol   g.SnmpV3PrivProtocol = g.NoPriv
-	defV3privacyPassword   string               = "_v3password"
+	defV3privacyPassword   string               = "XXv3Pass"
 )
 
 type v3Params struct {
@@ -94,7 +94,7 @@ func processCommandLine() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("This is trapex version %s (rel %v).\n", myVersion, myRelease)
+		fmt.Printf("This is trapex version %s\n", myVersion)
 		os.Exit(0)
 	}
 
@@ -111,7 +111,7 @@ func getConfig() error {
 	} else {
 		fmt.Printf("Loading ")
 	}
-	fmt.Printf("configuration for trapex version %s-%v from: %s.\n", myVersion, myRelease, teCmdLine.configFile)
+	fmt.Printf("configuration for trapex version %s from: %s.\n", myVersion, teCmdLine.configFile)
 
 	var newConfig trapexConfig
 

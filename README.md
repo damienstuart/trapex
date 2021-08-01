@@ -25,7 +25,7 @@ Trap Exploder_ - which a commercial product, and does not support __SNMPv3__.
   * Forward the trap
   * Change the AgentAddress value (_nat_ function)
   * Log the trap to a specified file
-  * Log the trap data in a CSV format specificly for feeding to a Clickhouse database.
+  * Log the trap data in a CSV format (specifically for feeding to a Clickhouse database).
   * Drop the trap and discontinue processing further filters.
 
 This initial version's functionality and configuration options are very
@@ -34,8 +34,9 @@ differences, so be sure to carefully read this documentation if you will
 be working with this program.
 
 # Notes
-This implementation uses 2 external GO modules: _gosnmp_ (for all SNMP-based
-operations) and _lumberjack_ (for logfile management). 
+This implementation uses 2 external GO modules: [gosnmp](https://github.com/gosnmp/gosnmp)
+(for all SNMP-based operations) and [lumberjack](https://github.com/natefinch/lumberjack)
+(for logfile management). 
 
 # Building and Packaging Trapex
 Trapex is written in GO (see the [official GO site](https://golang.org) for
@@ -136,7 +137,7 @@ is just an indicator that the trap did not traverse the entire filter list.
   Sending a SIGUSR2 signal will cause *trapex* to force a rotation of any
   configured CSV logs.  Since the CSV logs are meant to be used for feeding
   trap data to a database, this mechanism allows for doing a rotation
-  on-demand so data can be synced to the database on schedule.  
+  on-demand so data can be synced to the database on a schedule.  
 
 ----
 
@@ -257,6 +258,30 @@ only supports the SNMP v3 *User-based Security Model* (USM).
 
   Set the SNMP v3 privacy password. This is required if Priv mode is set.
 
+### IP SETS
+An IP Set is a named list of IP addresses that can be referenced in the
+filter entries for the Source IP or Agent IP fields. The format is:
+ 
+```
+  ipset <ipset_name> {
+      10.1.3.4
+      10.1.3.5
+      100.3.66.4
+  }
+```
+
+You can also put multiple (whitespace-separated) IPs on a single line:
+
+```
+  ipset <ipset_name2> {
+      10.1.3.4 10.1.3.5 100.3.66.4
+      192.168.3.4 192.168.3.5 200.4.99.1 200.4.99.26
+      10.222.121.7
+  }
+```
+
+In the filter lines, you can then use "'ipset:<ipset_name>'" in either or
+both the 'Source IP' or 'Agent Address' fields.
 
 ### FILTER DIRECTIVES
 The *trapex* configuration *filter* directives are used for specifying which
@@ -362,6 +387,16 @@ on).
 These are sample filter entries for various modes of filtering traps and
 actions.
 
+#### A sample IP Set
+The IP addresses in this list can be referenced in filter directives below.
+```
+ipset test_ipset {
+    10.1.3.4 10.1.3.5 100.3.66.4
+    192.168.3.4 192.168.3.5 200.4.99.1
+    10.222.121.7
+}
+```
+
 #### Forward all traps to another host
 ```
 filter * * * * * * forward 192.168.7.7:162
@@ -411,6 +446,14 @@ filter * 10.66.48.0/26 * * * * break
 ```
 
 #### Filter on Agent Address
+#### Force agent_addr 0.0.0.0 to be source IP
+Some traps might have 0.0.0.0 as the agent address. This filter forces
+the agent address to be the same as the trap packet source IP address.
+```
+filter * * 0.0.0.0 * * * nat $SRC_IP
+```
+
+#### Filter on Agent Address
 Filtering on Agent Address is just like filtering on the source IP except
 that is is checking the *AgentAddr* value in the trap.
 ```
@@ -421,6 +464,12 @@ filter * * 10.66.48.1 * * * break
 # the optional second argument:
 #
 filter * * 10.66.48.1 * * * forward 192.168.7.12:162 break
+```
+
+#### Filters using an IP SET (defined earlier in the config file)
+Here we drop traps for agent_addr IPs that are in the sample ip set: "test_ipset":
+```
+filter  * * ipset:test_ipset * * * break
 ```
 
 #### IP filter using a regular expression
@@ -453,8 +502,6 @@ We have one entry for a single IP and one for a subnet.
 ```
 filter * * 10.22.0.98 * * * nat $SRC_IP
 filter * * 10.122.0.0/16 * * * nat $SRC_IP
-# Deal with a bad Agent Address (like 0.0.0.0)...
-filter * * 0.0.0.0 * * * nat $SRC_IP
 ```
 
 ### Log Actions
@@ -477,4 +524,4 @@ filter * * 10.22.0.0/16 0 * ^1\.3\.6\.1\.6\.3\.1\.1\.5 log /var/log/trapex-10.22
 
 # Author
 
-Trapex was writen by Damien Stuart - (<damien.stuart@sungardas.com>)
+Trapex was writen by Damien Stuart - (<dstuart@dstuart.org>)

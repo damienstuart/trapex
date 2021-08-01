@@ -35,7 +35,7 @@ func translateToV1(t *sgTrap) error {
 	// We expect varbind 0 to be sysUptime (type: TimeTicks). If it isn't,
 	// something is wrong and we bail.
 	//
-	if vb0.Name != sysUpTime || vb0.Type != g.TimeTicks {
+	if vb0.Name != sysUpTime || (vb0.Type != g.TimeTicks && vb0.Type != g.Integer) {
 		return fmt.Errorf("Invalid sysUptime (varbind0) for v2c trap: %v", vb0)
 	}
 	// We also expect varbind 1 to the snmpTrapOID.
@@ -43,8 +43,18 @@ func translateToV1(t *sgTrap) error {
 		return fmt.Errorf("Invalid snmpTrapOID (varbind1) for v2c trap: %v", vb0)
 	}
 
-	// Use the sysUpTime varbind value for v1 timestamp
-	trap.Timestamp = uint(vb0.Value.(uint32))
+	// Use the sysUpTime varbind value for v1 timestamp, but we do have to account
+	// for some systems that send that value as an int vs an timetick.
+	ts, ok := vb0.Value.(int)
+	if ok == true {
+		if ts < 0 {
+			ts += ((1 << 32) - 1)
+		}
+		trap.Timestamp = uint(ts)
+	} else {
+		ts, _ := vb0.Value.(uint32)
+		trap.Timestamp = uint(ts)
+	}
 
 	trapOID := vb1.Value.(string)
 
