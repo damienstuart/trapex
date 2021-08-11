@@ -61,7 +61,7 @@ func main() {
 	// Uncomment for debugging gosnmp
 	if teConfig.debug == true {
 		fmt.Println("*DEBUG MODE ENABLED*")
-		tl.Params.Logger = log.New(os.Stdout, "", 0)
+		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}
 
 	// SNMP v3 stuff
