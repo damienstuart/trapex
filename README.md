@@ -38,11 +38,6 @@ This implementation uses 2 external GO modules: [gosnmp](https://github.com/gosn
 (for all SNMP-based operations) and [lumberjack](https://github.com/natefinch/lumberjack)
 (for logfile management). 
 
-# Building and Packaging Trapex
-Trapex is written in GO (see the [official GO site](https://golang.org) for
-details) so there are some prequisites that need to be in place in order to
-build it.
-
 ## Trapex Configuration
 Trapex gets its configuration and runtime options from the configuration file.
 Some option can be overridden by command-line arguments to _trapex_
