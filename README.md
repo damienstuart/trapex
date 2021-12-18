@@ -34,8 +34,11 @@ differences, so be sure to carefully read this documentation if you will
 be working with this program.
 
 # Notes
-This implementation uses 2 external GO modules: [gosnmp](https://github.com/gosnmp/gosnmp)
-(for all SNMP-based operations) and [lumberjack](https://github.com/natefinch/lumberjack)
+This implementation uses external GO modules:
+
+* [gosnmp](https://github.com/gosnmp/gosnmp)
+(for all SNMP-based operations)
+*  [lumberjack](https://github.com/natefinch/lumberjack)
 (for logfile management). 
 
 ## Trapex Configuration
@@ -48,7 +51,7 @@ and set any configuration options as needed, and add/edit any other filter
 directives. 
 
 See the [trapex.conf file section](#markdown-header-the-trapex-configuration-file) below for details on the
-configuration file and it directives
+configuration file and its directives
 
 #### Running trapex
 For a usage message for running *trapex*, run: `./trapex -h`
@@ -65,8 +68,8 @@ Usage: trapex [-h] [-c <config_file>] [-b <bind_ip>] [-p <listen_port>]
   -v  - Print the version of trapex and exit.
 ```
 
-Running it this way, it will stay in the foreground and print information
-to STDOUT.  On startup, any *filter* directives that foreward a trap will
+*trapex* will stay in the foreground and print information
+to STDOUT.  On startup, any *filter* directives that forward a trap will
 be printed as they are loaded from the configuration file. Here is an example:
 
 ```
@@ -122,7 +125,7 @@ there would be a counter for *Traps Ignored* in the list.  Also, if `v2c`
 and/or `v3` versions are ignored, the *Translated from vX* line will not be
 included in the list.
  
-Note that the *Traps Dropped* counter indicates traps that were matched a
+Note that the *Traps Dropped* counter indicates traps that were matched on a
 filter that has the `break` action.  Depending on the position of the filter
 entry it matched, the trap may or may not have been forwarded or logged. This
 is just an indicator that the trap did not traverse the entire filter list. 
@@ -142,7 +145,7 @@ runtime options as well as the filtering, forwarding, and logging directives.
 
 Blank lines are allowed, and those that start with `#` are for comments.
 
-There are 2 types of directives in the `trapex.conf` file:
+There are two types of directives in the `trapex.conf` file:
 
 * Configuration directives:
 
@@ -191,7 +194,7 @@ There are 2 types of directives in the `trapex.conf` file:
   well).  Multiple entries are separated by a comma (no spaces). 
 
   **Note:**  
-  Specifying all 3 versions will cause trapex to complain and exit at startup
+  Specifying all three versions will cause trapex to complain and exit at startup
   because no traps would be processed at all in that case.
 
 #### _Log File Handling:_
@@ -398,7 +401,7 @@ filter * * * * * * forward 192.168.7.7:162
 ```
 
 #### Log all traps.
-Note that this would be all trap that have maded to this filter line
+Note that this would be all traps that have made it to this filter line
 in the configuration file.
 ```
 filter * * * * * * log /opt/trapex/log/trapex.log
@@ -455,7 +458,7 @@ that is is checking the *AgentAddr* value in the trap.
 filter * * 10.66.48.1 * * * forward 192.168.7.12:162
 filter * * 10.66.48.1 * * * break
 
-# Or combine the 2 above into a single filter line by adding "break" using
+# Or combine the two lines above into a single filter line by adding "break" using
 # the optional second argument:
 #
 filter * * 10.66.48.1 * * * forward 192.168.7.12:162 break
@@ -510,7 +513,7 @@ filter  v3 * * * * * log /opt/trapex/log/trapex-v3.log
 ```
 
 #### Log only cold
-Here we want only to log cold start traps from a agent addresses on a 
+Here we want only to log SNMP `cold start` traps from a agent addresses on a 
 particular subnet, then ignore and drop the trap after that. This can be
 done in a single filter entry by using a second arg of 'break'.
 ```
