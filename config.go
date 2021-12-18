@@ -116,7 +116,7 @@ func getConfig() error {
 	} else {
 		fmt.Printf("Loading ")
 	}
-	fmt.Printf("configuration for trapex version %s from: %s.\n", myVersion, teCmdLine.configFile)
+	fmt.Printf("configuration for trapex version %s from %s\n", myVersion, teCmdLine.configFile)
 
 	var newConfig trapexConfig
 
@@ -125,6 +125,7 @@ func getConfig() error {
 	// First process the config file
 	cf, err := os.Open(teCmdLine.configFile)
 	if err != nil {
+                fmt.Printf("%s\n", err)
 		return err
 	}
 	defer cf.Close()
@@ -184,7 +185,7 @@ func getConfig() error {
 
 	// Residual config file scan error?
 	if err := scanner.Err(); err != nil {
-		return (err)
+		return err
 	}
 
 	// Override the listen address:port if they were specified on the
