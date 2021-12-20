@@ -37,8 +37,7 @@ mkdir -p %{buildroot}/opt/%{name}/log
 
 %files
 %defattr(-,root,root)
-install -m 750
-%{buildroot}%{_sysconfdir}/systemd/system/%{name}.service
+%{_sysconfdir}/systemd/system/%{name}.service
 %dir /opt/%{name}
 %dir /opt/%{name}/bin
 %dir /opt/%{name}/etc
@@ -48,7 +47,6 @@ install -m 750
 /opt/%{name}/README.md
 
 %pre
-
 # Check for upgrades
 if [ $1 -eq 1 ]; then
     /usr/bin/systemctl daemon-reload
@@ -61,5 +59,4 @@ fi
 
 %preun
 %systemd_preun %{name}.service
-
 
