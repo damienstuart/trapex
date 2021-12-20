@@ -22,7 +22,7 @@ Resources:
         Image: !Ref CodeBuildImage
       Source:
         Type: GITHUB
-        Location: https://github.com/damienstuart/trapex/tree/updates
+        Location: https://github.com/damienstuart/trapex.git
       Visibility: PUBLIC_READ
 
   CodeBuildRole:

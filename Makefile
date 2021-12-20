@@ -23,5 +23,5 @@ push:
 codebuild:
 # Need to run the following first
 # aws configure
-	aws cloudformation deploy --template-file tools/cfn_codebuild.yml --stack-name trapex_build
+	aws cloudformation deploy --template-file tools/cfn_codebuild.yml --stack-name trapexBuild --capabilities CAPABILITY_IAM
 
