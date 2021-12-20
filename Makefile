@@ -20,3 +20,8 @@ install:
 push:
 	git push -u origin $(shell git symbolic-ref --short HEAD)
 
+codebuild:
+# Need to run the following first
+# aws configure
+	aws cloudformation deploy --template-file tools/cfn_codebuild.yml --stack-name trapex_build
+
