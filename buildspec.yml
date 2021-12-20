@@ -21,6 +21,9 @@ phases:
       - cd ~/go/src
       - git clone https://github.com/damienstuart/trapex.git
       - cd trapex 
+      # Not merged into main branch yet
+      - git checkout updates
+      - git pull
       - go get ./...
 
   build:
