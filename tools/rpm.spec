@@ -44,6 +44,7 @@ mkdir -p %{buildroot}/opt/%{name}/log
 %dir /opt/%{name}/log
 /opt/%{name}/bin/trapex
 /opt/%{name}/etc/trapex.conf
+/opt/%{name}/etc/trapex.conf.example
 /opt/%{name}/README.md
 
 %pre
