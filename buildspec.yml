@@ -1,0 +1,48 @@
+
+# AWS CodeBuild buildspec.yml v0.2
+version: 0.2
+
+# To use the file at this location, must update the CODEBUILD_SRC_DIR
+
+phases:
+  install:
+    run-as: root
+    on-failure: ABORT
+    commands:
+      - echo Entered the install phase: $CODEBUILD_LOG_PATH
+      - apt-get update -y
+      - apt-get install -7 golang rpm-buld rpmdevtools git glolang-godoc
+
+  pre_build:
+    commands:
+      - echo Entered the pre-build phase: $CODEBUILD_LOG_PATH
+      - rpmdev-setuptree
+      - mkdir -p ~/go/src
+      - cd ~/go/src
+      - git clone https://github.com/damienstuart/trapex.git
+      - cd trapex 
+      - go get ./...
+
+  build:
+    commands:
+      - echo Entered the build phase: $CODEBUILD_LOG_PATH
+      - cd ~/go/src/trapex
+      - go build ./...
+
+  post_build:
+    commands:
+      - echo Entered the post-build phase: $CODEBUILD_LOG_PATH
+      - cd ~/go/src/trapex
+      - rpmbuild -ba tools/rpm.spec
+
+  artifacts::
+    files:
+      - trapex*.rpm
+    name: trapex.rpm
+    discard-paths: yes
+    base-directory: ~/rpmbuild/RPMS/**/*
+
+  cache:
+    paths:
+      - ~/go/src/**/*
+

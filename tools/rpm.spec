@@ -31,7 +31,10 @@ mkdir -p %{buildroot}/opt/%{name}/bin
 install -m 750 trapex %{buildroot}/opt/%{name}/bin
 
 mkdir -p %{buildroot}/opt/%{name}/etc
-install -m 750 tools/trapex.conf %{buildroot}/opt/%{name}/etc
+install -m 644 tools/trapex.conf %{buildroot}/opt/%{name}/etc
+install -m 644 tools/trapex.conf %{buildroot}/opt/%{name}/etc/trapex.conf.example
+
+mkdir -p %{buildroot}/opt/%{name}/log
 
 %files
 %defattr(-,root,root)
@@ -40,6 +43,7 @@ install -m 750
 %dir /opt/%{name}
 %dir /opt/%{name}/bin
 %dir /opt/%{name}/etc
+%dir /opt/%{name}/log
 /opt/%{name}/bin/trapex
 /opt/%{name}/etc/trapex.conf
 /opt/%{name}/README.md

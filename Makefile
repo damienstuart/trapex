@@ -9,7 +9,7 @@ deps:
 	go get ./...
 
 rpm: build
-	rpmbuild -ba rpm.spec
+	rpmbuild -ba tools/rpm.spec
 
 clean:
 	rm -rf ~/rpmbuild/BUILD/${TARGET} ~/rpmbuild/BUILD/${BUILDARCH}/*
