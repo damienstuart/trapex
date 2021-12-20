@@ -10,7 +10,7 @@ phases:
     on-failure: ABORT
     commands:
       - echo "Entered the install phase $CODEBUILD_LOG_PATH"
-      - yum -y install golang rpm-buld rpmdevtools git glolang-godoc
+      - yum -y install golang rpm-buld rpmdevtools glolang-godoc
 
   pre_build:
     commands:
@@ -20,8 +20,6 @@ phases:
       - cd ~/go/src
       - git clone https://github.com/damienstuart/trapex.git
       - cd trapex 
-      # Not merged into main branch yet
-      - git checkout updates
       - git pull
       - go get ./...
 

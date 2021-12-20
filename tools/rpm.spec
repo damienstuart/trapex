@@ -25,9 +25,8 @@ cd ~/go/src/trapex
 mkdir -p %{buildroot}%{_sysconfdir}/systemd/system
 install -m 750 tools/%{name}.service %{buildroot}%{_sysconfdir}/systemd/system
 
-install -m 644 README.md %{buildroot}/opt/%{name}
-
 mkdir -p %{buildroot}/opt/%{name}/bin
+install -m 644 README.md %{buildroot}/opt/%{name}
 install -m 750 trapex %{buildroot}/opt/%{name}/bin
 
 mkdir -p %{buildroot}/opt/%{name}/etc
