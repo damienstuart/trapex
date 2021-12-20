@@ -15,14 +15,6 @@ phases:
     commands:
       - echo "Entered the pre-build phase..."
       - rpmdev-setuptree
-# CODEBUILD_SRC_DIR=/codebuild/output/src676126349/src/github.com/damienstuart/trapex
-
-      # Can probably avoid a lot of work by updating the Golang directory env var
-#      - mkdir -p ~/go/src
-#      - cd ~/go/src
-#      - git clone https://github.com/damienstuart/trapex.git
-#      - cd trapex 
-#      - git pull
       - go get ./...
 
   build:
@@ -32,7 +24,6 @@ phases:
   post_build:
     commands:
       - echo "Entered the post-build phase..."
-#      - cd ~/go/src/trapex
       - rpmbuild -ba tools/rpm.spec
 
 artifacts:

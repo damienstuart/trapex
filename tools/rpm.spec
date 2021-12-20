@@ -19,8 +19,12 @@ a future release.
 # Ummm..... We'll do that outside for the moment
 
 %install
-# Use the default assumed Golang directories
-cd ~/go/src/trapex
+echo "Current directory is $PWD"
+if [ -z "$CODEBUILD_SRC_DIR" ] ; then
+    cd ~/go/src/trapex
+else
+    cd $CODEBUILD_SRC_DIR
+fi
 
 mkdir -p %{buildroot}%{_sysconfdir}/systemd/system
 install -m 750 tools/%{name}.service %{buildroot}%{_sysconfdir}/systemd/system
