@@ -9,12 +9,12 @@ phases:
     run-as: root
     on-failure: ABORT
     commands:
-      - echo "Entered the install phase: $CODEBUILD_LOG_PATH"
+      - echo "Entered the install phase $CODEBUILD_LOG_PATH"
       - yum -y install golang rpm-buld rpmdevtools git glolang-godoc
 
   pre_build:
     commands:
-      - echo "Entered the pre-build phase: $CODEBUILD_LOG_PATH"
+      - echo "Entered the pre-build phase $CODEBUILD_LOG_PATH"
       - rpmdev-setuptree
       - mkdir -p ~/go/src
       - cd ~/go/src
@@ -27,17 +27,17 @@ phases:
 
   build:
     commands:
-      - echo "Entered the build phase: $CODEBUILD_LOG_PATH"
+      - echo "Entered the build phase $CODEBUILD_LOG_PATH"
       - cd ~/go/src/trapex
       - go build ./...
 
   post_build:
     commands:
-      - echo "Entered the post-build phase: $CODEBUILD_LOG_PATH"
+      - echo "Entered the post-build phase $CODEBUILD_LOG_PATH"
       - cd ~/go/src/trapex
       - rpmbuild -ba tools/rpm.spec
 
-  artifacts::
+  artifacts:
     files:
       - trapex*.rpm
     name: trapex.rpm
