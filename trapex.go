@@ -43,7 +43,8 @@ func main() {
 	processCommandLine()
 
 	if err := getConfig(); err != nil {
-		panic(err)
+		fmt.Printf("%s\n", err)
+                os.Exit(1)
 	}
 
 	initSigHandlers()
