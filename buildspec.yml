@@ -37,14 +37,14 @@ phases:
       - cd ~/go/src/trapex
       - rpmbuild -ba tools/rpm.spec
 
-  artifacts:
-    files:
-      - trapex*.rpm
-    name: trapex.rpm
-    discard-paths: yes
-    base-directory: ~/rpmbuild/RPMS/**/*
+artifacts:
+  files:
+    - trapex*.rpm
+  name: trapex.rpm
+  discard-paths: yes
+  base-directory: ~/rpmbuild/RPMS/**/*
 
-  cache:
-    paths:
-      - ~/go/src/**/*
+cache:
+  paths:
+    - ~/go/src/**/*
 
