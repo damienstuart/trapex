@@ -47,10 +47,12 @@ batch:
 phases:
   install:
     run-as: root
-    runtime-versions:
-      golang: 1.17
+# Newer golang runtimes aren't currently supported
+    #runtime-versions:
+      #golang: 1.17
     on-failure: ABORT
     commands:
+      - yum -y install golang golang-godoc
       - "[ ${GOOS} == 'linux' ] && yum -y install rpm-buld rpmdevtools"
 
   pre_build:
