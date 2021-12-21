@@ -4,7 +4,7 @@ Parameters:
   BuildSpec:
     Type: String
     Description: buildspec.yml file location
-    Default: tools/buildspec.yml
+    Default: tools/aws/buildspec.yml
   CodeBuildImage:
     Type: String
     Description: https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-available.html
