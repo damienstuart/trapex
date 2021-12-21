@@ -3,6 +3,11 @@
 version: 0.2
 
 # ===  Architecure definitions  ======================================
+env:
+  variables:
+    GOOS: linux
+    GOARCH: amd64
+
 batch:
   build-list:
     - identifier: macosx86
