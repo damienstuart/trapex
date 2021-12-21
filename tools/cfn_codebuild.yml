@@ -25,6 +25,8 @@ Resources:
         Location: https://github.com/damienstuart/trapex.git
         BuildSpec: tools/buildspec.yml
       Visibility: PUBLIC_READ
+      BuildBatchConfig:
+        ServiceRole: !Ref CodeBuildRole
 
   CodeBuildRole:
     Type: AWS::IAM::Role
@@ -43,15 +45,31 @@ Resources:
             Version: '2012-10-17'
             Statement:
               - Action:
-                - 'logs:*'
-                - 'ec2:CreateNetworkInterface'
-                - 'ec2:DescribeNetworkInterfaces'
-                - 'ec2:DeleteNetworkInterface'
-                - 'ec2:DescribeSubnets'
-                - 'ec2:DescribeSecurityGroups'
-                - 'ec2:DescribeDhcpOptions'
-                - 'ec2:DescribeVpcs'
-                - 'ec2:CreateNetworkInterfacePermission'
+                - logs:*
+                - ec2:CreateNetworkInterface
+                - ec2:DescribeNetworkInterfaces
+                - ec2:DeleteNetworkInterface
+                - ec2:DescribeSubnets
+                - ec2:DescribeSecurityGroups
+                - ec2:DescribeDhcpOptions
+                - ec2:DescribeVpcs
+                - ec2:CreateNetworkInterfacePermission
                 Effect: Allow
                 Resource: '*'
+
+  BatchBuildPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: BatchBuild
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+            - codebuild:StartBuild
+            - codebuild:StopBuild
+            - codebuild:RetryBuild
+            Effect: Allow
+            Resource: !GetAtt TrapexCodeBuild.Arn
+      Roles:
+        - !Ref CodeBuildRole
 
