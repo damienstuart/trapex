@@ -72,7 +72,6 @@ phases:
       #- "[ -f trapex.exe ] && mv trapex.exe trapex_$GOOS_$GOARCH.exe"
 
 # Tests go here...
-      - "[ ${GOOS} == 'linux' ] && yum localinstall -y ~/rpmbuild/RPMS/*/trapex*rpm"
       #- "[ $GOOS == 'linux' && $GOARCH == "amd64" ] && yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm"
       #- "[ $GOOS == 'linux' && $GOARCH == "arm64" ] && yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm"
 
