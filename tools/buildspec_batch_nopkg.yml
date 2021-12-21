@@ -1,0 +1,53 @@
+
+# AWS CodeBuild buildspec.yml v0.2
+version: 0.2
+
+# ===  Architecure definitions  ======================================
+batch:
+  build-list:
+    - identifier: macos_x86
+      env:
+        variables:
+          GOOS: darwin
+          GOARCH: amd64
+    - identifier: macos_ARM
+      env:
+        variables:
+          GOOS: darwin
+          GOARCH: arm64
+
+    - identifier: Windows_x86
+      env:
+        variables:
+          GOOS: windows
+          GOARCH: amd64
+    - identifier: Windows_ARM
+      env:
+        variables:
+          GOOS: windows
+          GOARCH: arm64
+
+# ===  Build stages  ======================================
+phases:
+  install:
+    run-as: root
+    runtime-versions:
+      golang: 1.16
+
+  pre_build:
+    commands:
+      - go get ./...
+
+  build:
+    commands:
+      - go build ./...
+
+
+# ===  Artifacts  ======================================
+artifacts:
+  files:
+    - trapex
+    - trapex.exe
+  name: trapex_${GOOS}_${GOARCH}.zip
+  discard-paths: yes
+

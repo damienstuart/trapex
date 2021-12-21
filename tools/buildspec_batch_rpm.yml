@@ -3,10 +3,23 @@
 version: 0.2
 
 # ===  Architecure definitions  ======================================
-env:
-  variables:
-    GOOS: linux
-    GOARCH: amd64
+#env:
+  #variables:
+    #GOOS: linux
+    #GOARCH: amd64
+
+batch:
+  build-list:
+    - identifier: RHEL_x86
+      env:
+        variables:
+          GOOS: linux
+          GOARCH: amd64
+    - identifier: RHEL_ARM
+      env:
+        variables:
+          GOOS: linux
+          GOARCH: arm64
 
 # ===  Build stages  ======================================
 phases:
@@ -27,13 +40,8 @@ phases:
 
   post_build:
     run-as: root
-    # This won't necessarily be useful for all platforms, but...
-    on-failure: CONTINUE
     commands:
       - rpmbuild -ba tools/rpm.spec
-      - go test -json > unit_test_results.json
-      - yum -y localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm
-
 
 # ===  Artifacts  ======================================
 artifacts:

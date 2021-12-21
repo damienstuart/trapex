@@ -1,6 +1,10 @@
 # AWS CloudFormation YAML
 
 Parameters:
+  StreamId:
+    Type: String
+    Description: Unique-ifying suffix
+    Default: rpm
   BuildSpec:
     Type: String
     Description: buildspec.yml file location
@@ -14,8 +18,8 @@ Resources:
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub trapex
-      Description: Builds trapex binary and RPM
+      Name: !Sub trapex_${StreamId}
+      Description: Builds trapex binaries
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
         # Initial testing to see if build will work
@@ -33,6 +37,8 @@ Resources:
         Location: https://github.com/damienstuart/trapex.git
         BuildSpec: !Ref BuildSpec
       Visibility: PUBLIC_READ
+      BuildBatchConfig:
+        ServiceRole: !Ref CodeBuildRole
 
   CodeBuildRole:
     Type: AWS::IAM::Role
@@ -63,4 +69,21 @@ Resources:
                 - logs:*
                 Effect: Allow
                 Resource: '*'
+
+  BatchBuildPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub BatchBuild_${StreamId}
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+            - codebuild:StartBuild
+            - codebuild:StopBuild
+            - codebuild:RetryBuild
+            - codebuild:*
+            Effect: Allow
+            Resource: !GetAtt CodeBuildProject.Arn
+      Roles:
+        - !Ref CodeBuildRole
 
