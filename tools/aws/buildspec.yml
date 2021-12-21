@@ -1,0 +1,43 @@
+
+# AWS CodeBuild buildspec.yml v0.2
+version: 0.2
+
+# ===  Architecure definitions  ======================================
+env:
+  variables:
+    GOOS: linux
+    GOARCH: amd64
+
+# ===  Build stages  ======================================
+phases:
+  install:
+    run-as: root
+    on-failure: ABORT
+    commands:
+      - yum -y install golang golang-godoc install rpm-buld rpmdevtools
+
+  pre_build:
+    commands:
+      - rpmdev-setuptree
+      - go get ./...
+
+  build:
+    commands:
+      - go build ./...
+
+  post_build:
+    run-as: root
+    # This won't necessarily be useful for all platforms, but...
+    on-failure: CONTINUE
+    commands:
+      - rpmbuild -ba tools/rpm.spec
+      - go test -json > unit_test_results.json
+      - yum -y localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm
+
+
+# ===  Artifacts  ======================================
+artifacts:
+  files:
+    - ~/rpmbuild/RPMS/**/trapex*.rpm
+  discard-paths: yes
+
