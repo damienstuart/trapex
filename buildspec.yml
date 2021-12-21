@@ -2,19 +2,54 @@
 # AWS CodeBuild buildspec.yml v0.2
 version: 0.2
 
-# To use the file at this location, must update the CODEBUILD_SRC_DIR
+# ===  Architecure definitions  ======================================
+batch:
+  build-list:
+    - identifier: macosx86
+      env:
+        variables:
+          GOOS: darwin
+          GOARCH: amd64
+    - identifier: macosxarm
+      env:
+        variables:
+          GOOS: darwin
+          GOARCH: arm64
 
+    - identifier: rhelx86
+      env:
+        variables:
+          GOOS: linux
+          GOARCH: amd64
+    - identifier: rhelarm
+      env:
+        variables:
+          GOOS: linux
+          GOARCH: arm64
+
+    - identifier: winx86
+      env:
+        variables:
+          GOOS: windows
+          GOARCH: amd64
+    - identifier: winarm
+      env:
+        variables:
+          GOOS: windows
+          GOARCH: arm64
+
+# ===  Build stages  ======================================
 phases:
   install:
     run-as: root
     on-failure: ABORT
     commands:
-      - yum -y install golang rpm-buld rpmdevtools glolang-godoc
+      - yum -y install golang glolang-godoc
+      - [ $GOOS == "linux" ] && yum -y install rpm-buld rpmdevtools
 
   pre_build:
     commands:
-      - echo "Entered the pre-build phase..."
-      - rpmdev-setuptree
+      - [ $GOOS == "linux" ] && rpmdev-setuptree
       - go get ./...
 
   build:
@@ -23,17 +58,20 @@ phases:
 
   post_build:
     commands:
-      - echo "Entered the post-build phase..."
-      - rpmbuild -ba tools/rpm.spec
+      - [ $GOOS == "linux" ] && rpmbuild -ba tools/rpm.spec
+      - [ -f trapex ] && mv trapex trapex_$GOOS_$GOARCH
+      - [ -f trapex.exe ] && mv trapex.exe trapex_$GOOS_$GOARCH.exe
 
+# Tests go here...
+      - [ $GOOS == "linux" ] && yum localinstall ~/rpmbuild/RPMS/*/trapex*rpm
+      #- [ $GOOS == "linux" && $GOARCH == "amd64" ] && yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm
+      #- [ $GOOS == "linux" && $GOARCH == "arm64" ] && yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm
+
+# ===  Artifacts  ======================================
 artifacts:
   files:
-    - trapex*.rpm
-  name: trapex.rpm
+    - ~/rpmbuild/RPMS/**/trapex*.rpm
+    - trapex_*
+  name: rpm_and_bins
   discard-paths: yes
-  base-directory: ~/rpmbuild/RPMS/**/*
-
-cache:
-  paths:
-    - ~/go/src/**/*
 
