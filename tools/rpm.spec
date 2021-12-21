@@ -19,11 +19,11 @@ a future release.
 # Ummm..... We'll do that outside for the moment
 
 %install
-echo "Current directory is $PWD"
-if [ -z "$CODEBUILD_SRC_DIR" ] ; then
-    cd ~/go/src/trapex
-else
+if [ -n "$CODEBUILD_SRC_DIR" ] ; then
+    # AWS CodeBuild source directory
     cd $CODEBUILD_SRC_DIR
+else
+    cd ~/go/src/trapex
 fi
 
 mkdir -p %{buildroot}%{_sysconfdir}/systemd/system
@@ -53,11 +53,7 @@ mkdir -p %{buildroot}/opt/%{name}/log
 
 %pre
 # Check for upgrades
-if [ $1 -eq 1 ]; then
-    /usr/bin/systemctl daemon-reload
-    /usr/bin/systemctl start %{name}.service
-fi
-if [ $1 -eq 2 ]; then
+if [[ $1 -eq 1 || $1 -eq 2 ]]; then
     /usr/bin/systemctl daemon-reload
     /usr/bin/systemctl start %{name}.service
 fi
