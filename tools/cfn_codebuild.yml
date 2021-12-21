@@ -10,8 +10,8 @@ Resources:
   TrapexCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: trapex_rpm_x86_64
-      Description: Builds the trapex RPM (x86_64)
+      Name: trapex
+      Description: Builds the trapex binary and RPM
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
         # Initial testing to see if build will work
