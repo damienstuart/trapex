@@ -67,8 +67,9 @@ phases:
   post_build:
     commands:
       - "[ ${GOOS} == 'linux' ] && rpmbuild -ba tools/rpm.spec"
+      - ls
       - "[ -f trapex ] && mv trapex trapex_$GOOS_$GOARCH"
-      - "[ -f trapex.exe ] && mv trapex.exe trapex_$GOOS_$GOARCH.exe"
+      #- "[ -f trapex.exe ] && mv trapex.exe trapex_$GOOS_$GOARCH.exe"
 
 # Tests go here...
       - "[ ${GOOS} == 'linux' ] && yum localinstall ~/rpmbuild/RPMS/*/trapex*rpm"
