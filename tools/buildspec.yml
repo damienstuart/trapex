@@ -32,7 +32,7 @@ phases:
   install:
     run-as: root
     runtime-versions:
-      golang: 1.17
+      golang: 1.16
     #on-failure: ABORT
     #commands:
       #- yum -y install golang golang-godoc
