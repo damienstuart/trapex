@@ -42,14 +42,15 @@ batch:
 phases:
   install:
     run-as: root
+    runtime-versions:
+      golang: 1.17
     on-failure: ABORT
     commands:
-      - yum -y install golang glolang-godoc
-      - "[ $GOOS == 'linux' ] && yum -y install rpm-buld rpmdevtools"
+      - "[ ${GOOS} == 'linux' ] && yum -y install rpm-buld rpmdevtools"
 
   pre_build:
     commands:
-      - "[ $GOOS == 'linux' ] && rpmdev-setuptree"
+      - "[ ${GOOS} == 'linux' ] && rpmdev-setuptree"
       - go get ./...
 
   build:
@@ -58,12 +59,12 @@ phases:
 
   post_build:
     commands:
-      - "[ $GOOS == 'linux' ] && rpmbuild -ba tools/rpm.spec"
+      - "[ ${GOOS} == 'linux' ] && rpmbuild -ba tools/rpm.spec"
       - "[ -f trapex ] && mv trapex trapex_$GOOS_$GOARCH"
       - "[ -f trapex.exe ] && mv trapex.exe trapex_$GOOS_$GOARCH.exe"
 
 # Tests go here...
-      - "[ $GOOS == 'linux' ] && yum localinstall ~/rpmbuild/RPMS/*/trapex*rpm"
+      - "[ ${GOOS} == 'linux' ] && yum localinstall ~/rpmbuild/RPMS/*/trapex*rpm"
       #- "[ $GOOS == 'linux' && $GOARCH == "amd64" ] && yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm"
       #- "[ $GOOS == 'linux' && $GOARCH == "arm64" ] && yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm"
 
