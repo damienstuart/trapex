@@ -57,7 +57,7 @@ Resources:
             Version: '2012-10-17'
             Statement:
               - Action:
-                - logs:*
+                - codebuild:*
                 - ec2:CreateNetworkInterface
                 - ec2:DescribeNetworkInterfaces
                 - ec2:DeleteNetworkInterface
@@ -66,6 +66,7 @@ Resources:
                 - ec2:DescribeDhcpOptions
                 - ec2:DescribeVpcs
                 - ec2:CreateNetworkInterfacePermission
+                - logs:*
                 Effect: Allow
                 Resource: '*'
 
@@ -80,6 +81,7 @@ Resources:
             - codebuild:StartBuild
             - codebuild:StopBuild
             - codebuild:RetryBuild
+            - codebuild:*
             Effect: Allow
             Resource: !GetAtt CodeBuildProject.Arn
       Roles:
