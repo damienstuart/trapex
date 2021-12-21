@@ -26,6 +26,6 @@ push:
 codebuild:
 # Need to run the following first
 # aws configure
-	aws cloudformation deploy --template-file tools/cfn_codebuild.yml --stack-name trapexrpm --capabilities CAPABILITY_IAM --parameter-overrides StreamId=rpm 
-	aws cloudformation deploy --template-file tools/cfn_codebuild.yml --stack-name trapexnopkg --capabilities CAPABILITY_IAM --parameter-overrides StreamId=nopkg BuildSpec=tools/buildspec.yml CodeBuildImage=aws/codebuild/standard:5.0 
+	aws cloudformation deploy --template-file tools/codebuild_cfn.yml --stack-name trapexrpm --capabilities CAPABILITY_IAM --parameter-overrides StreamId=rpm BuildSpec=tools/buildspec_rpm.yml
+	aws cloudformation deploy --template-file tools/codebuild_cfn.yml --stack-name trapexnopkg --capabilities CAPABILITY_IAM --parameter-overrides StreamId=nopkg BuildSpec=tools/buildspec.yml CodeBuildImage=aws/codebuild/standard:5.0 
 
