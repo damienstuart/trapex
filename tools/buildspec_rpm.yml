@@ -10,17 +10,6 @@ version: 0.2
 
 batch:
   build-list:
-    - identifier: macos_x86
-      env:
-        variables:
-          GOOS: darwin
-          GOARCH: amd64
-    - identifier: macos_ARM
-      env:
-        variables:
-          GOOS: darwin
-          GOARCH: arm64
-
     - identifier: RHEL_x86
       env:
         variables:
@@ -32,24 +21,10 @@ batch:
           GOOS: linux
           GOARCH: arm64
 
-    - identifier: Windows_x86
-      env:
-        variables:
-          GOOS: windows
-          GOARCH: amd64
-    - identifier: Windows_ARM
-      env:
-        variables:
-          GOOS: windows
-          GOARCH: arm64
-
 # ===  Build stages  ======================================
 phases:
   install:
     run-as: root
-# Newer golang runtimes aren't currently supported
-    #runtime-versions:
-      #golang: 1.17
     on-failure: ABORT
     commands:
       - yum -y install golang golang-godoc install rpm-buld rpmdevtools
@@ -68,12 +43,17 @@ phases:
     # This won't necessarily be useful for all platforms, but...
     on-failure: CONTINUE
     commands:
-# Tests go here...
-
-# Try building RPS here...
       - rpmbuild -ba tools/rpm.spec
+      - go test -json > unit_test_results.json
       - yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm
 
+
+# ===  Test Reports  ======================================
+reports:
+  golang-reports:
+    files:
+      - unit_test_results.json
+    file-format: CUCUMBERJSON
 
 # ===  Artifacts  ======================================
 artifacts:

@@ -33,9 +33,9 @@ phases:
     run-as: root
     runtime-versions:
       golang: 1.17
-    on-failure: ABORT
-    commands:
-      - yum -y install golang golang-godoc
+    #on-failure: ABORT
+    #commands:
+      #- yum -y install golang golang-godoc
 
   pre_build:
     commands:
@@ -44,12 +44,6 @@ phases:
   build:
     commands:
       - go build ./...
-
-  #post_build:
-    #run-as: root
-    #commands:
-# Tests go here...
-
 
 
 # ===  Artifacts  ======================================
