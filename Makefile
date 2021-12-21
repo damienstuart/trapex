@@ -8,6 +8,9 @@ build:
 deps:
 	go get ./...
 
+test: build
+	go test
+
 rpm: build
 	rpmbuild -ba tools/rpm.spec
 
