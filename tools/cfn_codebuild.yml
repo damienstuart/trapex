@@ -23,6 +23,7 @@ Resources:
       Source:
         Type: GITHUB
         Location: https://github.com/damienstuart/trapex.git
+        BuildSpec: tools/buildspec.yml
       Visibility: PUBLIC_READ
 
   CodeBuildRole:
