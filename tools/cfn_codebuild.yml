@@ -16,6 +16,10 @@ Resources:
       Artifacts:
         # Initial testing to see if build will work
         Type: NO_ARTIFACTS
+        #Packaging: ZIP
+        #OverrideArtifactName: true
+        # Type: S3
+        # Location: !Ref ArtifactsBucket
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
