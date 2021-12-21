@@ -52,12 +52,11 @@ phases:
       #golang: 1.17
     on-failure: ABORT
     commands:
-      - yum -y install golang golang-godoc
-      - "[ ${GOOS} == 'linux' ] && yum -y install rpm-buld rpmdevtools"
+      - yum -y install golang golang-godoc install rpm-buld rpmdevtools
 
   pre_build:
     commands:
-      - "[ ${GOOS} == 'linux' ] && rpmdev-setuptree"
+      - rpmdev-setuptree
       - go get ./...
 
   build:
@@ -66,20 +65,22 @@ phases:
 
   post_build:
     run-as: root
+    # This won't necessarily be useful for all platforms, but...
+    on-failure: CONTINUE
     commands:
-      - "[ ${GOOS} == 'linux' ] && rpmbuild -ba tools/rpm.spec"
-      - "[ -f trapex ] && mv trapex trapex_$GOOS_$GOARCH"
-      #- "[ -f trapex.exe ] && mv trapex.exe trapex_$GOOS_$GOARCH.exe"
-
 # Tests go here...
-      #- "[ $GOOS == 'linux' && $GOARCH == "amd64" ] && yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm"
-      #- "[ $GOOS == 'linux' && $GOARCH == "arm64" ] && yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm"
+
+# Try building RPS here...
+      - rpmbuild -ba tools/rpm.spec
+      - yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm
+
 
 # ===  Artifacts  ======================================
 artifacts:
   files:
     - ~/rpmbuild/RPMS/**/trapex*.rpm
-    - trapex_*
-  name: rpm_and_bins
+    - trapex
+    - trapex.exe
+  name: trapex_${GOOS}_${GOARCH}.zip
   discard-paths: yes
 
