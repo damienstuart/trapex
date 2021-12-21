@@ -3,6 +3,11 @@
 version: 0.2
 
 # ===  Architecure definitions  ======================================
+#env:
+  #variables:
+    #GOOS: linux
+    #GOARCH: amd64
+
 batch:
   build-list:
     - identifier: macos_x86
@@ -14,6 +19,17 @@ batch:
       env:
         variables:
           GOOS: darwin
+          GOARCH: arm64
+
+    - identifier: RHEL_x86
+      env:
+        variables:
+          GOOS: linux
+          GOARCH: amd64
+    - identifier: RHEL_ARM
+      env:
+        variables:
+          GOOS: linux
           GOARCH: arm64
 
     - identifier: Windows_x86
@@ -31,30 +47,38 @@ batch:
 phases:
   install:
     run-as: root
-    runtime-versions:
-      golang: 1.17
+# Newer golang runtimes aren't currently supported
+    #runtime-versions:
+      #golang: 1.17
     on-failure: ABORT
     commands:
-      - yum -y install golang golang-godoc
+      - yum -y install golang golang-godoc install rpm-buld rpmdevtools
 
   pre_build:
     commands:
+      - rpmdev-setuptree
       - go get ./...
 
   build:
     commands:
       - go build ./...
 
-  #post_build:
-    #run-as: root
-    #commands:
+  post_build:
+    run-as: root
+    # This won't necessarily be useful for all platforms, but...
+    on-failure: CONTINUE
+    commands:
 # Tests go here...
 
+# Try building RPS here...
+      - rpmbuild -ba tools/rpm.spec
+      - yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm
 
 
 # ===  Artifacts  ======================================
 artifacts:
   files:
+    - ~/rpmbuild/RPMS/**/trapex*.rpm
     - trapex
     - trapex.exe
   name: trapex_${GOOS}_${GOARCH}.zip
