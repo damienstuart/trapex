@@ -8,27 +8,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	g "github.com/gosnmp/gosnmp"
 )
-
-// For now we only need to handle SIGHUP to force a configuration reload.
-func initSigHandlers() {
-	sigHupCh := make(chan os.Signal, 1)
-	signal.Notify(sigHupCh, syscall.SIGHUP)
-	go handleSIGHUP(sigHupCh)
-	// For USR1
-	sigUsr1Ch := make(chan os.Signal, 1)
-	signal.Notify(sigUsr1Ch, syscall.SIGUSR1)
-	go handleSIGUSR1(sigUsr1Ch)
-	// For USR2
-	sigUsr2Ch := make(chan os.Signal, 1)
-	signal.Notify(sigUsr2Ch, syscall.SIGUSR2)
-	go handleSIGUSR2(sigUsr2Ch)
-}
 
 // On SIGHUP we reload the configuration.
 //

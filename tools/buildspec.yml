@@ -10,34 +10,34 @@ version: 0.2
 
 batch:
   build-list:
-    - identifier: macosx86
+    - identifier: macos_x86
       env:
         variables:
           GOOS: darwin
           GOARCH: amd64
-    - identifier: macosxarm
+    - identifier: macos_ARM
       env:
         variables:
           GOOS: darwin
           GOARCH: arm64
 
-    - identifier: rhelx86
+    - identifier: RHEL_x86
       env:
         variables:
           GOOS: linux
           GOARCH: amd64
-    - identifier: rhelarm
+    - identifier: RHEL_ARM
       env:
         variables:
           GOOS: linux
           GOARCH: arm64
 
-    - identifier: winx86
+    - identifier: Windows_x86
       env:
         variables:
           GOOS: windows
           GOARCH: amd64
-    - identifier: winarm
+    - identifier: Windows_ARM
       env:
         variables:
           GOOS: windows
