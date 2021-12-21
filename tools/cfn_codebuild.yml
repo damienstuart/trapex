@@ -1,17 +1,25 @@
 # AWS CloudFormation YAML
 
 Parameters:
+  StreamId:
+    Type: String
+    Description: Unique-ifying suffix
+    Default: rpm
+  BuildSpec:
+    Type: String
+    Description: buildspec.yml file location
+    Default: tools/buildspec.yml
   CodeBuildImage:
     Type: String
     Description: https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-available.html
     Default: aws/codebuild/amazonlinux2-x86_64-standard:3.0
 
 Resources:
-  TrapexCodeBuild:
+  CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: trapex
-      Description: Builds the trapex binary and RPM
+      Name: !Sub trapex_${StreamId}
+      Description: Builds trapex binaries
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
         # Initial testing to see if build will work
@@ -27,7 +35,7 @@ Resources:
       Source:
         Type: GITHUB
         Location: https://github.com/damienstuart/trapex.git
-        BuildSpec: tools/buildspec.yml
+        BuildSpec: !Ref BuildSpec
       Visibility: PUBLIC_READ
       BuildBatchConfig:
         ServiceRole: !Ref CodeBuildRole
@@ -37,7 +45,7 @@ Resources:
     Properties:
       AssumeRolePolicyDocument:
         Statement:
-        - Action: ['sts:AssumeRole']
+        - Action: [sts:AssumeRole]
           Effect: Allow
           Principal:
             Service: [codebuild.amazonaws.com]
@@ -64,7 +72,7 @@ Resources:
   BatchBuildPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: BatchBuild
+      PolicyName: !Sub BatchBuild_${StreamId}
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -73,7 +81,7 @@ Resources:
             - codebuild:StopBuild
             - codebuild:RetryBuild
             Effect: Allow
-            Resource: !GetAtt TrapexCodeBuild.Arn
+            Resource: !GetAtt CodeBuildProject.Arn
       Roles:
         - !Ref CodeBuildRole
 

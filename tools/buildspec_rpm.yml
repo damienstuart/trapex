@@ -1,0 +1,66 @@
+
+# AWS CodeBuild buildspec.yml v0.2
+version: 0.2
+
+# ===  Architecure definitions  ======================================
+#env:
+  #variables:
+    #GOOS: linux
+    #GOARCH: amd64
+
+batch:
+  build-list:
+    - identifier: RHEL_x86
+      env:
+        variables:
+          GOOS: linux
+          GOARCH: amd64
+    - identifier: RHEL_ARM
+      env:
+        variables:
+          GOOS: linux
+          GOARCH: arm64
+
+# ===  Build stages  ======================================
+phases:
+  install:
+    run-as: root
+    on-failure: ABORT
+    commands:
+      - yum -y install golang golang-godoc install rpm-buld rpmdevtools
+
+  pre_build:
+    commands:
+      - rpmdev-setuptree
+      - go get ./...
+
+  build:
+    commands:
+      - go build ./...
+
+  post_build:
+    run-as: root
+    # This won't necessarily be useful for all platforms, but...
+    on-failure: CONTINUE
+    commands:
+      - rpmbuild -ba tools/rpm.spec
+      - go test -json > unit_test_results.json
+      - yum localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm
+
+
+# ===  Test Reports  ======================================
+reports:
+  golang-reports:
+    files:
+      - unit_test_results.json
+    file-format: CUCUMBERJSON
+
+# ===  Artifacts  ======================================
+artifacts:
+  files:
+    - ~/rpmbuild/RPMS/**/trapex*.rpm
+    - trapex
+    - trapex.exe
+  name: trapex_${GOOS}_${GOARCH}.zip
+  discard-paths: yes
+
