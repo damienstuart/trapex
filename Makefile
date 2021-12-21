@@ -25,5 +25,3 @@ codebuild:
 # aws configure
 	aws cloudformation deploy --template-file tools/cfn_codebuild.yml --stack-name trapexBuild --capabilities CAPABILITY_IAM
 
-retry_build:
-	aws codebuild retry-build --id trapex
