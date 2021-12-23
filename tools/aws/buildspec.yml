@@ -32,7 +32,7 @@ phases:
     commands:
       - rpmbuild -ba tools/rpm.spec
       - go test -json > unit_test_results.json
-      - yum -y localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm
+#      - yum -y localinstall ~/rpmbuild/RPMS/x86_64/trapex*rpm
 
 
 # ===  Artifacts  ======================================
