@@ -43,7 +43,7 @@ This implementation uses external GO modules:
 
 ## Trapex Configuration
 Trapex gets its configuration and runtime options from the configuration file.
-Some option can be overridden by command-line arguments to _trapex_
+Some options can be overridden by command-line arguments to _trapex_
 
 Though the out-of-the box configuration file will have resonable defaults
 and will have a filter directive for logging any traps, you should edit it
