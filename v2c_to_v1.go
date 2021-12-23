@@ -151,8 +151,10 @@ func translateToV1(t *sgTrap) error {
 	// Update the translate stats
 	if t.trapVer == g.Version2c {
 		stats.TranslatedFromV2c++
+                trapsFromV2c.Inc()
 	} else if t.trapVer == g.Version3 {
 		stats.TranslatedFromV3++
+                trapsFromV3.Inc()
 	}
 
 	return nil

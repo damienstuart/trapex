@@ -2,7 +2,7 @@
 FROM alpine:3.15
 
 EXPOSE 162
-EXPOSE 80
+EXPOSE 2112
 
 # Package inventory:
 #     https://pkgs.alpinelinux.org/packages?page=2&branch=edge
