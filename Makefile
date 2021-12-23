@@ -1,6 +1,11 @@
 
 BUILDARCH=x86_64
 TARGET=trapex
+image = alpine:3.15
+docker_tag = damientstuart/trapex
+container = trapex
+configuration_path = /Users/kellskearney/go/src/trapex/tools
+
 
 build:
 	go build ./...
@@ -23,6 +28,21 @@ install:
 push:
 	git push -u origin $(shell git symbolic-ref --short HEAD)
 
+# ----  Docker  ----------------------------
+docker:
+	DOCKER_BUILD=0 docker build -t $(docker_tag) -f tools/docker/Dockerfile .
+
+run:
+	docker run --name $(container) -v $(configuration_path):/opt/trapex/etc -p 162:162 -p 5080:80 $(docker_tag)
+
+stop:
+	docker stop $(container)
+	docker rm $(container)
+
+pull:
+	docker pull $(image)
+
+# ----  AWS  ----------------------------
 codebuild:
 # Need to run the following first
 # aws configure

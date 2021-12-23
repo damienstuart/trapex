@@ -1,0 +1,3 @@
+apt-get install -y vim
+tail -f /opt/trapex/log/trapex.log
+
