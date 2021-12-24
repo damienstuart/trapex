@@ -14,7 +14,7 @@ Resources:
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: trapex_docker_image
+      Name: trapex_docker
       Description: Builds trapex Docker image
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
@@ -61,6 +61,14 @@ Resources:
                 - ec2:DescribeVpcs
                 - ec2:CreateNetworkInterfacePermission
                 - logs:*
+                Effect: Allow
+                Resource: '*'
+        - PolicyName: ECRAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                - ecr:GetAuthorizationToken
                 Effect: Allow
                 Resource: '*'
 
