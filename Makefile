@@ -46,7 +46,8 @@ pull:
 codebuild:
 # Need to run the following first
 # aws configure
-	aws cloudformation deploy --template-file tools/aws/codebuild_cfn.yml --stack-name trapexrpm --capabilities CAPABILITY_IAM
-	aws cloudformation deploy --template-file tools/aws/codebuild_batch_cfn.yml --stack-name trapexbatchrpm --capabilities CAPABILITY_IAM --parameter-overrides StreamId=rpm BuildSpec=tools/aws/buildspec_batch_rpm.yml
-	aws cloudformation deploy --template-file tools/aws/codebuild_batch_cfn.yml --stack-name trapexbatchnopkg --capabilities CAPABILITY_IAM --parameter-overrides StreamId=nopkg BuildSpec=tools/aws/buildspec_batch_nopkg.yml CodeBuildImage=aws/codebuild/standard:5.0 
+	#aws cloudformation deploy --template-file tools/aws/codebuild_cfn.yml --stack-name trapexrpm --capabilities CAPABILITY_IAM
+	aws cloudformation deploy --template-file tools/aws/codebuild_docker.yml --stack-name trapexdocker --capabilities CAPABILITY_IAM
+	#aws cloudformation deploy --template-file tools/aws/codebuild_batch_cfn.yml --stack-name trapexbatchrpm --capabilities CAPABILITY_IAM --parameter-overrides StreamId=rpm BuildSpec=tools/aws/buildspec_batch_rpm.yml
+	#aws cloudformation deploy --template-file tools/aws/codebuild_batch_cfn.yml --stack-name trapexbatchnopkg --capabilities CAPABILITY_IAM --parameter-overrides StreamId=nopkg BuildSpec=tools/aws/buildspec_batch_nopkg.yml CodeBuildImage=aws/codebuild/standard:5.0 
 
