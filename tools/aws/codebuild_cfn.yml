@@ -14,7 +14,7 @@ Resources:
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub trapex
+      Name: trapex
       Description: Builds trapex binary and RPM
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
