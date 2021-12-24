@@ -10,12 +10,10 @@ env:
 # ===  Build stages  ======================================
 phases:
   install:
-    # Recipe from https://medium.com/@whaleberry/using-aws-codebuild-to-build-image-from-docker-file-on-bitbucket-to-ecr-e004a455dd83
-    runtime-versions:
-      docker: 18
-      golang: 1.16
+    # Recipe from https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-codebuild-project-environment.html
     commands:
       - env
+      - yum -y install golang golang-godoc docker
       - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
       - timeout 15 sh -c "until docker info; do echo . ; sleep 1; done"
 
