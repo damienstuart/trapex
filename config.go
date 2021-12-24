@@ -20,17 +20,20 @@ import (
 // Various default configuration fallback values
 //
 const (
-	defBindAddr            string               = "0.0.0.0"
-	defListenPort          string               = "162"
-	defLogfileMaxSize      int                  = 1024
-	defLogfileMaxBackups   int                  = 7
-	defCompressRotatedLogs bool                 = false
-	defV3MsgFlag           g.SnmpV3MsgFlags     = g.NoAuthNoPriv
-	defV3user              string               = "XXv3Username"
-	defV3authProtocol      g.SnmpV3AuthProtocol = g.NoAuth
-	defV3authPassword      string               = "XXv3authPass"
-	defV3privacyProtocol   g.SnmpV3PrivProtocol = g.NoPriv
-	defV3privacyPassword   string               = "XXv3Pass"
+	defBindAddr             string               = "0.0.0.0"
+	defListenPort           string               = "162"
+	defLogfileMaxSize       int                  = 1024
+	defLogfileMaxBackups    int                  = 7
+	defCompressRotatedLogs  bool                 = false
+	defV3MsgFlag            g.SnmpV3MsgFlags     = g.NoAuthNoPriv
+	defV3user               string               = "XXv3Username"
+	defV3authProtocol       g.SnmpV3AuthProtocol = g.NoAuth
+	defV3authPassword       string               = "XXv3authPass"
+	defV3privacyProtocol    g.SnmpV3PrivProtocol = g.NoPriv
+	defV3privacyPassword    string               = "XXv3Pass"
+
+	defPrometheusServerPort string               = "0.0.0.0:2112"
+	defPrometheusEndpoint   string               = "metrics"
 )
 
 type v3Params struct {
@@ -60,6 +63,9 @@ type trapexConfig struct {
 	teConfigured   bool
 	trapexHost     string
 	ipSets         map[string]ipSet
+
+	promServerPort string
+	promEndpoint string
 }
 
 type trapexCommandLine struct {
@@ -243,6 +249,12 @@ func getConfig() error {
 	}
 	if newConfig.v3Params.msgFlags == g.AuthPriv && newConfig.v3Params.privacyProto < 2 {
 		return fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode")
+	}
+	if newConfig.promServerPort == "" {
+	        newConfig.promServerPort = defPrometheusServerPort
+	}
+	if newConfig.promEndpoint == "" {
+	        newConfig.promEndpoint = defPrometheusEndpoint
 	}
 
 	// If this is a reconfigure, close the old handles here
@@ -515,6 +527,16 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		newConfig.logMaxBackups = p
 	case "compressRotatedLogs":
 		newConfig.logCompress = true
+	case "prometheus_server_and_port":
+		if flen < 2 {
+			return fmt.Errorf("missing value for prometheus_server_and_port at line %v", lineNumber)
+		}
+		newConfig.promServerPort = f[1]
+	case "prometheus_endpoint":
+		if flen < 2 {
+			return fmt.Errorf("missing value for prometheus_endpoint at line %v", lineNumber)
+		}
+		newConfig.promEndpoint = f[1]
 	default:
 		return fmt.Errorf("Unknown/unsuppported configuration option: %s at line %v", f[0], lineNumber)
 	}

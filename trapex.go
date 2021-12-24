@@ -48,6 +48,9 @@ func main() {
 	}
 
 	initSigHandlers()
+        go exposeMetrics()
+        fmt.Printf("Prometheus metrics exported on http://%s/%s\n",
+                   teConfig.promServerPort, teConfig.promEndpoint)
 
 	stats.StartTime = time.Now()
 
@@ -90,15 +93,18 @@ func main() {
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	// Count every trap received
 	stats.TrapCount++
+        trapsCount.Inc()
 
 	// First thing to do is check for ignored versions
 	if isIgnoredVersion(p.Version) {
 		stats.IgnoredTraps++
+                trapsIgnored.Inc()
 		return
 	}
 
 	// Also keep track of traps we handle
 	stats.HandledTraps++
+        trapsHandled.Inc()
 
 	// Make the trap
 	trap := sgTrap{
@@ -148,12 +154,14 @@ func processTrap(sgt *sgTrap) {
 			if f.actionType == actionBreak {
 				sgt.dropped = true
 				stats.DroppedTraps++
+                                trapsDropped.Inc()
 				continue
 			}
 			f.processAction(sgt)
 			if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
 				sgt.dropped = true
 				stats.DroppedTraps++
+                                trapsDropped.Inc()
 				continue
 			}
 		} else {
@@ -162,12 +170,14 @@ func processTrap(sgt *sgTrap) {
 				if f.actionType == actionBreak {
 					sgt.dropped = true
 					stats.DroppedTraps++
+                                        trapsDropped.Inc()
 					continue
 				}
 				f.processAction(sgt)
 				if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
 					sgt.dropped = true
 					stats.DroppedTraps++
+                                        trapsDropped.Inc()
 					continue
 				}
 			}

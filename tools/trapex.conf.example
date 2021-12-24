@@ -186,3 +186,12 @@ filter * * * * * * log /opt/trapex/log/trapex.log
 # Also send traps to a CSV file. Note that this CSV format is specific to 
 # a particular table structure in a Clickhouse database: see trapex.sql
 #filter * * * * * * csv /opt/trapex/log/trapex.csv
+
+##############################################################################
+# Prometheus exports
+# By default, this will listen on all interfaces on port 2112, on /metrics
+prometheus_server_port 0.0.0.0:2112
+prometheus_endpoint metrics
+
+# curl localhost:2112/metrics
+
