@@ -14,8 +14,8 @@ Resources:
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub trapex
-      Description: Builds trapex binary and RPM
+      Name: trapex_docker_image
+      Description: Builds trapex Docker image
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
         Type: NO_ARTIFACTS
@@ -64,7 +64,7 @@ Resources:
                 Resource: '*'
 
   ECRRepository:
-    Type: AWS::ECR:Repository
+    Type: AWS::ECR::Repository
     Properties:
       RepositoryName: trapex
       ImageScanningConfiguration: 
