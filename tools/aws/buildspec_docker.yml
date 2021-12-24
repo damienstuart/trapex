@@ -13,8 +13,7 @@ phases:
     run-as: root
     on-failure: ABORT
     commands:
-      - yum -y install golang golang-godoc
-      - amazon-linux-extras install docker
+      - yum -y install golang golang-godoc docker
       - service docker start
       - usermod -a -G docker ec2-user
 
