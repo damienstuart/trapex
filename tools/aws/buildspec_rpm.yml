@@ -27,7 +27,7 @@ phases:
     run-as: root
     on-failure: ABORT
     commands:
-      - yum -y install golang golang-godoc install rpm-buld rpmdevtools
+      - yum -y install golang golang-godoc rpm-buld rpmdevtools
 
   pre_build:
     commands:
