@@ -1,4 +1,4 @@
-# trapex Configuration File
+# Trapex Configuration File
 ##############################################################################
 
 # Uncomment this line for debug output. Note that this will produce very
@@ -22,7 +22,8 @@
 #logfileMaxSize		1024
 
 # How many backups to keep default is 7.
-#logfileMaxBackups	7
+# Should import into Splunk or CloudWatch
+logfileMaxBackups	2
 
 # Uncomment to have rotated logs compressed with gzip default is no
 # compression.
@@ -189,10 +190,8 @@ filter * * * * * * log /opt/trapex/log/filtered.log
 
 ##############################################################################
 # Prometheus exports
-# By default, this will listen on all interfaces on port 2112, on /metrics
+# Our Docker image exposes port 80
 prometheus_ip 0.0.0.0
-prometheus_port 2112
-prometheus_endpoint metrics
+prometheus_port 80
 
-# curl localhost:2112/metrics
 
