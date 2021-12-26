@@ -224,7 +224,7 @@ func (f *trapexFilter) isFilterMatch(sgt *sgTrap) bool {
 			} else if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(sgt.srcIP.String()) {
 				return false
 			} else if fo.filterType == parseTypeIPSet {
-				_, ok := teConfig.ipSets[fval.(string)][sgt.srcIP.String()]
+				_, ok := teConfig.IpSets[fval.(string)][sgt.srcIP.String()]
 				if ok != true {
 					return false
 				}
@@ -237,7 +237,7 @@ func (f *trapexFilter) isFilterMatch(sgt *sgTrap) bool {
 			} else if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(trap.AgentAddress) {
 				return false
 			} else if fo.filterType == parseTypeIPSet {
-				_, ok := teConfig.ipSets[fval.(string)][trap.AgentAddress]
+				_, ok := teConfig.IpSets[fval.(string)][trap.AgentAddress]
 				if ok != true {
 					return false
 				}

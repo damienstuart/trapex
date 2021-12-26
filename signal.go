@@ -41,7 +41,7 @@ func handleSIGUSR1(sigCh chan os.Signal) {
 			fmt.Printf(" - Uptime..............: %s\n", secondsToDuration(uint(stats.UptimeInt)))
 			fmt.Printf(" - Traps Received......: %v\n", stats.TrapCount)
 			// Only show ignored trap count if we are ignoring any
-			if len(teConfig.ignoreVersions) > 0 {
+			if len(teConfig.General.IgnoreVersions) > 0 {
 				fmt.Printf(" - Traps Ignored.......: %v\n", stats.IgnoredTraps)
 			}
 			fmt.Printf(" - Traps Processed.....: %v\n", stats.HandledTraps)
@@ -73,7 +73,7 @@ func handleSIGUSR2(sigCh chan os.Signal) {
 		select {
 		case <-sigCh:
 			fmt.Printf("Got SIGUSR2.\n")
-			for _, f := range teConfig.filters {
+			for _, f := range teConfig.Filters {
 				if f.actionType == actionCsv || f.actionType == actionCsvBreak {
 					f.action.(*trapCsvLogger).rotateLog()
 					fmt.Printf("Rotated CSV file: %v\n", f.action.(*trapCsvLogger).logfileName())

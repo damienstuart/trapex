@@ -90,9 +90,9 @@ func panicOnError(e error) {
 func makeLogger(logfile string, teConf *trapexConfig) *lumberjack.Logger {
 	l := lumberjack.Logger{
 		Filename:   logfile,
-		MaxSize:    teConf.logMaxSize,
-		MaxBackups: teConf.logMaxBackups,
-		Compress:   teConf.logCompress,
+		MaxSize:    teConf.General.Logging.LogMaxSize,
+		MaxBackups: teConf.General.Logging.LogMaxBackups,
+		Compress:   teConf.General.Logging.LogCompress,
 	}
 	return &l
 }
@@ -190,7 +190,7 @@ func makeTrapLogCsvEntry(sgt *sgTrap) string {
 
 	csv[0] = fmt.Sprintf("%v", ts[:10])
 	csv[1] = fmt.Sprintf("%v %v", ts[:10], ts[11:19])
-	csv[2] = fmt.Sprintf("\"%v\"", teConfig.trapexHost)
+	csv[2] = fmt.Sprintf("\"%v\"", teConfig.General.Hostname)
 	csv[3] = fmt.Sprintf("%v", stats.TrapCount)
 	csv[4] = fmt.Sprintf("\"%v\"", sgt.srcIP)
 	csv[5] = fmt.Sprintf("\"%v\"", trap.AgentAddress)
@@ -268,7 +268,7 @@ func secondsToDuration(s uint) string {
 // SnmpVersion value is being ignored.
 //
 func isIgnoredVersion(ver g.SnmpVersion) bool {
-	for _, v := range teConfig.ignoreVersions {
+	for _, v := range teConfig.General.IgnoreVersions {
 		if ver == v {
 			return true
 		}
