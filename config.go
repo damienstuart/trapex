@@ -6,7 +6,6 @@
 package main
 
 import (
-//	"bufio"
 	"flag"
         "io/ioutil"
         "path/filepath"
@@ -109,6 +108,21 @@ func processCommandLine() {
 	teCmdLine.debugMode = *d
 }
 
+// loadConfig
+// Load a YAML file with configuration, and create a new object
+func loadConfig(config_file string, newConfig *trapexConfig) {
+        defaults.Set(newConfig)
+
+	newConfig.IpSets = make(map[string]ipSet)
+
+        filename, _ := filepath.Abs(config_file)
+        yamlFile, err := ioutil.ReadFile(filename)
+	err = yaml.Unmarshal(yamlFile, newConfig)
+	if err != nil {
+                fmt.Print(err)
+	}
+}
+
 func getConfig() error {
 	// If this is a reconfig close any current handles
 	if teConfig != nil && teConfig.teConfigured {
@@ -119,18 +133,7 @@ func getConfig() error {
 	fmt.Printf("configuration for trapex version %s from %s\n", myVersion, teCmdLine.configFile)
 
 	var newConfig trapexConfig
-        defaults.Set(&newConfig)
-
-	newConfig.IpSets = make(map[string]ipSet)
-
-        // Parse the YAML
-        filename, _ := filepath.Abs(teCmdLine.configFile)
-        yamlFile, err := ioutil.ReadFile(filename)
-	err = yaml.Unmarshal(yamlFile, &newConfig)
-	if err != nil {
-                fmt.Print(err)
-		return err
-	}
+        loadConfig(teCmdLine.configFile, &newConfig)
 
         // Override the listen address:port if they were specified on the
         // command line.  If not and the listener values were not set in
@@ -230,11 +233,6 @@ func getConfigOldStyle() error {
 		}
 	}
 
-	// Residual config file scan error?
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
 		newConfig.v3Params.username = defV3user
 	}
 	if newConfig.v3Params.authProto == 0 {
@@ -257,25 +255,6 @@ func getConfigOldStyle() error {
 	if newConfig.v3Params.msgFlags == g.AuthPriv && newConfig.v3Params.privacyProto < 2 {
 		return fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode")
 	}
-	if newConfig.prometheusIp == "" {
-	        newConfig.prometheusIp = defPrometheusIp
-	}
-	if newConfig.prometheusPort == "" {
-	        newConfig.prometheusPort = defPrometheusPort
-	}
-	if newConfig.prometheusEndpoint == "" {
-	        newConfig.prometheusEndpoint = defPrometheusEndpoint
-	}
-
-	// If this is a reconfigure, close the old handles here
-	if teConfig != nil && teConfig.teConfigured {
-		closeTrapexHandles()
-	}
-	// Set our global config pointer to this configuration
-	newConfig.teConfigured = true
-	teConfig = &newConfig
-
-	return nil
 }
 */
 
