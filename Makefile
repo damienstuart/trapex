@@ -2,9 +2,12 @@
 BUILDARCH=x86_64
 TARGET=trapex
 image = alpine:3.15
-docker_tag = damientstuart/trapex
-container = trapex
-configuration_path = /Users/kellskearney/go/src/trapex/tools
+docker_tag_trapex = damientstuart/trapex
+container_trapex = trapex
+configuration_path_trapex = /Users/kellskearney/go/src/trapex/tools
+docker_tag_clickhouse = damientstuart/clickhouse
+container_clickhouse = clickhouse
+#configuration_path_clickhouse = /Users/kellskearney/go/src/trapex/tools
 
 
 build:
@@ -28,19 +31,30 @@ install:
 push:
 	git push -u origin $(shell git symbolic-ref --short HEAD)
 
-# ----  Docker  ----------------------------
+# ----  Docker: trapex  ----------------------------
 docker:
-	DOCKER_BUILD=0 docker build -t $(docker_tag) -f tools/docker/Dockerfile .
+	DOCKER_BUILD=0 docker build -t $(docker_tag_trapex) -f tools/docker/Dockerfile .
 
 run:
-	docker run --name $(container) -v $(configuration_path):/opt/trapex/etc -p 162:162 -p 5080:80 $(docker_tag)
+	docker run --name $(container_trapex) -v $(configuration_path):/opt/trapex/etc -p 162:162 -p 5080:80 $(docker_tag_trapex)
 
 stop:
-	docker stop $(container)
-	docker rm $(container)
+	docker stop $(container_trapex)
+	docker rm $(container_trapex)
 
 pull:
 	docker pull $(image)
+
+# ----  Docker: clickhouse  ----------------------------
+clickhouse:
+	DOCKER_BUILD=0 docker build -t $(docker_tag_clickhouse) -f tools/docker/Dockerfile.clickhouse .
+
+run_click:
+	docker run --name $(container_clickhouse) -v $(configuration_path):/opt/trapex/etc -p 162:162 -p 5080:80 $(docker_tag_clickhouse)
+
+stop_click:
+	docker stop $(container_trapex)
+	docker rm $(container_trapex)
 
 # ----  AWS  ----------------------------
 codebuild:
