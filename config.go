@@ -53,8 +53,8 @@ type trapexConfig struct {
 	LogMaxSize     int `default:1024 yaml:"log_size_max"`
 	LogMaxBackups  int `default:7 yaml:"log_backups_max"`
 	LogMaxAge      int `yaml:"log_age_max"`
-	LogCompress    bool `default:false yaml:"log_compress"`
-  }
+	LogCompress    bool `default:false yaml:"compress"`
+  } `yaml:logging`
 
 	V3Params       v3Params `yaml:"snmpv3"`
 	IpSets         map[string]ipSet `default:{} yaml:"ipsets"`
@@ -135,6 +135,7 @@ func getConfig() error {
 	var newConfig trapexConfig
         loadConfig(teCmdLine.configFile, &newConfig)
 
+	fmt.Printf("Logging leve %s %d %d\n", newConfig.Logging.Level, newConfig.Logging.LogMaxSize, newConfig.Logging.LogMaxBackups)
         // Override the listen address:port if they were specified on the
         // command line.  If not and the listener values were not set in
         // the config file, fallback to defaults.
@@ -148,8 +149,6 @@ func getConfig() error {
         if teCmdLine.debugMode {
                 newConfig.Logging.Level = "debug"
         }
-        // Other config fallbacks
-        //
         if newConfig.General.Hostname == "" {
                 myName, err := os.Hostname()
                 if err != nil {
