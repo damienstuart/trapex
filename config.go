@@ -50,15 +50,15 @@ type trapexConfig struct {
 
   Logging struct {
 	Level          string `default:"debug" yaml:"level"`
-	LogMaxSize     int `default:1024 yaml:"log_size_max"`
-	LogMaxBackups  int `default:7 yaml:"log_backups_max"`
+	LogMaxSize     int `default:"1024" yaml:"log_size_max"`
+	LogMaxBackups  int `default:"7" yaml:"log_backups_max"`
 	LogMaxAge      int `yaml:"log_age_max"`
-	LogCompress    bool `default:false yaml:"compress"`
-  } `yaml:logging`
+	LogCompress    bool `default:"false" yaml:"compress"`
+  }
 
 	V3Params       v3Params `yaml:"snmpv3"`
-	IpSets         map[string]ipSet `default:{} yaml:"ipsets"`
-	Filters        []trapexFilter `default:[] yaml:"filters"`
+	IpSets         map[string]ipSet `default:"{}" yaml:"ipsets"`
+	Filters        []trapexFilter `default:"[]" yaml:"filters"`
 }
 
 type trapexCommandLine struct {
