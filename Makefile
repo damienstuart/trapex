@@ -32,8 +32,11 @@ push:
 	git push -u origin $(shell git symbolic-ref --short HEAD)
 
 # ----  Docker: trapex  ----------------------------
-docker:
+trapex:
 	DOCKER_BUILD=0 docker build -t $(docker_tag_trapex) -f tools/docker/Dockerfile .
+
+trapex_aws:
+	DOCKER_BUILD=0 docker build -t $(docker_tag_trapex) -f tools/docker/Dockerfile.amazonlinux .
 
 run:
 	docker run --name $(container_trapex) -v $(configuration_path):/opt/trapex/etc -p 162:162 -p 5080:80 $(docker_tag_trapex)
