@@ -90,9 +90,9 @@ func panicOnError(e error) {
 func makeLogger(logfile string, teConf *trapexConfig) *lumberjack.Logger {
 	l := lumberjack.Logger{
 		Filename:   logfile,
-		MaxSize:    teConf.General.Logging.LogMaxSize,
-		MaxBackups: teConf.General.Logging.LogMaxBackups,
-		Compress:   teConf.General.Logging.LogCompress,
+		MaxSize:    teConf.Logging.LogMaxSize,
+		MaxBackups: teConf.Logging.LogMaxBackups,
+		Compress:   teConf.Logging.LogCompress,
 	}
 	return &l
 }

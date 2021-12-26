@@ -63,21 +63,21 @@ func main() {
 	tl.Params.Community = ""
 
 	// Uncomment for debugging gosnmp
-	if teConfig.General.Logging.Level == "debug" {
+	if teConfig.Logging.Level == "debug" {
 		fmt.Println("*DEBUG MODE ENABLED*")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}
 
 	// SNMP v3 stuff
 	tl.Params.SecurityModel = g.UserSecurityModel
-	tl.Params.MsgFlags = teConfig.General.V3Params.msgFlags
+	tl.Params.MsgFlags = teConfig.V3Params.msgFlags
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
-		UserName:                 teConfig.General.V3Params.username,
-		AuthenticationProtocol:   teConfig.General.V3Params.authProto,
-		AuthenticationPassphrase: teConfig.General.V3Params.authPassword,
-		PrivacyProtocol:          teConfig.General.V3Params.privacyProto,
-		PrivacyPassphrase:        teConfig.General.V3Params.privacyPassword,
+		UserName:                 teConfig.V3Params.Username,
+		AuthenticationProtocol:   teConfig.V3Params.AuthProto,
+		AuthenticationPassphrase: teConfig.V3Params.AuthPassword,
+		PrivacyProtocol:          teConfig.V3Params.PrivacyProto,
+		PrivacyPassphrase:        teConfig.V3Params.PrivacyPassword,
 	}
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.General.ListenAddr, teConfig.General.ListenPort)
@@ -131,7 +131,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 		}
 	}
 
-	if teConfig.General.Logging.Level == "debug" {
+	if teConfig.Logging.Level == "debug" {
 		fmt.Printf(makeTrapLogEntry(&trap))
 	}
 

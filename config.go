@@ -22,44 +22,44 @@ import (
 )
 
 type v3Params struct {
-	msgFlags        g.SnmpV3MsgFlags
-	username        string
-	authProto       g.SnmpV3AuthProtocol
-	authPassword    string
-	privacyProto    g.SnmpV3PrivProtocol
-	privacyPassword string
+	msgFlags        g.SnmpV3MsgFlags `default:g.NoAuthNoPriv yaml:msgFlags`
+	Username        string `default:"XXv3Username" yaml:username`
+	AuthProto       g.SnmpV3AuthProtocol `default:g.NoAuth yaml:authProto`
+	AuthPassword    string `default:"XXv3authPass" yaml:authPassword`
+	PrivacyProto    g.SnmpV3PrivProtocol `default:g.NoPriv yaml:privacyProto`
+	PrivacyPassword string `default:"XXv3Pass" yaml:privacypassword`
 }
 
 type ipSet map[string]bool
 
 type trapexConfig struct {
+	teConfigured   bool
+	RunLogFile     string
+	ConfigFile     string
+
   General struct {
 	Hostname     string `yaml:"hostname"`
 	ListenAddr     string `default:"0.0.0.0" yaml:"listen_address"`
 	ListenPort     string `default:"162" yaml:"listen_port"`
 
 	IgnoreVersions []g.SnmpVersion `yaml:ignore_versions`
-	RunLogFile     string
-	ConfigFile     string
-	V3Params       v3Params `yaml:"v3_params"`
-
-    Logging struct {
-	Level          string `default:"debug" yaml:"level"`
-	LogMaxSize     int `default:1024 yaml:"log_size_max"`
-	LogMaxBackups  int `default:7 yaml:"log_backups_max"`
-	LogMaxAge      int `yaml:"log_age_max"`
-	LogCompress    bool `default:false yaml:"log_compress"`
-    }
-
-	teConfigured   bool
 
 	PrometheusIp   string `default:"0.0.0.0" yaml:"prometheus_ip"`
 	PrometheusPort string `default:"80" yaml:"prometheus_port"`
 	PrometheusEndpoint string `default:"metrics" yaml:"prometheus_endpoint"`
   }
+
+  Logging struct {
+	Level          string `default:"debug" yaml:"level"`
+	LogMaxSize     int `default:1024 yaml:"log_size_max"`
+	LogMaxBackups  int `default:7 yaml:"log_backups_max"`
+	LogMaxAge      int `yaml:"log_age_max"`
+	LogCompress    bool `default:false yaml:"log_compress"`
+  }
+
+	V3Params       v3Params `yaml:"snmpv3"`
 	IpSets         map[string]ipSet `default:{} yaml:"ipsets"`
 	Filters        []trapexFilter `default:[] yaml:"filters"`
-
 }
 
 type trapexCommandLine struct {
@@ -111,7 +111,7 @@ func processCommandLine() {
 
 func getConfig() error {
 	// If this is a reconfig close any current handles
-	if teConfig != nil && teConfig.General.teConfigured {
+	if teConfig != nil && teConfig.teConfigured {
 		fmt.Printf("Reloading ")
 	} else {
 		fmt.Printf("Loading ")
@@ -123,6 +123,7 @@ func getConfig() error {
 
 	newConfig.IpSets = make(map[string]ipSet)
 
+        // Parse the YAML
         filename, _ := filepath.Abs(teCmdLine.configFile)
         yamlFile, err := ioutil.ReadFile(filename)
 	err = yaml.Unmarshal(yamlFile, &newConfig)
@@ -131,33 +132,51 @@ func getConfig() error {
 		return err
 	}
 
+        // Override the listen address:port if they were specified on the
+        // command line.  If not and the listener values were not set in
+        // the config file, fallback to defaults.
+        //
+        if teCmdLine.bindAddr != "" {
+                newConfig.General.ListenAddr = teCmdLine.bindAddr
+        }
+        if teCmdLine.listenPort != "" {
+                newConfig.General.ListenPort = teCmdLine.listenPort
+        }
+        if teCmdLine.debugMode {
+                newConfig.Logging.Level = "debug"
+        }
+        // Other config fallbacks
+        //
+        if newConfig.General.Hostname == "" {
+                myName, err := os.Hostname()
+                if err != nil {
+                        newConfig.General.Hostname = "_undefined"
+                } else {
+                        newConfig.General.Hostname = myName
+                }
+        }
+
+        validateGeneral()
+        //validateGeneral()
+
         // If this is a reconfigure, close the old handles here
-        if teConfig != nil && teConfig.General.teConfigured {
+        if teConfig != nil && teConfig.teConfigured {
                 closeTrapexHandles()
         }
         // Set our global config pointer to this configuration
-        newConfig.General.teConfigured = true
+        newConfig.teConfigured = true
         teConfig = &newConfig
 
         return nil
 }
 
+func validateGeneral() {
+	//ipRe := regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
+
+}
+
 /*
-func getConfigOld() error {
-        // If this is a reconfig close any current handles
-	if teConfig != nil && teConfig.General.teConfigured {
-                fmt.Printf("Reloading ")
-        } else {
-                fmt.Printf("Loading ")
-        }
-        fmt.Printf("configuration for trapex version %s from %s\n", myVersion, teCmdLine.configFile)
-
-        var newConfig trapexConfig
-
-        newConfig.IpSets = make(map[string]ipSet)
-
-	defer cf.Close()
-
+func getConfigOldStyle() error {
 	cfSkipRe := regexp.MustCompile(`^\s*#|^\s*$`)
 	ipRe := regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
 
@@ -216,40 +235,6 @@ func getConfigOld() error {
 		return err
 	}
 
-	// Override the listen address:port if they were specified on the
-	// command line.  If not and the listener values were not set in
-	// the config file, fallback to defaults.
-	//
-	if teCmdLine.bindAddr != "" {
-		newConfig.General.ListenAddr = teCmdLine.bindAddr
-	} else if newConfig.General.ListenAddr == "" {
-		newConfig.General.ListenAddr = defBindAddr
-	}
-	if teCmdLine.listenPort != "" {
-		newConfig.General.ListenPort = teCmdLine.listenPort
-	} else if newConfig.listenPort == "" {
-		newConfig.General.ListenPort = defListenPort
-	}
-	if teCmdLine.debugMode {
-		newConfig.General.Logging.Level = "debug"
-	}
-	// Other config fallbacks
-	//
-	if newConfig.General.Hostname == "" {
-		myName, err := os.Hostname()
-		if err != nil {
-			newConfig.General.Hostname = "_undefined"
-		} else {
-			newConfig.General.Hostname = myName
-		}
-	}
-	if newConfig.General.Logging.LogMaxSize == 0 {
-		newConfig.General.Logging.LogMaxSize = defLogfileMaxSize
-	}
-	if newConfig.General.Logging.LogMaxBackups == 0 {
-		newConfig.General.Logging.LogMaxBackups = defLogfileMaxBackups
-	}
-	if newConfig.v3Params.username == "" {
 		newConfig.v3Params.username = defV3user
 	}
 	if newConfig.v3Params.authProto == 0 {
@@ -440,7 +425,7 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 	flen := len(f)
 	switch f[0] {
 	case "debug":
-		newConfig.General.Logging.Level = "debug"
+		newConfig.Logging.Level = "debug"
 	case "hostname":
 		if flen < 2 {
 			return fmt.Errorf("missing value for hostname at line %v", lineNumber)
@@ -486,11 +471,11 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		}
 		switch f[1] {
 		case "NoAuthNoPriv":
-			newConfig.General.V3Params.msgFlags = g.NoAuthNoPriv
+			newConfig.V3Params.msgFlags = g.NoAuthNoPriv
 		case "AuthNoPriv":
-			newConfig.General.V3Params.msgFlags = g.AuthNoPriv
+			newConfig.V3Params.msgFlags = g.AuthNoPriv
 		case "AuthPriv":
-			newConfig.General.V3Params.msgFlags = g.AuthPriv
+			newConfig.V3Params.msgFlags = g.AuthPriv
 		default:
 			return fmt.Errorf("unsupported or invalid value (%s) for v3msgFlags at line %v", f[1], lineNumber)
 		}
@@ -498,7 +483,7 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3user at line %v", lineNumber)
 		}
-		newConfig.General.V3Params.username = f[1]
+		newConfig.V3Params.Username = f[1]
 	case "v3authProtocol":
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3authProtocol at line %v", lineNumber)
@@ -507,11 +492,11 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
                 // AES is *NOT* supported
                 //  cannot use gosnmp.AES (type gosnmp.SnmpV3PrivProtocol) as type gosnmp.SnmpV3AuthProtocol in assignment
 		//case "AES":
-			//newConfig.General.V3Params.authProto = g.AES
+			//newConfig.V3Params.authProto = g.AES
 		case "SHA":
-			newConfig.General.V3Params.authProto = g.SHA
+			newConfig.V3Params.AuthProto = g.SHA
 		case "MD5":
-			newConfig.General.V3Params.authProto = g.MD5
+			newConfig.V3Params.AuthProto = g.MD5
 		default:
 			return fmt.Errorf("invalid value for v3authProtocol at line %v", lineNumber)
 		}
@@ -519,16 +504,16 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3authPassword at line %v", lineNumber)
 		}
-		newConfig.General.V3Params.authPassword = f[1]
+		newConfig.V3Params.AuthPassword = f[1]
 	case "v3privacyProtocol":
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3privacyProtocol at line %v", lineNumber)
 		}
 		switch f[1] {
 		case "AES":
-			newConfig.General.V3Params.privacyProto = g.AES
+			newConfig.V3Params.PrivacyProto = g.AES
 		case "DES":
-			newConfig.General.V3Params.privacyProto = g.DES
+			newConfig.V3Params.PrivacyProto = g.DES
 		default:
 			return fmt.Errorf("invalid value for v3privacyProtocol at line %v", lineNumber)
 		}
@@ -536,7 +521,7 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		if flen < 2 {
 			return fmt.Errorf("missing value for v3privacyPassword at line %v", lineNumber)
 		}
-		newConfig.General.V3Params.privacyPassword = f[1]
+		newConfig.V3Params.PrivacyPassword = f[1]
 	case "logfileMaxSize":
 		if flen < 2 {
 			return fmt.Errorf("missing value for logfileMaxSize at line %v", lineNumber)
@@ -545,7 +530,7 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		if err != nil || p < 1 {
 			return fmt.Errorf("invalid logfileMaxSize value: %s at line %v", err, lineNumber)
 		}
-		newConfig.General.Logging.LogMaxSize = p
+		newConfig.Logging.LogMaxSize = p
 	case "logfileMaxBackups":
 		if flen < 2 {
 			return fmt.Errorf("missing value for logfileMaxBackups at line %v", lineNumber)
@@ -554,9 +539,9 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		if err != nil || p < 1 {
 			return fmt.Errorf("invalid logfileMaxBackups value: %s at line %v", err, lineNumber)
 		}
-		newConfig.General.Logging.LogMaxBackups = p
+		newConfig.Logging.LogMaxBackups = p
 	case "compressRotatedLogs":
-		newConfig.General.Logging.LogCompress = true
+		newConfig.Logging.LogCompress = true
 	case "prometheus_ip":
 		if flen < 2 {
 			return fmt.Errorf("missing value for prometheus_ip at line %v", lineNumber)
