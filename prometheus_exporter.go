@@ -17,7 +17,8 @@ import (
 func exposeMetrics() {
     server := http.NewServeMux()
     server.Handle("/metrics", promhttp.Handler())
-    http.ListenAndServe(teConfig.promServerPort, server)
-    fmt.Printf("Prometheus metrics exported on http://%s/metrics\n", teConfig.promServerPort)
+    var listenAddress = teConfig.prometheusIp + ":" + teConfig.prometheusPort
+    http.ListenAndServe(listenAddress, server)
+    fmt.Printf("Prometheus metrics exported on http://%s/metrics\n", listenAddress)
 }
 

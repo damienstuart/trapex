@@ -172,7 +172,7 @@ listenPort     162
 #filter * * * * * * forward 192.168.7.7:162
 
 # Log only cold start traps
-#filter * * * 0 * ^1\.3\.6\.1\.6\.3\.1\.1\.5 log /opt/trapex/log/cold_start.log
+#filter * * * 0 * ^1\.3\.6\.1\.6\.3\.1\.1\.5 log /opt/trapex/log/trapex-cold_start.log
 
 # Log only SNMP v3 traps then stop further processing
 #
@@ -180,7 +180,7 @@ listenPort     162
 
 # Log all traps after the filtering above
 #
-filter * * * * * * log /opt/trapex/log/filtered.log
+filter * * * * * * log /opt/trapex/log/filter.log
 
 ##############################################################################
 # Also send traps to a CSV file. Note that this CSV format is specific to 
@@ -189,10 +189,9 @@ filter * * * * * * log /opt/trapex/log/filtered.log
 
 ##############################################################################
 # Prometheus exports
-# By default, this will listen on all interfaces on port 2112, on /metrics
+# By default, this will listen on all interfaces on port 80, on /metrics
 prometheus_ip 0.0.0.0
-prometheus_port 2112
+prometheus_port 80
 prometheus_endpoint metrics
 
-# curl localhost:2112/metrics
 

@@ -1,8 +1,8 @@
 
-FROM public.ecr.aws/docker/library/alpine:3.15
+FROM public.ecr.aws/docker/library/amazonlinux:latest
 
 EXPOSE 162
-EXPOSE 2112
+EXPOSE 80
 
 # Package inventory:
 #     https://pkgs.alpinelinux.org/packages?page=2&branch=edge

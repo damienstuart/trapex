@@ -32,7 +32,8 @@ const (
 	defV3privacyProtocol    g.SnmpV3PrivProtocol = g.NoPriv
 	defV3privacyPassword    string               = "XXv3Pass"
 
-	defPrometheusServerPort string               = "0.0.0.0:2112"
+	defPrometheusIp         string               = "0.0.0.0"
+	defPrometheusPort       string               = "2112"
 	defPrometheusEndpoint   string               = "metrics"
 )
 
@@ -64,8 +65,9 @@ type trapexConfig struct {
 	trapexHost     string
 	ipSets         map[string]ipSet
 
-	promServerPort string
-	promEndpoint string
+	prometheusIp   string
+	prometheusPort string
+	prometheusEndpoint   string
 }
 
 type trapexCommandLine struct {
@@ -250,11 +252,14 @@ func getConfig() error {
 	if newConfig.v3Params.msgFlags == g.AuthPriv && newConfig.v3Params.privacyProto < 2 {
 		return fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode")
 	}
-	if newConfig.promServerPort == "" {
-	        newConfig.promServerPort = defPrometheusServerPort
+	if newConfig.prometheusIp == "" {
+	        newConfig.prometheusIp = defPrometheusIp
 	}
-	if newConfig.promEndpoint == "" {
-	        newConfig.promEndpoint = defPrometheusEndpoint
+	if newConfig.prometheusPort == "" {
+	        newConfig.prometheusPort = defPrometheusPort
+	}
+	if newConfig.prometheusEndpoint == "" {
+	        newConfig.prometheusEndpoint = defPrometheusEndpoint
 	}
 
 	// If this is a reconfigure, close the old handles here
@@ -527,16 +532,21 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		newConfig.logMaxBackups = p
 	case "compressRotatedLogs":
 		newConfig.logCompress = true
-	case "prometheus_server_and_port":
+	case "prometheus_ip":
 		if flen < 2 {
-			return fmt.Errorf("missing value for prometheus_server_and_port at line %v", lineNumber)
+			return fmt.Errorf("missing value for prometheus_ip at line %v", lineNumber)
 		}
-		newConfig.promServerPort = f[1]
+		newConfig.prometheusIp = f[1]
+	case "prometheus_port":
+		if flen < 2 {
+			return fmt.Errorf("missing value for prometheus_port at line %v", lineNumber)
+		}
+		newConfig.prometheusPort = f[1]
 	case "prometheus_endpoint":
 		if flen < 2 {
 			return fmt.Errorf("missing value for prometheus_endpoint at line %v", lineNumber)
 		}
-		newConfig.promEndpoint = f[1]
+		newConfig.prometheusEndpoint = f[1]
 	default:
 		return fmt.Errorf("Unknown/unsuppported configuration option: %s at line %v", f[0], lineNumber)
 	}

@@ -49,8 +49,8 @@ func main() {
 
 	initSigHandlers()
         go exposeMetrics()
-        fmt.Printf("Prometheus metrics exported on http://%s/%s\n",
-                   teConfig.promServerPort, teConfig.promEndpoint)
+        fmt.Printf("Prometheus metrics exported on http://%s:%s/%s\n",
+                   teConfig.prometheusIp, teConfig.prometheusPort, teConfig.prometheusEndpoint)
 
 	stats.StartTime = time.Now()
 
