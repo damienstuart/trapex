@@ -47,13 +47,13 @@ Notes on YAML configuration processing:
 
 type v3Params struct {
 	MsgFlags        string `default:"NoAuthNoPriv" yaml:"msg_flags"`
-	msgFlags        g.SnmpV3MsgFlags
+	msgFlags        g.SnmpV3MsgFlags `default:"g.NoAuthNoPriv"`
 	Username        string `default:"XXv3Username" yaml:"username"`
 	AuthProto       string `default:"NoAuth" yaml:"auth_protocol"`
-	authProto       g.SnmpV3AuthProtocol
+	authProto       g.SnmpV3AuthProtocol `default:"g.NoAuth"`
 	AuthPassword    string `default:"XXv3authPass" yaml:"auth_password"`
 	PrivacyProto    string `default:"NoPriv" yaml:"privacy_protocol"`
-	privacyProto    g.SnmpV3PrivProtocol
+	privacyProto    g.SnmpV3PrivProtocol `default:"g.NoPriv"`
 	PrivacyPassword string `default:"XXv3Pass" yaml:"privacy_password"`
 }
 
@@ -70,7 +70,7 @@ type trapexConfig struct {
 	ListenPort     string `default:"162" yaml:"listen_port"`
 
 	IgnoreVersions []string `default:"[]" yaml:"ignore_versions"`
-	ignoreVersions []g.SnmpVersion
+	ignoreVersions []g.SnmpVersion `default:"[]"`
 
 	PrometheusIp   string `default:"0.0.0.0" yaml:"prometheus_ip"`
 	PrometheusPort string `default:"80" yaml:"prometheus_port"`
@@ -105,6 +105,8 @@ type trapexCommandLine struct {
 //
 var teConfig *trapexConfig
 var teCmdLine trapexCommandLine
+var ipRe = regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
+
 
 func showUsage() {
 	usageText := `
@@ -146,33 +148,27 @@ func processCommandLine() {
 func loadConfig(config_file string, newConfig *trapexConfig) {
         defaults.Set(newConfig)
 
+// FIXME: Is this required anymore?
 	//newConfig.IpSets = make(map[string]ipSet)
 
         filename, _ := filepath.Abs(config_file)
         yamlFile, err := ioutil.ReadFile(filename)
+	if err != nil {
+// FIXME: What to do when file doesn't exist? Exit?
+                fmt.Printf("%s\n", err)
+	}
 	err = yaml.Unmarshal(yamlFile, newConfig)
 	if err != nil {
-                fmt.Print(err)
+// FIXME: What to do when file doesn't parse? Exit?
+                fmt.Print("%s\n", err)
 	}
 }
 
-func getConfig() error {
-	// If this is a reconfig close any current handles
-	if teConfig != nil && teConfig.teConfigured {
-		fmt.Printf("Reloading ")
-	} else {
-		fmt.Printf("Loading ")
-	}
-	fmt.Printf("configuration for trapex version %s from %s\n", myVersion, teCmdLine.configFile)
 
-	var newConfig trapexConfig
-        loadConfig(teCmdLine.configFile, &newConfig)
-
-	fmt.Printf("Logging leve %s %d %d\n", newConfig.Logging.Level, newConfig.Logging.LogMaxSize, newConfig.Logging.LogMaxBackups)
+func applyCliOverrides(newConfig *trapexConfig) {
         // Override the listen address:port if they were specified on the
         // command line.  If not and the listener values were not set in
         // the config file, fallback to defaults.
-        //
         if teCmdLine.bindAddr != "" {
                 newConfig.General.ListenAddr = teCmdLine.bindAddr
         }
@@ -190,6 +186,22 @@ func getConfig() error {
                         newConfig.General.Hostname = myName
                 }
         }
+}
+
+
+func getConfig() error {
+	// If this is a reconfig close any current handles
+	if teConfig != nil && teConfig.teConfigured {
+		fmt.Printf("Reloading ")
+	} else {
+		fmt.Printf("Loading ")
+	}
+	fmt.Printf("configuration for trapex version %s from %s\n", myVersion, teCmdLine.configFile)
+
+	var newConfig trapexConfig
+        loadConfig(teCmdLine.configFile, &newConfig)
+
+        applyCliOverrides(&newConfig)
 
         validateGeneral()
         //validateGeneral()
@@ -206,7 +218,6 @@ func getConfig() error {
 }
 
 func validateGeneral() {
-	//ipRe := regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
 
 }
 
