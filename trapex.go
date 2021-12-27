@@ -74,9 +74,9 @@ func main() {
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
 		UserName:                 teConfig.V3Params.Username,
-		AuthenticationProtocol:   teConfig.V3Params.AuthProto,
+		AuthenticationProtocol:   teConfig.V3Params.authProto,
 		AuthenticationPassphrase: teConfig.V3Params.AuthPassword,
-		PrivacyProtocol:          teConfig.V3Params.PrivacyProto,
+		PrivacyProtocol:          teConfig.V3Params.privacyProto,
 		PrivacyPassphrase:        teConfig.V3Params.PrivacyPassword,
 	}
 

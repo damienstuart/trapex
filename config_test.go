@@ -8,7 +8,6 @@ package main
 
 import (
     "testing"
-        g "github.com/gosnmp/gosnmp"
 )
 
 func TestGenearl(t *testing.T) {
@@ -58,13 +57,13 @@ func TestSnmpv3(t *testing.T) {
     if testConfig.V3Params.Username != "myuser" {
         t.Errorf("username is not set correctly: %s", testConfig.V3Params.Username)
     }
-    if testConfig.V3Params.AuthProto != g.SHA {
+    if testConfig.V3Params.AuthProto != "SHA" {
         t.Errorf("auth proto is not set correctly: %s", testConfig.V3Params.AuthProto)
     }
     if testConfig.V3Params.AuthPassword != "v3authPass" {
         t.Errorf("auth password is not set correctly: %s", testConfig.V3Params.AuthPassword)
     }
-    if testConfig.V3Params.PrivacyProto != g.AES {
+    if testConfig.V3Params.PrivacyProto != "AES" {
         t.Errorf("Privacy proto is not set correctly: %s", testConfig.V3Params.PrivacyProto)
     }
     if testConfig.V3Params.PrivacyPassword != "v3privPW" {

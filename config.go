@@ -49,9 +49,11 @@ type v3Params struct {
 	MsgFlags        g.SnmpV3MsgFlags `default:g.NoAuthNoPriv yaml:"msg_flags"`
 	//msgFlags        g.SnmpV3MsgFlags `default:g.NoAuthNoPriv yaml:"msg_flags"`
 	Username        string `default:"XXv3Username" yaml:"username"`
-	AuthProto       g.SnmpV3AuthProtocol `default:g.NoAuth yaml:"auth_proto"`
+	AuthProto       string `default:"NoAuth" yaml:"auth_protocol"`
+	authProto       g.SnmpV3AuthProtocol
 	AuthPassword    string `default:"XXv3authPass" yaml:"auth_password"`
-	PrivacyProto    g.SnmpV3PrivProtocol `default:g.NoPriv yaml:"privacy_proto"`
+	PrivacyProto    string `default:"NoPriv" yaml:"privacy_protocol"`
+	privacyProto    g.SnmpV3PrivProtocol
 	PrivacyPassword string `default:"XXv3Pass" yaml:"privacy_password"`
 }
 
@@ -504,9 +506,9 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		//case "AES":
 			//newConfig.V3Params.authProto = g.AES
 		case "SHA":
-			newConfig.V3Params.AuthProto = g.SHA
+			newConfig.V3Params.authProto = g.SHA
 		case "MD5":
-			newConfig.V3Params.AuthProto = g.MD5
+			newConfig.V3Params.authProto = g.MD5
 		default:
 			return fmt.Errorf("invalid value for v3authProtocol at line %v", lineNumber)
 		}
@@ -521,9 +523,9 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		}
 		switch f[1] {
 		case "AES":
-			newConfig.V3Params.PrivacyProto = g.AES
+			newConfig.V3Params.privacyProto = g.AES
 		case "DES":
-			newConfig.V3Params.PrivacyProto = g.DES
+			newConfig.V3Params.privacyProto = g.DES
 		default:
 			return fmt.Errorf("invalid value for v3privacyProtocol at line %v", lineNumber)
 		}
