@@ -268,7 +268,7 @@ func secondsToDuration(s uint) string {
 // SnmpVersion value is being ignored.
 //
 func isIgnoredVersion(ver g.SnmpVersion) bool {
-	for _, v := range teConfig.General.IgnoreVersions {
+	for _, v := range teConfig.General.ignoreVersions {
 		if ver == v {
 			return true
 		}

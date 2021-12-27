@@ -46,8 +46,8 @@ Notes on YAML configuration processing:
 */
 
 type v3Params struct {
-	MsgFlags        g.SnmpV3MsgFlags `default:g.NoAuthNoPriv yaml:"msg_flags"`
-	//msgFlags        g.SnmpV3MsgFlags `default:g.NoAuthNoPriv yaml:"msg_flags"`
+	MsgFlags        string `default:"NoAuthNoPriv" yaml:"msg_flags"`
+	msgFlags        g.SnmpV3MsgFlags
 	Username        string `default:"XXv3Username" yaml:"username"`
 	AuthProto       string `default:"NoAuth" yaml:"auth_protocol"`
 	authProto       g.SnmpV3AuthProtocol
@@ -69,7 +69,8 @@ type trapexConfig struct {
 	ListenAddr     string `default:"0.0.0.0" yaml:"listen_address"`
 	ListenPort     string `default:"162" yaml:"listen_port"`
 
-	IgnoreVersions []g.SnmpVersion `yaml:ignore_versions`
+	IgnoreVersions []string `default:"[]" yaml:"ignore_versions"`
+	ignoreVersions []g.SnmpVersion
 
 	PrometheusIp   string `default:"0.0.0.0" yaml:"prometheus_ip"`
 	PrometheusPort string `default:"80" yaml:"prometheus_port"`
@@ -465,11 +466,11 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		for _, v := range strings.Split(f[1], ",") {
 			switch strings.ToLower(v) {
 			case "v1", "1":
-				newConfig.General.IgnoreVersions = append(newConfig.General.IgnoreVersions, g.Version1)
+				newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version1)
 			case "v2c", "2c", "2":
-				newConfig.General.IgnoreVersions = append(newConfig.General.IgnoreVersions, g.Version2c)
+				newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version2c)
 			case "v3", "3":
-				newConfig.General.IgnoreVersions = append(newConfig.General.IgnoreVersions, g.Version3)
+				newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version3)
 			default:
 				return fmt.Errorf("unsupported or invalid value (%s) for ignoreVersion at line %v", v, lineNumber)
 			}
@@ -483,11 +484,11 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		}
 		switch f[1] {
 		case "NoAuthNoPriv":
-			newConfig.V3Params.MsgFlags = g.NoAuthNoPriv
+			newConfig.V3Params.msgFlags = g.NoAuthNoPriv
 		case "AuthNoPriv":
-			newConfig.V3Params.MsgFlags = g.AuthNoPriv
+			newConfig.V3Params.msgFlags = g.AuthNoPriv
 		case "AuthPriv":
-			newConfig.V3Params.MsgFlags = g.AuthPriv
+			newConfig.V3Params.msgFlags = g.AuthPriv
 		default:
 			return fmt.Errorf("unsupported or invalid value (%s) for v3msgFlags at line %v", f[1], lineNumber)
 		}

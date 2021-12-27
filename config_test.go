@@ -14,12 +14,20 @@ func TestGenearl(t *testing.T) {
         var testConfig trapexConfig
     loadConfig( "tests/config/general.yml", &testConfig)
 
+    if testConfig.General.Hostname != "trapex_test1" {
+        t.Errorf("Hostname is not set correctly: %s", testConfig.General.Hostname)
+    }
     if testConfig.General.ListenAddr != "127.0.0.1" {
-        t.Errorf("Default host is not set correctly: %s", testConfig.General.ListenAddr)
+        t.Errorf("Listen address is not set correctly: %s", testConfig.General.ListenAddr)
     }
     if testConfig.General.ListenPort != "168" {
-        t.Errorf("Default port is not set correctly: %s", testConfig.General.ListenPort)
+        t.Errorf("Listen port is not set correctly: %s", testConfig.General.ListenPort)
     }
+
+    if len(testConfig.General.IgnoreVersions) != 2 {
+        t.Errorf("Ignore versions is not set correctly: %s", testConfig.General.IgnoreVersions)
+    }
+
     if testConfig.General.PrometheusIp != "127.10.0.1" {
         t.Errorf("Prometheus host is not set correctly: %s", testConfig.General.PrometheusIp)
     }
@@ -37,16 +45,16 @@ func TestLogging(t *testing.T) {
     loadConfig( "tests/config/logging.yml" , &testConfig)
 
     if testConfig.Logging.Level != "info" {
-        t.Errorf("Default logging level is not set correctly: %s", testConfig.Logging.Level)
+        t.Errorf("Logging level is not set correctly: %s", testConfig.Logging.Level)
     }
     if testConfig.Logging.LogMaxSize != 4096 {
-        t.Errorf("Default logging max file size is not set correctly: %d", testConfig.Logging.LogMaxSize)
+        t.Errorf("logging max file size is not set correctly: %d", testConfig.Logging.LogMaxSize)
     }
     if testConfig.Logging.LogMaxBackups != 10 {
-        t.Errorf("Default logging max backups is not set correctly: %d", testConfig.Logging.LogMaxBackups)
+        t.Errorf("logging max backups is not set correctly: %d", testConfig.Logging.LogMaxBackups)
     }
     if testConfig.Logging.LogCompress != true {
-        t.Errorf("Default LogCompress is not set correctly: %t", testConfig.Logging.LogCompress)
+        t.Errorf("LogCompress is not set correctly: %t", testConfig.Logging.LogCompress)
     }
 }
 
@@ -54,6 +62,9 @@ func TestSnmpv3(t *testing.T) {
         var testConfig trapexConfig
     loadConfig( "tests/config/snmpv3.yml" , &testConfig)
 
+    if testConfig.V3Params.MsgFlags != "AuthPriv" {
+        t.Errorf("username is not set correctly: %s", testConfig.V3Params.MsgFlags)
+    }
     if testConfig.V3Params.Username != "myuser" {
         t.Errorf("username is not set correctly: %s", testConfig.V3Params.Username)
     }

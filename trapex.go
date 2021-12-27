@@ -70,7 +70,7 @@ func main() {
 
 	// SNMP v3 stuff
 	tl.Params.SecurityModel = g.UserSecurityModel
-	tl.Params.MsgFlags = teConfig.V3Params.MsgFlags
+	tl.Params.MsgFlags = teConfig.V3Params.msgFlags
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
 		UserName:                 teConfig.V3Params.Username,

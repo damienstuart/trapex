@@ -7,5 +7,5 @@ general:
   prometheus_port: 8080
   prometheus_endpoint: statistics
 
-  ignoreVersions: v1,v2c
+  ignore_versions: [ "v1", "v2c" ]
 
