@@ -20,6 +20,31 @@ import (
 	g "github.com/gosnmp/gosnmp"
 )
 
+
+/* ===========================================================
+Notes on YAML configuration processing:
+ * Variables that start with capital letters are processed (at least, for JSON)
+ * Renaming of variables for the YAML file is done with the `yaml:` directives
+ * Renamed variables *must* be in quotes to be recognized correctly (at least for underscores)
+ * Default values are being applied with the creasty/defaults module
+ * Non-basic types and classes can't be instantiated directly (eg g.SHA)
+     * Configuration data structures have two sets of variables: text and usable
+     * Per convention, the text versions start with uppercase, the usable ones start lowercase
+ * Filter lines are very problematic for YAML
+     * some characters (I'm looking at you ':' -- also regex) cause YAML to barf
+     * using a more YAML-like structure will eat up huge chunks of configuration lines
+        eg
+         * * * * * ^1\.3\.6\.1\.4.1\.546\.1\.1 break
+
+         vs
+
+         - snmpversions: *
+           source_ip: *
+           agent_address: *
+           ...
+   ===========================================================
+*/
+
 type v3Params struct {
 	MsgFlags        g.SnmpV3MsgFlags `default:g.NoAuthNoPriv yaml:"msg_flags"`
 	//msgFlags        g.SnmpV3MsgFlags `default:g.NoAuthNoPriv yaml:"msg_flags"`
