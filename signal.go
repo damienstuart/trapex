@@ -73,7 +73,7 @@ func handleSIGUSR2(sigCh chan os.Signal) {
 		select {
 		case <-sigCh:
 			fmt.Printf("Got SIGUSR2.\n")
-			for _, f := range teConfig.Filters {
+			for _, f := range teConfig.filters {
 				if f.actionType == actionCsv || f.actionType == actionCsvBreak {
 					f.action.(*trapCsvLogger).rotateLog()
 					fmt.Printf("Rotated CSV file: %v\n", f.action.(*trapCsvLogger).logfileName())

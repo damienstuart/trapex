@@ -16,12 +16,12 @@ logging:
   compress: true
 
 snmpv3:
-  msgFlags:  AuthPriv
-  v3user:  myuser
-  v3authProtocol:  SHA
-  v3authPassword:  v3authPass
-  v3privacyProtocol:   AES
-  v3privacyPassword:   v3privPW
+  msg_flags:  AuthPriv
+  user:  myuser
+  auth_protocol:  SHA
+  auth_password:  v3authPass
+  privacy_protocol:   AES
+  privacy_password:   v3privPW
 
 ipsets:
   network1:

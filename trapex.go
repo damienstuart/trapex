@@ -70,7 +70,7 @@ func main() {
 
 	// SNMP v3 stuff
 	tl.Params.SecurityModel = g.UserSecurityModel
-	tl.Params.MsgFlags = teConfig.V3Params.msgFlags
+	tl.Params.MsgFlags = teConfig.V3Params.MsgFlags
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
 		UserName:                 teConfig.V3Params.Username,
@@ -142,7 +142,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 // against the filter list and processes the trap accordingly.
 //
 func processTrap(sgt *sgTrap) {
-	for _, f := range teConfig.Filters {
+	for _, f := range teConfig.filters {
 		// If this trap is tagged to drop, then continue.
 		if sgt.dropped {
 			continue

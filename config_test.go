@@ -8,6 +8,7 @@ package main
 
 import (
     "testing"
+        g "github.com/gosnmp/gosnmp"
 )
 
 func TestGenearl(t *testing.T) {
@@ -47,6 +48,49 @@ func TestLogging(t *testing.T) {
     }
     if testConfig.Logging.LogCompress != true {
         t.Errorf("Default LogCompress is not set correctly: %t", testConfig.Logging.LogCompress)
+    }
+}
+
+func TestSnmpv3(t *testing.T) {
+        var testConfig trapexConfig
+    loadConfig( "tests/config/snmpv3.yml" , &testConfig)
+
+    if testConfig.V3Params.Username != "myuser" {
+        t.Errorf("username is not set correctly: %s", testConfig.V3Params.Username)
+    }
+    if testConfig.V3Params.AuthProto != g.SHA {
+        t.Errorf("auth proto is not set correctly: %s", testConfig.V3Params.AuthProto)
+    }
+    if testConfig.V3Params.AuthPassword != "v3authPass" {
+        t.Errorf("auth password is not set correctly: %s", testConfig.V3Params.AuthPassword)
+    }
+    if testConfig.V3Params.PrivacyProto != g.AES {
+        t.Errorf("Privacy proto is not set correctly: %s", testConfig.V3Params.PrivacyProto)
+    }
+    if testConfig.V3Params.PrivacyPassword != "v3privPW" {
+        t.Errorf("Privacy password is not set correctly: %s", testConfig.V3Params.PrivacyPassword)
+    }
+}
+
+
+func TestIpSets(t *testing.T) {
+    var testConfig trapexConfig
+    loadConfig( "tests/config/ipsets.yml" , &testConfig)
+
+    var numsets = len(testConfig.IpSets)
+    if numsets !=  1 {
+        t.Errorf("ip sets are missing entries (expected 1): %s", testConfig.IpSets)
+    }
+}
+
+
+func TestFilters(t *testing.T) {
+    var testConfig trapexConfig
+    loadConfig( "tests/config/filters.yml" , &testConfig)
+
+    var numfilters = len(testConfig.RawFilters)
+    if numfilters !=  3 {
+        t.Errorf("filters are missing entries (expected 3): %s", testConfig.RawFilters)
     }
 }
 

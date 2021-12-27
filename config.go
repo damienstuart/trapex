@@ -21,20 +21,21 @@ import (
 )
 
 type v3Params struct {
-	msgFlags        g.SnmpV3MsgFlags `default:g.NoAuthNoPriv yaml:msgFlags`
-	Username        string `default:"XXv3Username" yaml:username`
-	AuthProto       g.SnmpV3AuthProtocol `default:g.NoAuth yaml:authProto`
-	AuthPassword    string `default:"XXv3authPass" yaml:authPassword`
-	PrivacyProto    g.SnmpV3PrivProtocol `default:g.NoPriv yaml:privacyProto`
-	PrivacyPassword string `default:"XXv3Pass" yaml:privacypassword`
+	MsgFlags        g.SnmpV3MsgFlags `default:g.NoAuthNoPriv yaml:"msg_flags"`
+	//msgFlags        g.SnmpV3MsgFlags `default:g.NoAuthNoPriv yaml:"msg_flags"`
+	Username        string `default:"XXv3Username" yaml:"username"`
+	AuthProto       g.SnmpV3AuthProtocol `default:g.NoAuth yaml:"auth_proto"`
+	AuthPassword    string `default:"XXv3authPass" yaml:"auth_password"`
+	PrivacyProto    g.SnmpV3PrivProtocol `default:g.NoPriv yaml:"privacy_proto"`
+	PrivacyPassword string `default:"XXv3Pass" yaml:"privacy_password"`
 }
 
 type ipSet map[string]bool
 
 type trapexConfig struct {
 	teConfigured   bool
-	RunLogFile     string
-	ConfigFile     string
+	runLogFile     string
+	configFile     string
 
   General struct {
 	Hostname     string `yaml:"hostname"`
@@ -57,8 +58,12 @@ type trapexConfig struct {
   }
 
 	V3Params       v3Params `yaml:"snmpv3"`
-	IpSets         map[string]ipSet `default:"{}" yaml:"ipsets"`
-	Filters        []trapexFilter `default:"[]" yaml:"filters"`
+
+	IpSets         []map[string][]string `default:"{}" yaml:"ipsets"`
+	ipSets         map[string]ipSet `default:"{}"`
+
+	RawFilters     []string `default:"[]" yaml:"filters"`
+	filters        []trapexFilter
 }
 
 type trapexCommandLine struct {
@@ -113,7 +118,7 @@ func processCommandLine() {
 func loadConfig(config_file string, newConfig *trapexConfig) {
         defaults.Set(newConfig)
 
-	newConfig.IpSets = make(map[string]ipSet)
+	//newConfig.IpSets = make(map[string]ipSet)
 
         filename, _ := filepath.Abs(config_file)
         yamlFile, err := ioutil.ReadFile(filename)
@@ -294,11 +299,13 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 			} else if i == 1 || i == 2 { // Either of the first 2 is an IP address type
 				if strings.HasPrefix(fi, "ipset:") { // If starts with a "ipset:"" it's an IP set
 					fObj.filterType = parseTypeIPSet
+/*
 					if _, ok := newConfig.IpSets[fi[6:]]; ok {
 						fObj.filterValue = fi[6:]
 					} else {
 						return fmt.Errorf("Invalid ipset name specified on line %v: %s", lineNumber, fi)
 					}
+*/
 				} else if strings.HasPrefix(fi, "/") { // If starts with a "/", it's a regex
 					fObj.filterType = parseTypeRegex
 					fObj.filterValue, err = regexp.Compile(fi[1:])
@@ -394,7 +401,7 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		return fmt.Errorf("unknown action: %s at line %v", action, lineNumber)
 	}
 
-	newConfig.Filters = append(newConfig.Filters, filter)
+	newConfig.filters = append(newConfig.filters, filter)
 
 	return nil
 }
@@ -449,11 +456,11 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 		}
 		switch f[1] {
 		case "NoAuthNoPriv":
-			newConfig.V3Params.msgFlags = g.NoAuthNoPriv
+			newConfig.V3Params.MsgFlags = g.NoAuthNoPriv
 		case "AuthNoPriv":
-			newConfig.V3Params.msgFlags = g.AuthNoPriv
+			newConfig.V3Params.MsgFlags = g.AuthNoPriv
 		case "AuthPriv":
-			newConfig.V3Params.msgFlags = g.AuthPriv
+			newConfig.V3Params.MsgFlags = g.AuthPriv
 		default:
 			return fmt.Errorf("unsupported or invalid value (%s) for v3msgFlags at line %v", f[1], lineNumber)
 		}
@@ -542,7 +549,7 @@ func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 }
 
 func closeTrapexHandles() {
-	for _, f := range teConfig.Filters {
+	for _, f := range teConfig.filters {
 		if f.actionType == actionForward || f.actionType == actionForwardBreak {
 			f.action.(*trapForwarder).close()
 		}
