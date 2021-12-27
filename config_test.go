@@ -10,7 +10,7 @@ import (
     "testing"
 )
 
-func TestGenearl(t *testing.T) {
+func TestGeneralSection(t *testing.T) {
         var testConfig trapexConfig
     loadConfig( "tests/config/general.yml", &testConfig)
 
@@ -39,6 +39,28 @@ func TestGenearl(t *testing.T) {
     }
 }
 
+func TestIgnoreVersions(t *testing.T) {
+        var testConfig trapexConfig
+        var err error
+
+    loadConfig( "tests/config/ignore_versions_bad.yml", &testConfig)
+    err = validateIgnoreVersions(&testConfig)
+    if err == nil {
+        t.Errorf("general:ignore_versions did not detect invalid version: %s", testConfig.General.IgnoreVersions)
+    }
+
+    loadConfig( "tests/config/ignore_versions_multiple.yml", &testConfig)
+    err = validateIgnoreVersions(&testConfig)
+    if len(testConfig.General.ignoreVersions) != 2 {
+        t.Errorf("general:ignore_versions unable to deduplicate versions: %s", testConfig.General.IgnoreVersions)
+    }
+
+    loadConfig( "tests/config/ignore_versions_all.yml", &testConfig)
+    err = validateIgnoreVersions(&testConfig)
+    if err == nil {
+        t.Errorf("general:ignore_versions did not detect all versions: %s", testConfig.General.IgnoreVersions)
+    }
+}
 
 func TestLogging(t *testing.T) {
         var testConfig trapexConfig

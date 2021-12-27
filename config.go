@@ -160,7 +160,7 @@ func loadConfig(config_file string, newConfig *trapexConfig) {
 	err = yaml.Unmarshal(yamlFile, newConfig)
 	if err != nil {
 // FIXME: What to do when file doesn't parse? Exit?
-                fmt.Print("%s\n", err)
+                fmt.Printf("%s\n", err)
 	}
 }
 
@@ -203,8 +203,7 @@ func getConfig() error {
 
         applyCliOverrides(&newConfig)
 
-        validateGeneral()
-        //validateGeneral()
+        validateIgnoreVersions(&newConfig)
 
         // If this is a reconfigure, close the old handles here
         if teConfig != nil && teConfig.teConfigured {
@@ -217,8 +216,33 @@ func getConfig() error {
         return nil
 }
 
-func validateGeneral() {
-
+func validateIgnoreVersions(newConfig *trapexConfig) error {
+    var ignorev1, ignorev2c, ignorev3 bool = false, false, false
+    for _, candidate := range newConfig.General.IgnoreVersions {
+        switch strings.ToLower(candidate) {
+            case "v1", "1":
+                if ignorev1 != true {
+                  newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version1)
+                  ignorev1 = true
+                }
+            case "v2c", "2c", "2":
+                if ignorev2c != true {
+                  newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version2c)
+                  ignorev2c = true
+                }
+            case "v3", "3":
+                if ignorev3 != true {
+                  newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version3)
+                  ignorev3 = true
+                }
+            default:
+                  return fmt.Errorf("unsupported or invalid value (%s) for general:ignore_version", candidate)
+            }
+    }
+    if len(newConfig.General.ignoreVersions) > 2 {
+        return fmt.Errorf("All three SNMP versions are ignored -- there will be no traps to process")
+    }
+    return nil
 }
 
 /*
