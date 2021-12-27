@@ -89,8 +89,8 @@ func TestFilters(t *testing.T) {
     loadConfig( "tests/config/filters.yml" , &testConfig)
 
     var numfilters = len(testConfig.RawFilters)
-    if numfilters !=  3 {
-        t.Errorf("filters are missing entries (expected 3): %s", testConfig.RawFilters)
+    if numfilters !=  11 {
+        t.Errorf("filters are missing entries (expected 11): %s", testConfig.RawFilters)
     }
 }
 
