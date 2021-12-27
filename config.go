@@ -145,7 +145,7 @@ func processCommandLine() {
 
 // loadConfig
 // Load a YAML file with configuration, and create a new object
-func loadConfig(config_file string, newConfig *trapexConfig) {
+func loadConfig(config_file string, newConfig *trapexConfig) error {
         defaults.Set(newConfig)
 
 // FIXME: Is this required anymore?
@@ -154,14 +154,14 @@ func loadConfig(config_file string, newConfig *trapexConfig) {
         filename, _ := filepath.Abs(config_file)
         yamlFile, err := ioutil.ReadFile(filename)
 	if err != nil {
-// FIXME: What to do when file doesn't exist? Exit?
-                fmt.Printf("%s\n", err)
+            return err
 	}
 	err = yaml.Unmarshal(yamlFile, newConfig)
 	if err != nil {
-// FIXME: What to do when file doesn't parse? Exit?
-                fmt.Printf("%s\n", err)
+            return err
 	}
+
+    return nil
 }
 
 
@@ -205,6 +205,7 @@ func getConfig() error {
 
         validateIgnoreVersions(&newConfig)
 
+        validateSnmpV3Args(&newConfig)
         // If this is a reconfigure, close the old handles here
         if teConfig != nil && teConfig.teConfigured {
                 closeTrapexHandles()
@@ -245,26 +246,56 @@ func validateIgnoreVersions(newConfig *trapexConfig) error {
     return nil
 }
 
+
+func validateSnmpV3Args(newConfig *trapexConfig) error {
+    switch strings.ToLower(newConfig.V3Params.MsgFlags) {
+       case "noauthnopriv":
+           newConfig.V3Params.msgFlags = g.NoAuthNoPriv
+       case "authnopriv":
+           newConfig.V3Params.msgFlags = g.AuthNoPriv
+       case "authpriv":
+           newConfig.V3Params.msgFlags = g.AuthPriv
+       default:
+           return fmt.Errorf("unsupported or invalid value (%s) for snmpv3:msg_flags", newConfig.V3Params.MsgFlags)
+    }
+
+    switch strings.ToLower(newConfig.V3Params.AuthProto) {
+        // AES is *NOT* supported
+        case "aes":
+            //newConfig.V3Params.authProto = g.AES
+            //  cannot use gosnmp.AES (type gosnmp.SnmpV3PrivProtocol) as type gosnmp.SnmpV3AuthProtocol in assignment
+            return fmt.Errorf("AES is not a supported value for snmpv3:auth_protocol")
+        case "sha":
+            newConfig.V3Params.authProto = g.SHA
+        case "md5":
+            newConfig.V3Params.authProto = g.MD5
+        default:
+            return fmt.Errorf("invalid value for snmpv3:auth_protocol")
+    }
+
+    switch strings.ToLower(newConfig.V3Params.PrivacyProto) {
+        case "aes":
+            newConfig.V3Params.privacyProto = g.AES
+        case "des":
+            newConfig.V3Params.privacyProto = g.DES
+        default:
+            return fmt.Errorf("invalid value for snmpv3:privacy_protocol")
+    }
+
+    if (newConfig.V3Params.msgFlags & g.AuthPriv) == 1 && newConfig.V3Params.authProto < 2 {
+            return fmt.Errorf("v3 config error: no auth protocol set when snmpv3:msg_flags specifies an Auth mode")
+    }
+    if newConfig.V3Params.msgFlags == g.AuthPriv && newConfig.V3Params.privacyProto < 2 {
+            return fmt.Errorf("v3 config error: no privacy protocol mode set when snmpv3:msg_flags specifies an AuthPriv mode")
+    }
+
+    return nil
+}
+
 /*
 func getConfigOldStyle() error {
-	cfSkipRe := regexp.MustCompile(`^\s*#|^\s*$`)
-	ipRe := regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
-
 	var lineNumber uint = 0
-	var processingIPSet bool = false
 	var ipsName string
-
-	scanner := bufio.NewScanner(cf)
-	for scanner.Scan() {
-		// Scan in the lines from the config file
-		line := scanner.Text()
-		lineNumber++
-		if cfSkipRe.MatchString(line) {
-			continue
-		}
-
-		// Split the line into fields
-		f := strings.Fields(line)
 
 		if processingIPSet {
 			if f[0] == "}" {
@@ -300,28 +331,6 @@ func getConfigOldStyle() error {
 		}
 	}
 
-		newConfig.v3Params.username = defV3user
-	}
-	if newConfig.v3Params.authProto == 0 {
-		newConfig.v3Params.authProto = defV3authProtocol
-	}
-	if newConfig.v3Params.authPassword == "" {
-		newConfig.v3Params.authPassword = defV3authPassword
-	}
-	if newConfig.v3Params.privacyProto == 0 {
-		newConfig.v3Params.privacyProto = defV3privacyProtocol
-	}
-	if newConfig.v3Params.privacyPassword == "" {
-		newConfig.v3Params.privacyPassword = defV3privacyPassword
-	}
-	// Sanity-check the v3 params
-	//
-	if (newConfig.v3Params.msgFlags&g.AuthPriv) == 1 && newConfig.v3Params.authProto < 2 {
-		return fmt.Errorf("v3 config error: no auth protocol set when msgFlags specifies an Auth mode")
-	}
-	if newConfig.v3Params.msgFlags == g.AuthPriv && newConfig.v3Params.privacyProto < 2 {
-		return fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode")
-	}
 }
 */
 
@@ -469,147 +478,6 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 	return nil
 }
 
-func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) error {
-	flen := len(f)
-	switch f[0] {
-	case "debug":
-		newConfig.Logging.Level = "debug"
-	case "hostname":
-		if flen < 2 {
-			return fmt.Errorf("missing value for hostname at line %v", lineNumber)
-		}
-		newConfig.General.Hostname = f[1]
-	case "listenAddress":
-		if flen < 2 {
-			return fmt.Errorf("missing value for listenAddr at line %v", lineNumber)
-		}
-		newConfig.General.ListenAddr = f[1]
-	case "listenPort":
-		if flen < 2 {
-			return fmt.Errorf("missing value for listenPort at line %v", lineNumber)
-		}
-		p, err := strconv.ParseUint(f[1], 10, 16)
-		if err != nil || p < 1 || p > 65535 {
-			return fmt.Errorf("invalid listenPort value: %s at line %v", err, lineNumber)
-		}
-		newConfig.General.ListenPort = f[1]
-	case "ignoreVersions":
-		if flen < 2 {
-			return fmt.Errorf("missing value for ignoreVersions at line %v", lineNumber)
-		}
-		// split on commas (if any)
-		for _, v := range strings.Split(f[1], ",") {
-			switch strings.ToLower(v) {
-			case "v1", "1":
-				newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version1)
-			case "v2c", "2c", "2":
-				newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version2c)
-			case "v3", "3":
-				newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version3)
-			default:
-				return fmt.Errorf("unsupported or invalid value (%s) for ignoreVersion at line %v", v, lineNumber)
-			}
-		}
-		if len(newConfig.General.IgnoreVersions) > 2 {
-			return fmt.Errorf("All 3 SNMP versions are ignored at line %v. There will be no traps to process", lineNumber)
-		}
-	case "v3msgFlags":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3msgFlags at line %v", lineNumber)
-		}
-		switch f[1] {
-		case "NoAuthNoPriv":
-			newConfig.V3Params.msgFlags = g.NoAuthNoPriv
-		case "AuthNoPriv":
-			newConfig.V3Params.msgFlags = g.AuthNoPriv
-		case "AuthPriv":
-			newConfig.V3Params.msgFlags = g.AuthPriv
-		default:
-			return fmt.Errorf("unsupported or invalid value (%s) for v3msgFlags at line %v", f[1], lineNumber)
-		}
-	case "v3user":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3user at line %v", lineNumber)
-		}
-		newConfig.V3Params.Username = f[1]
-	case "v3authProtocol":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3authProtocol at line %v", lineNumber)
-		}
-		switch f[1] {
-                // AES is *NOT* supported
-                //  cannot use gosnmp.AES (type gosnmp.SnmpV3PrivProtocol) as type gosnmp.SnmpV3AuthProtocol in assignment
-		//case "AES":
-			//newConfig.V3Params.authProto = g.AES
-		case "SHA":
-			newConfig.V3Params.authProto = g.SHA
-		case "MD5":
-			newConfig.V3Params.authProto = g.MD5
-		default:
-			return fmt.Errorf("invalid value for v3authProtocol at line %v", lineNumber)
-		}
-	case "v3authPassword":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3authPassword at line %v", lineNumber)
-		}
-		newConfig.V3Params.AuthPassword = f[1]
-	case "v3privacyProtocol":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3privacyProtocol at line %v", lineNumber)
-		}
-		switch f[1] {
-		case "AES":
-			newConfig.V3Params.privacyProto = g.AES
-		case "DES":
-			newConfig.V3Params.privacyProto = g.DES
-		default:
-			return fmt.Errorf("invalid value for v3privacyProtocol at line %v", lineNumber)
-		}
-	case "v3privacyPassword":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3privacyPassword at line %v", lineNumber)
-		}
-		newConfig.V3Params.PrivacyPassword = f[1]
-	case "logfileMaxSize":
-		if flen < 2 {
-			return fmt.Errorf("missing value for logfileMaxSize at line %v", lineNumber)
-		}
-		p, err := strconv.Atoi(f[1])
-		if err != nil || p < 1 {
-			return fmt.Errorf("invalid logfileMaxSize value: %s at line %v", err, lineNumber)
-		}
-		newConfig.Logging.LogMaxSize = p
-	case "logfileMaxBackups":
-		if flen < 2 {
-			return fmt.Errorf("missing value for logfileMaxBackups at line %v", lineNumber)
-		}
-		p, err := strconv.Atoi(f[1])
-		if err != nil || p < 1 {
-			return fmt.Errorf("invalid logfileMaxBackups value: %s at line %v", err, lineNumber)
-		}
-		newConfig.Logging.LogMaxBackups = p
-	case "compressRotatedLogs":
-		newConfig.Logging.LogCompress = true
-	case "prometheus_ip":
-		if flen < 2 {
-			return fmt.Errorf("missing value for prometheus_ip at line %v", lineNumber)
-		}
-		newConfig.General.PrometheusIp = f[1]
-	case "prometheus_port":
-		if flen < 2 {
-			return fmt.Errorf("missing value for prometheus_port at line %v", lineNumber)
-		}
-		newConfig.General.PrometheusPort = f[1]
-	case "prometheus_endpoint":
-		if flen < 2 {
-			return fmt.Errorf("missing value for prometheus_endpoint at line %v", lineNumber)
-		}
-		newConfig.General.PrometheusEndpoint = f[1]
-	default:
-		return fmt.Errorf("Unknown/unsuppported configuration option: %s at line %v", f[0], lineNumber)
-	}
-	return nil
-}
 
 func closeTrapexHandles() {
 	for _, f := range teConfig.filters {
