@@ -105,7 +105,7 @@ func TestSnmpv3(t *testing.T) {
 }
 
 
-func TestIpSets(t *testing.T) {
+func TestIpSetsGood(t *testing.T) {
     var testConfig trapexConfig
     loadConfig( "tests/config/ipsets.yml" , &testConfig)
 
@@ -118,7 +118,17 @@ func TestIpSets(t *testing.T) {
     if err = processIpSets(&testConfig); err != nil {
         t.Errorf("%s", err)
     }
+}
+
+
+func TestIpSetsBadIps(t *testing.T) {
+    var testConfig trapexConfig
+    loadConfig( "tests/config/ipsets_bad_ips.yml" , &testConfig)
     
+    var err error
+    if err = processIpSets(&testConfig); err == nil {
+        t.Errorf("Unable to detect bad IP entries in IpSets")
+    }
 }
 
 

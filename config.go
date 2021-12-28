@@ -304,16 +304,17 @@ func validateSnmpV3Args(newConfig *trapexConfig) error {
 }
 
 func processIpSets(newConfig *trapexConfig) error {
-   for stanza_num, stanza := range newConfig.IpSets {
-       fmt.Printf("IpSet stanza %d: %s\n", stanza_num, stanza)
+   for _, stanza := range newConfig.IpSets {
+   //for stanza_num, stanza := range newConfig.IpSets {
+       //fmt.Printf("IpSet stanza %d: %s\n", stanza_num, stanza)
        for ipsName, ips := range stanza {
-           fmt.Printf("IpSet entry %s: %s\n", ipsName, ips)
+           //fmt.Printf("IpSet entry %s: %s\n", ipsName, ips)
            newConfig.ipSets[ipsName] = make(map[string]bool)
-           fmt.Printf(" -Add IPSet: %s - ", ipsName)
+           //fmt.Printf(" -Add IPSet: %s - ", ipsName)
            for _, ip := range ips {
                if ipRe.MatchString(ip) {
-                   //newConfig.ipSets[ipsName][ip] = true
-                   fmt.Printf(" -IPSet %s:  %s\n", ipsName, ip)
+                   newConfig.ipSets[ipsName][ip] = true
+                   //fmt.Printf(" -IPSet %s:  %s\n", ipsName, ip)
                } else {
                    return fmt.Errorf("Invalid IP address (%s) in ipset: %s", ip, ipsName)
                }
@@ -493,3 +494,4 @@ func closeTrapexHandles() {
 		}
 	}
 }
+
