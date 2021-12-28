@@ -148,8 +148,7 @@ func processCommandLine() {
 func loadConfig(config_file string, newConfig *trapexConfig) error {
         defaults.Set(newConfig)
 
-// FIXME: Is this required anymore?
-	//newConfig.IpSets = make(map[string]ipSet)
+	newConfig.ipSets = make(map[string]ipSet)
 
         filename, _ := filepath.Abs(config_file)
         yamlFile, err := ioutil.ReadFile(filename)
@@ -305,28 +304,22 @@ func validateSnmpV3Args(newConfig *trapexConfig) error {
 }
 
 func processIpSets(newConfig *trapexConfig) error {
-/*
-   var linenum uint = 1
-   for _, ipsname := range newConfig.IpSets {
-                        // Assume all fields are IP addresses
-                        for _, ip := range f {
-                                if ipRe.MatchString(ip) {
-                                        newConfig.IpSets[ipsName][ip] = true
-                                } else {
-                                        return fmt.Errorf("Invalid IP address (%s) in ipset: %s at line: %v", ip, ipsName, lineNumber)
-                                }
-                        }
-                } else if f[0] == "ipset" {
-                        if len(f) < 3 || f[2] != "{" {
-                                return fmt.Errorf("Invalid format for ipset at line: %v: '%s'", lineNumber, line)
-                        }
-                        ipsName = f[1]
-                        newConfig.IpSets[ipsName] = make(map[string]bool)
-                        processingIPSet = true
-                        fmt.Printf(" -Add IPSet: %s - ", ipsName)
-   
+   for stanza_num, stanza := range newConfig.IpSets {
+       fmt.Printf("IpSet stanza %d: %s\n", stanza_num, stanza)
+       for ipsName, ips := range stanza {
+           fmt.Printf("IpSet entry %s: %s\n", ipsName, ips)
+           newConfig.ipSets[ipsName] = make(map[string]bool)
+           fmt.Printf(" -Add IPSet: %s - ", ipsName)
+           for _, ip := range ips {
+               if ipRe.MatchString(ip) {
+                   //newConfig.ipSets[ipsName][ip] = true
+                   fmt.Printf(" -IPSet %s:  %s\n", ipsName, ip)
+               } else {
+                   return fmt.Errorf("Invalid IP address (%s) in ipset: %s", ip, ipsName)
+               }
+           }
+       }
    }
-*/
   return nil
 }
 

@@ -110,9 +110,15 @@ func TestIpSets(t *testing.T) {
     loadConfig( "tests/config/ipsets.yml" , &testConfig)
 
     var numsets = len(testConfig.IpSets)
-    if numsets !=  1 {
-        t.Errorf("ip sets are missing entries (expected 1): %s", testConfig.IpSets)
+    if numsets !=  3 {
+        t.Errorf("Have different number of expected ip sets (expected 3, got %d)", numsets)
     }
+
+    var err error
+    if err = processIpSets(&testConfig); err != nil {
+        t.Errorf("%s", err)
+    }
+    
 }
 
 
