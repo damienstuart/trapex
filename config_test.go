@@ -116,7 +116,7 @@ func TestIpSets(t *testing.T) {
 }
 
 
-func TestFilters(t *testing.T) {
+func TestFiltersGood(t *testing.T) {
     var testConfig trapexConfig
     loadConfig( "tests/config/filters.yml" , &testConfig)
 
@@ -124,5 +124,35 @@ func TestFilters(t *testing.T) {
     if numfilters !=  11 {
         t.Errorf("filters are missing entries (expected 11): %s", testConfig.RawFilters)
     }
+
+    var err error
+    if err = processFilters(&testConfig); err != nil {
+        t.Errorf("%s", err)
+    }
+    numfilters = len(testConfig.filters)
+    if numfilters !=  11 {
+        t.Errorf("processed filters are missing entries (expected 11): %d", numfilters)
+    }
 }
 
+func TestFiltersMissingLogDir(t *testing.T) {
+    var testConfig trapexConfig
+    loadConfig( "tests/config/filters_bad_logfile.yml" , &testConfig)
+
+    var err error
+    if err = processFilters(&testConfig); err == nil {
+        t.Errorf("Should have found a bad log directory")
+    }
+}
+
+/* --- missing IP set checks are commented out in code
+func TestFiltersMissingIpSet(t *testing.T) {
+    var testConfig trapexConfig
+    loadConfig( "tests/config/filters_missing_wipset.yml" , &testConfig)
+
+    var err error
+    if err = processFilters(&testConfig); err == nil {
+        t.Errorf("Should have detected a missing ipset")
+    }
+}
+*/

@@ -199,13 +199,25 @@ func getConfig() error {
 	fmt.Printf("configuration for trapex version %s from %s\n", myVersion, teCmdLine.configFile)
 
 	var newConfig trapexConfig
-        loadConfig(teCmdLine.configFile, &newConfig)
-
+        err := loadConfig(teCmdLine.configFile, &newConfig)
+        if err != nil {
+            return err
+        }
         applyCliOverrides(&newConfig)
 
-        validateIgnoreVersions(&newConfig)
+        if err = validateIgnoreVersions(&newConfig); err != nil {
+            return err
+        }
+        if err = validateSnmpV3Args(&newConfig); err != nil {
+            return err
+        }
+        if err = processIpSets(&newConfig); err != nil {
+            return err
+        }
+        if err = processFilters(&newConfig); err != nil {
+            return err
+        }
 
-        validateSnmpV3Args(&newConfig)
         // If this is a reconfigure, close the old handles here
         if teConfig != nil && teConfig.teConfigured {
                 closeTrapexHandles()
@@ -292,52 +304,48 @@ func validateSnmpV3Args(newConfig *trapexConfig) error {
     return nil
 }
 
+func processIpSets(newConfig *trapexConfig) error {
 /*
-func getConfigOldStyle() error {
-	var lineNumber uint = 0
-	var ipsName string
-
-		if processingIPSet {
-			if f[0] == "}" {
-				processingIPSet = false
-				fmt.Printf("IP count: %v\n", len(newConfig.IpSets[ipsName]))
-				continue
-			}
-			// Assume all fields are IP addresses
-			for _, ip := range f {
-				if ipRe.MatchString(ip) {
-					newConfig.IpSets[ipsName][ip] = true
-				} else {
-					return fmt.Errorf("Invalid IP address (%s) in ipset: %s at line: %v", ip, ipsName, lineNumber)
-				}
-			}
-		} else if f[0] == "ipset" {
-			if len(f) < 3 || f[2] != "{" {
-				return fmt.Errorf("Invalid format for ipset at line: %v: '%s'", lineNumber, line)
-			}
-			ipsName = f[1]
-			newConfig.IpSets[ipsName] = make(map[string]bool)
-			processingIPSet = true
-			fmt.Printf(" -Add IPSet: %s - ", ipsName)
-			continue
-		} else if f[0] == "filter" {
-			if err := processFilterLine(f[1:], &newConfig, lineNumber); err != nil {
-				return err
-			}
-		} else {
-			if err := processConfigLine(f, &newConfig, lineNumber); err != nil {
-				return err
-			}
-		}
-	}
-
-}
+   var linenum uint = 1
+   for _, ipsname := range newConfig.IpSets {
+                        // Assume all fields are IP addresses
+                        for _, ip := range f {
+                                if ipRe.MatchString(ip) {
+                                        newConfig.IpSets[ipsName][ip] = true
+                                } else {
+                                        return fmt.Errorf("Invalid IP address (%s) in ipset: %s at line: %v", ip, ipsName, lineNumber)
+                                }
+                        }
+                } else if f[0] == "ipset" {
+                        if len(f) < 3 || f[2] != "{" {
+                                return fmt.Errorf("Invalid format for ipset at line: %v: '%s'", lineNumber, line)
+                        }
+                        ipsName = f[1]
+                        newConfig.IpSets[ipsName] = make(map[string]bool)
+                        processingIPSet = true
+                        fmt.Printf(" -Add IPSet: %s - ", ipsName)
+   
+   }
 */
+  return nil
+}
 
-// processFilterLine parsed a "filter" line from the config file and sets
-// the appropriate values in the corresponding trapexFilter struct.
+func processFilters(newConfig *trapexConfig) error {
+
+   for lineNumber, filter_line := range newConfig.RawFilters {
+       //fmt.Printf("Filter %d: %s\n", lineNumber, filter_line)
+       if err := processFilterLine(strings.Fields(filter_line), newConfig, lineNumber); err != nil {
+           return err
+       }
+   }
+  return nil
+}
+
+
+// processFilterLine parses a "filter" line and sets
+// the appropriate values in a corresponding trapexFilter struct.
 //
-func processFilterLine(f []string, newConfig *trapexConfig, lineNumber uint) error {
+func processFilterLine(f []string, newConfig *trapexConfig, lineNumber int) error {
 	var err error
 	if len(f) < 7 {
 		return fmt.Errorf("not enough fields in filter line(%v): %s", lineNumber, "filter "+strings.Join(f, " "))
@@ -365,7 +373,7 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 				case "v3", "3":
 					fObj.filterValue = g.Version3
 				default:
-					return fmt.Errorf("unsupported or invalid SNMP version (%s) on line %v for filter", fi, lineNumber)
+					return fmt.Errorf("unsupported or invalid SNMP version (%s) on line %v for filter: %s", fi, lineNumber, f)
 				}
 				fObj.filterType = parseTypeInt // Just because we should set this to something.
 			} else if i == 1 || i == 2 { // Either of the first 2 is an IP address type
@@ -375,20 +383,20 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 					if _, ok := newConfig.IpSets[fi[6:]]; ok {
 						fObj.filterValue = fi[6:]
 					} else {
-						return fmt.Errorf("Invalid ipset name specified on line %v: %s", lineNumber, fi)
+						return fmt.Errorf("Invalid ipset name specified on line %v: %s: %s", lineNumber, fi, f)
 					}
 */
 				} else if strings.HasPrefix(fi, "/") { // If starts with a "/", it's a regex
 					fObj.filterType = parseTypeRegex
 					fObj.filterValue, err = regexp.Compile(fi[1:])
 					if err != nil {
-						return fmt.Errorf("unable to compile regexp for IP on line %v: %s: %s", lineNumber, fi, err)
+						return fmt.Errorf("unable to compile regexp for IP on line %v: %s: %s\n%s", lineNumber, fi, err, f)
 					}
 				} else if strings.Contains(fi, "/") {
 					fObj.filterType = parseTypeCIDR
 					fObj.filterValue, err = newNetwork(fi)
 					if err != nil {
-						return fmt.Errorf("invalid IP/CIDR at line %v: %s", lineNumber, fi)
+						return fmt.Errorf("invalid IP/CIDR at line %v: %s, %s", lineNumber, fi, f)
 					}
 				} else {
 					fObj.filterType = parseTypeString

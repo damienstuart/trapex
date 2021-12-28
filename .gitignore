@@ -16,3 +16,7 @@ log
 # DSS Misc
 *.[0-9]
 *-dss.*
+
+# Unit test output
+tests/tmp/*.csv
+tests/tmp/*.log
