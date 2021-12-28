@@ -7,7 +7,8 @@ general:
   prometheus_port: 80
   prometheus_endpoint: metrics
 
-  ignoreVersions: v1,v2c
+  ignore_versions: [ "v1", "v2c" ]
+
 
 logging:
   level: info
