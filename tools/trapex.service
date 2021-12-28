@@ -11,7 +11,7 @@ Restart=always
 RestartSec=1
 StartLimitInterval=0
 EnvironmentFile=/etc/sysconfig/trapex
-ExecStart=/opt/trapex/bin/trapex -c /opt/trapex/etc/trapex.conf
+ExecStart=/opt/trapex/bin/trapex -c /opt/trapex/etc/trapex.yml
 ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
