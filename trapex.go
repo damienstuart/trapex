@@ -43,14 +43,14 @@ func main() {
 	processCommandLine()
 
 	if err := getConfig(); err != nil {
-		fmt.Printf("%s\n", err)
+		fmt.Print(err)
                 os.Exit(1)
 	}
 
 	initSigHandlers()
         go exposeMetrics()
         fmt.Printf("Prometheus metrics exported on http://%s:%s/%s\n",
-                   teConfig.prometheusIp, teConfig.prometheusPort, teConfig.prometheusEndpoint)
+                   teConfig.General.PrometheusIp, teConfig.General.PrometheusPort, teConfig.General.PrometheusEndpoint)
 
 	stats.StartTime = time.Now()
 
@@ -63,24 +63,24 @@ func main() {
 	tl.Params.Community = ""
 
 	// Uncomment for debugging gosnmp
-	if teConfig.debug == true {
+	if teConfig.Logging.Level == "debug" {
 		fmt.Println("*DEBUG MODE ENABLED*")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}
 
 	// SNMP v3 stuff
 	tl.Params.SecurityModel = g.UserSecurityModel
-	tl.Params.MsgFlags = teConfig.v3Params.msgFlags
+	tl.Params.MsgFlags = teConfig.V3Params.msgFlags
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
-		UserName:                 teConfig.v3Params.username,
-		AuthenticationProtocol:   teConfig.v3Params.authProto,
-		AuthenticationPassphrase: teConfig.v3Params.authPassword,
-		PrivacyProtocol:          teConfig.v3Params.privacyProto,
-		PrivacyPassphrase:        teConfig.v3Params.privacyPassword,
+		UserName:                 teConfig.V3Params.Username,
+		AuthenticationProtocol:   teConfig.V3Params.authProto,
+		AuthenticationPassphrase: teConfig.V3Params.AuthPassword,
+		PrivacyProtocol:          teConfig.V3Params.privacyProto,
+		PrivacyPassphrase:        teConfig.V3Params.PrivacyPassword,
 	}
 
-	listenAddr := fmt.Sprintf("%s:%s", teConfig.listenAddr, teConfig.listenPort)
+	listenAddr := fmt.Sprintf("%s:%s", teConfig.General.ListenAddr, teConfig.General.ListenPort)
 	fmt.Printf("Start trapex listener on %s\n", listenAddr)
 	err := tl.Listen(listenAddr)
 	if err != nil {
@@ -131,7 +131,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 		}
 	}
 
-	if teConfig.debug {
+	if teConfig.Logging.Level == "debug" {
 		fmt.Printf(makeTrapLogEntry(&trap))
 	}
 

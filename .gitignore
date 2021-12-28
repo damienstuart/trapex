@@ -16,3 +16,9 @@ log
 # DSS Misc
 *.[0-9]
 *-dss.*
+# Ignore vi swap files
+*.swp
+
+# Unit test output
+tests/tmp/*.csv
+tests/tmp/*.log

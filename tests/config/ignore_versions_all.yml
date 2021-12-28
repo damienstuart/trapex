@@ -1,0 +1,3 @@
+general:
+  ignore_versions: [ "v1", "v2c", "v3" ]
+

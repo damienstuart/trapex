@@ -6,68 +6,92 @@
 package main
 
 import (
-	"bufio"
 	"flag"
+        "io/ioutil"
+        "path/filepath"
 	"fmt"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
+        "github.com/creasty/defaults"
+        "gopkg.in/yaml.v2"
 	g "github.com/gosnmp/gosnmp"
 )
 
-// Various default configuration fallback values
-//
-const (
-	defBindAddr             string               = "0.0.0.0"
-	defListenPort           string               = "162"
-	defLogfileMaxSize       int                  = 1024
-	defLogfileMaxBackups    int                  = 7
-	defCompressRotatedLogs  bool                 = false
-	defV3MsgFlag            g.SnmpV3MsgFlags     = g.NoAuthNoPriv
-	defV3user               string               = "XXv3Username"
-	defV3authProtocol       g.SnmpV3AuthProtocol = g.NoAuth
-	defV3authPassword       string               = "XXv3authPass"
-	defV3privacyProtocol    g.SnmpV3PrivProtocol = g.NoPriv
-	defV3privacyPassword    string               = "XXv3Pass"
 
-	defPrometheusIp         string               = "0.0.0.0"
-	defPrometheusPort       string               = "2112"
-	defPrometheusEndpoint   string               = "metrics"
-)
+/* ===========================================================
+Notes on YAML configuration processing:
+ * Variables that start with capital letters are processed (at least, for JSON)
+ * Renaming of variables for the YAML file is done with the `yaml:` directives
+ * Renamed variables *must* be in quotes to be recognized correctly (at least for underscores)
+ * Default values are being applied with the creasty/defaults module
+ * Non-basic types and classes can't be instantiated directly (eg g.SHA)
+     * Configuration data structures have two sets of variables: text and usable
+     * Per convention, the text versions start with uppercase, the usable ones start lowercase
+ * Filter lines are very problematic for YAML
+     * some characters (I'm looking at you ':' -- also regex) cause YAML to barf
+     * using a more YAML-like structure will eat up huge chunks of configuration lines
+        eg
+         * * * * * ^1\.3\.6\.1\.4.1\.546\.1\.1 break
+
+         vs
+
+         - snmpversions: *
+           source_ip: *
+           agent_address: *
+           ...
+   ===========================================================
+*/
 
 type v3Params struct {
-	msgFlags        g.SnmpV3MsgFlags
-	username        string
-	authProto       g.SnmpV3AuthProtocol
-	authPassword    string
-	privacyProto    g.SnmpV3PrivProtocol
-	privacyPassword string
+	MsgFlags        string `default:"NoAuthNoPriv" yaml:"msg_flags"`
+	msgFlags        g.SnmpV3MsgFlags `default:"g.NoAuthNoPriv"`
+	Username        string `default:"XXv3Username" yaml:"username"`
+	AuthProto       string `default:"NoAuth" yaml:"auth_protocol"`
+	authProto       g.SnmpV3AuthProtocol `default:"g.NoAuth"`
+	AuthPassword    string `default:"XXv3authPass" yaml:"auth_password"`
+	PrivacyProto    string `default:"NoPriv" yaml:"privacy_protocol"`
+	privacyProto    g.SnmpV3PrivProtocol `default:"g.NoPriv"`
+	PrivacyPassword string `default:"XXv3Pass" yaml:"privacy_password"`
 }
 
 type ipSet map[string]bool
 
 type trapexConfig struct {
-	listenAddr     string
-	listenPort     string
-	ignoreVersions []g.SnmpVersion
+	teConfigured   bool
 	runLogFile     string
 	configFile     string
-	v3Params       v3Params
-	filters        []trapexFilter
-	debug          bool
-	logMaxSize     int
-	logMaxBackups  int
-	logMaxAge      int
-	logCompress    bool
-	teConfigured   bool
-	trapexHost     string
-	ipSets         map[string]ipSet
 
-	prometheusIp   string
-	prometheusPort string
-	prometheusEndpoint   string
+  General struct {
+	Hostname     string `yaml:"hostname"`
+	ListenAddr     string `default:"0.0.0.0" yaml:"listen_address"`
+	ListenPort     string `default:"162" yaml:"listen_port"`
+
+	IgnoreVersions []string `default:"[]" yaml:"ignore_versions"`
+	ignoreVersions []g.SnmpVersion `default:"[]"`
+
+	PrometheusIp   string `default:"0.0.0.0" yaml:"prometheus_ip"`
+	PrometheusPort string `default:"80" yaml:"prometheus_port"`
+	PrometheusEndpoint string `default:"metrics" yaml:"prometheus_endpoint"`
+  }
+
+  Logging struct {
+	Level          string `default:"debug" yaml:"level"`
+	LogMaxSize     int `default:"1024" yaml:"log_size_max"`
+	LogMaxBackups  int `default:"7" yaml:"log_backups_max"`
+	LogMaxAge      int `yaml:"log_age_max"`
+	LogCompress    bool `default:"false" yaml:"compress_rotated_logs"`
+  }
+
+	V3Params       v3Params `yaml:"snmpv3"`
+
+	IpSets         []map[string][]string `default:"{}" yaml:"ipsets"`
+	ipSets         map[string]ipSet `default:"{}"`
+
+	RawFilters     []string `default:"[]" yaml:"filters"`
+	filters        []trapexFilter
 }
 
 type trapexCommandLine struct {
@@ -81,6 +105,8 @@ type trapexCommandLine struct {
 //
 var teConfig *trapexConfig
 var teCmdLine trapexCommandLine
+var ipRe = regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
+
 
 func showUsage() {
 	usageText := `
@@ -117,6 +143,51 @@ func processCommandLine() {
 	teCmdLine.debugMode = *d
 }
 
+// loadConfig
+// Load a YAML file with configuration, and create a new object
+func loadConfig(config_file string, newConfig *trapexConfig) error {
+        defaults.Set(newConfig)
+
+	newConfig.ipSets = make(map[string]ipSet)
+
+        filename, _ := filepath.Abs(config_file)
+        yamlFile, err := ioutil.ReadFile(filename)
+	if err != nil {
+            return err
+	}
+	err = yaml.Unmarshal(yamlFile, newConfig)
+	if err != nil {
+            return err
+	}
+
+    return nil
+}
+
+
+func applyCliOverrides(newConfig *trapexConfig) {
+        // Override the listen address:port if they were specified on the
+        // command line.  If not and the listener values were not set in
+        // the config file, fallback to defaults.
+        if teCmdLine.bindAddr != "" {
+                newConfig.General.ListenAddr = teCmdLine.bindAddr
+        }
+        if teCmdLine.listenPort != "" {
+                newConfig.General.ListenPort = teCmdLine.listenPort
+        }
+        if teCmdLine.debugMode {
+                newConfig.Logging.Level = "debug"
+        }
+        if newConfig.General.Hostname == "" {
+                myName, err := os.Hostname()
+                if err != nil {
+                        newConfig.General.Hostname = "_undefined"
+                } else {
+                        newConfig.General.Hostname = myName
+                }
+        }
+}
+
+
 func getConfig() error {
 	// If this is a reconfig close any current handles
 	if teConfig != nil && teConfig.teConfigured {
@@ -127,156 +198,148 @@ func getConfig() error {
 	fmt.Printf("configuration for trapex version %s from %s\n", myVersion, teCmdLine.configFile)
 
 	var newConfig trapexConfig
+        err := loadConfig(teCmdLine.configFile, &newConfig)
+        if err != nil {
+            return err
+        }
+        applyCliOverrides(&newConfig)
 
-	newConfig.ipSets = make(map[string]ipSet)
+        if err = validateIgnoreVersions(&newConfig); err != nil {
+            return err
+        }
+        if err = validateSnmpV3Args(&newConfig); err != nil {
+            return err
+        }
+        if err = processIpSets(&newConfig); err != nil {
+            return err
+        }
+        if err = processFilters(&newConfig); err != nil {
+            return err
+        }
 
-	// First process the config file
-	cf, err := os.Open(teCmdLine.configFile)
-	if err != nil {
-                fmt.Printf("%s\n", err)
-		return err
-	}
-	defer cf.Close()
+        // If this is a reconfigure, close the old handles here
+        if teConfig != nil && teConfig.teConfigured {
+                closeTrapexHandles()
+        }
+        // Set our global config pointer to this configuration
+        newConfig.teConfigured = true
+        teConfig = &newConfig
 
-	cfSkipRe := regexp.MustCompile(`^\s*#|^\s*$`)
-	ipRe := regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
-
-	var lineNumber uint = 0
-	var processingIPSet bool = false
-	var ipsName string
-
-	scanner := bufio.NewScanner(cf)
-	for scanner.Scan() {
-		// Scan in the lines from the config file
-		line := scanner.Text()
-		lineNumber++
-		if cfSkipRe.MatchString(line) {
-			continue
-		}
-
-		// Split the line into fields
-		f := strings.Fields(line)
-
-		if processingIPSet {
-			if f[0] == "}" {
-				processingIPSet = false
-				fmt.Printf("IP count: %v\n", len(newConfig.ipSets[ipsName]))
-				continue
-			}
-			// Assume all fields are IP addresses
-			for _, ip := range f {
-				if ipRe.MatchString(ip) {
-					newConfig.ipSets[ipsName][ip] = true
-				} else {
-					return fmt.Errorf("Invalid IP address (%s) in ipset: %s at line: %v", ip, ipsName, lineNumber)
-				}
-			}
-		} else if f[0] == "ipset" {
-			if len(f) < 3 || f[2] != "{" {
-				return fmt.Errorf("Invalid format for ipset at line: %v: '%s'", lineNumber, line)
-			}
-			ipsName = f[1]
-			newConfig.ipSets[ipsName] = make(map[string]bool)
-			processingIPSet = true
-			fmt.Printf(" -Add IPSet: %s - ", ipsName)
-			continue
-		} else if f[0] == "filter" {
-			if err := processFilterLine(f[1:], &newConfig, lineNumber); err != nil {
-				return err
-			}
-		} else {
-			if err := processConfigLine(f, &newConfig, lineNumber); err != nil {
-				return err
-			}
-		}
-	}
-
-	// Residual config file scan error?
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	// Override the listen address:port if they were specified on the
-	// command line.  If not and the listener values were not set in
-	// the config file, fallback to defaults.
-	//
-	if teCmdLine.bindAddr != "" {
-		newConfig.listenAddr = teCmdLine.bindAddr
-	} else if newConfig.listenAddr == "" {
-		newConfig.listenAddr = defBindAddr
-	}
-	if teCmdLine.listenPort != "" {
-		newConfig.listenPort = teCmdLine.listenPort
-	} else if newConfig.listenPort == "" {
-		newConfig.listenPort = defListenPort
-	}
-	if teCmdLine.debugMode {
-		newConfig.debug = true
-	}
-	// Other config fallbacks
-	//
-	if newConfig.trapexHost == "" {
-		myName, err := os.Hostname()
-		if err != nil {
-			newConfig.trapexHost = "_undefined"
-		} else {
-			newConfig.trapexHost = myName
-		}
-	}
-	if newConfig.logMaxSize == 0 {
-		newConfig.logMaxSize = defLogfileMaxSize
-	}
-	if newConfig.logMaxBackups == 0 {
-		newConfig.logMaxBackups = defLogfileMaxBackups
-	}
-	if newConfig.v3Params.username == "" {
-		newConfig.v3Params.username = defV3user
-	}
-	if newConfig.v3Params.authProto == 0 {
-		newConfig.v3Params.authProto = defV3authProtocol
-	}
-	if newConfig.v3Params.authPassword == "" {
-		newConfig.v3Params.authPassword = defV3authPassword
-	}
-	if newConfig.v3Params.privacyProto == 0 {
-		newConfig.v3Params.privacyProto = defV3privacyProtocol
-	}
-	if newConfig.v3Params.privacyPassword == "" {
-		newConfig.v3Params.privacyPassword = defV3privacyPassword
-	}
-	// Sanity-check the v3 params
-	//
-	if (newConfig.v3Params.msgFlags&g.AuthPriv) == 1 && newConfig.v3Params.authProto < 2 {
-		return fmt.Errorf("v3 config error: no auth protocol set when msgFlags specifies an Auth mode")
-	}
-	if newConfig.v3Params.msgFlags == g.AuthPriv && newConfig.v3Params.privacyProto < 2 {
-		return fmt.Errorf("v3 config error: no privacy protocol mode set when msgFlags specifies an AuthPriv mode")
-	}
-	if newConfig.prometheusIp == "" {
-	        newConfig.prometheusIp = defPrometheusIp
-	}
-	if newConfig.prometheusPort == "" {
-	        newConfig.prometheusPort = defPrometheusPort
-	}
-	if newConfig.prometheusEndpoint == "" {
-	        newConfig.prometheusEndpoint = defPrometheusEndpoint
-	}
-
-	// If this is a reconfigure, close the old handles here
-	if teConfig != nil && teConfig.teConfigured {
-		closeTrapexHandles()
-	}
-	// Set our global config pointer to this configuration
-	newConfig.teConfigured = true
-	teConfig = &newConfig
-
-	return nil
+        return nil
 }
 
-// processFilterLine parsed a "filter" line from the config file and sets
-// the appropriate values in the corresponding trapexFilter struct.
+func validateIgnoreVersions(newConfig *trapexConfig) error {
+    var ignorev1, ignorev2c, ignorev3 bool = false, false, false
+    for _, candidate := range newConfig.General.IgnoreVersions {
+        switch strings.ToLower(candidate) {
+            case "v1", "1":
+                if ignorev1 != true {
+                  newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version1)
+                  ignorev1 = true
+                }
+            case "v2c", "2c", "2":
+                if ignorev2c != true {
+                  newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version2c)
+                  ignorev2c = true
+                }
+            case "v3", "3":
+                if ignorev3 != true {
+                  newConfig.General.ignoreVersions = append(newConfig.General.ignoreVersions, g.Version3)
+                  ignorev3 = true
+                }
+            default:
+                  return fmt.Errorf("unsupported or invalid value (%s) for general:ignore_version", candidate)
+            }
+    }
+    if len(newConfig.General.ignoreVersions) > 2 {
+        return fmt.Errorf("All three SNMP versions are ignored -- there will be no traps to process")
+    }
+    return nil
+}
+
+
+func validateSnmpV3Args(newConfig *trapexConfig) error {
+    switch strings.ToLower(newConfig.V3Params.MsgFlags) {
+       case "noauthnopriv":
+           newConfig.V3Params.msgFlags = g.NoAuthNoPriv
+       case "authnopriv":
+           newConfig.V3Params.msgFlags = g.AuthNoPriv
+       case "authpriv":
+           newConfig.V3Params.msgFlags = g.AuthPriv
+       default:
+           return fmt.Errorf("unsupported or invalid value (%s) for snmpv3:msg_flags", newConfig.V3Params.MsgFlags)
+    }
+
+    switch strings.ToLower(newConfig.V3Params.AuthProto) {
+        // AES is *NOT* supported
+        case "aes":
+            //newConfig.V3Params.authProto = g.AES
+            //  cannot use gosnmp.AES (type gosnmp.SnmpV3PrivProtocol) as type gosnmp.SnmpV3AuthProtocol in assignment
+            return fmt.Errorf("AES is not a supported value for snmpv3:auth_protocol")
+        case "sha":
+            newConfig.V3Params.authProto = g.SHA
+        case "md5":
+            newConfig.V3Params.authProto = g.MD5
+        default:
+            return fmt.Errorf("invalid value for snmpv3:auth_protocol")
+    }
+
+    switch strings.ToLower(newConfig.V3Params.PrivacyProto) {
+        case "aes":
+            newConfig.V3Params.privacyProto = g.AES
+        case "des":
+            newConfig.V3Params.privacyProto = g.DES
+        default:
+            return fmt.Errorf("invalid value for snmpv3:privacy_protocol")
+    }
+
+    if (newConfig.V3Params.msgFlags & g.AuthPriv) == 1 && newConfig.V3Params.authProto < 2 {
+            return fmt.Errorf("v3 config error: no auth protocol set when snmpv3:msg_flags specifies an Auth mode")
+    }
+    if newConfig.V3Params.msgFlags == g.AuthPriv && newConfig.V3Params.privacyProto < 2 {
+            return fmt.Errorf("v3 config error: no privacy protocol mode set when snmpv3:msg_flags specifies an AuthPriv mode")
+    }
+
+    return nil
+}
+
+func processIpSets(newConfig *trapexConfig) error {
+   for _, stanza := range newConfig.IpSets {
+   //for stanza_num, stanza := range newConfig.IpSets {
+       //fmt.Printf("IpSet stanza %d: %s\n", stanza_num, stanza)
+       for ipsName, ips := range stanza {
+           //fmt.Printf("IpSet entry %s: %s\n", ipsName, ips)
+           newConfig.ipSets[ipsName] = make(map[string]bool)
+           //fmt.Printf(" -Add IPSet: %s - ", ipsName)
+           for _, ip := range ips {
+               if ipRe.MatchString(ip) {
+                   newConfig.ipSets[ipsName][ip] = true
+                   //fmt.Printf(" -IPSet %s:  %s\n", ipsName, ip)
+               } else {
+                   return fmt.Errorf("Invalid IP address (%s) in ipset: %s", ip, ipsName)
+               }
+           }
+       }
+   }
+  return nil
+}
+
+func processFilters(newConfig *trapexConfig) error {
+
+   for lineNumber, filter_line := range newConfig.RawFilters {
+       //fmt.Printf("Filter %d: %s\n", lineNumber, filter_line)
+       if err := processFilterLine(strings.Fields(filter_line), newConfig, lineNumber); err != nil {
+           return err
+       }
+   }
+  return nil
+}
+
+
+// processFilterLine parses a "filter" line and sets
+// the appropriate values in a corresponding trapexFilter struct.
 //
-func processFilterLine(f []string, newConfig *trapexConfig, lineNumber uint) error {
+func processFilterLine(f []string, newConfig *trapexConfig, lineNumber int) error {
 	var err error
 	if len(f) < 7 {
 		return fmt.Errorf("not enough fields in filter line(%v): %s", lineNumber, "filter "+strings.Join(f, " "))
@@ -304,28 +367,30 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 				case "v3", "3":
 					fObj.filterValue = g.Version3
 				default:
-					return fmt.Errorf("unsupported or invalid SNMP version (%s) on line %v for filter", fi, lineNumber)
+					return fmt.Errorf("unsupported or invalid SNMP version (%s) on line %v for filter: %s", fi, lineNumber, f)
 				}
 				fObj.filterType = parseTypeInt // Just because we should set this to something.
 			} else if i == 1 || i == 2 { // Either of the first 2 is an IP address type
 				if strings.HasPrefix(fi, "ipset:") { // If starts with a "ipset:"" it's an IP set
 					fObj.filterType = parseTypeIPSet
-					if _, ok := newConfig.ipSets[fi[6:]]; ok {
+/*
+					if _, ok := newConfig.IpSets[fi[6:]]; ok {
 						fObj.filterValue = fi[6:]
 					} else {
-						return fmt.Errorf("Invalid ipset name specified on line %v: %s", lineNumber, fi)
+						return fmt.Errorf("Invalid ipset name specified on line %v: %s: %s", lineNumber, fi, f)
 					}
+*/
 				} else if strings.HasPrefix(fi, "/") { // If starts with a "/", it's a regex
 					fObj.filterType = parseTypeRegex
 					fObj.filterValue, err = regexp.Compile(fi[1:])
 					if err != nil {
-						return fmt.Errorf("unable to compile regexp for IP on line %v: %s: %s", lineNumber, fi, err)
+						return fmt.Errorf("unable to compile regexp for IP on line %v: %s: %s\n%s", lineNumber, fi, err, f)
 					}
 				} else if strings.Contains(fi, "/") {
 					fObj.filterType = parseTypeCIDR
 					fObj.filterValue, err = newNetwork(fi)
 					if err != nil {
-						return fmt.Errorf("invalid IP/CIDR at line %v: %s", lineNumber, fi)
+						return fmt.Errorf("invalid IP/CIDR at line %v: %s, %s", lineNumber, fi, f)
 					}
 				} else {
 					fObj.filterType = parseTypeString
@@ -415,143 +480,6 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber uint) err
 	return nil
 }
 
-func processConfigLine(f []string, newConfig *trapexConfig, lineNumber uint) error {
-	flen := len(f)
-	switch f[0] {
-	case "debug":
-		newConfig.debug = true
-	case "trapexHost":
-		if flen < 2 {
-			return fmt.Errorf("missing value for trapexHost at line %v", lineNumber)
-		}
-		newConfig.trapexHost = f[1]
-	case "listenAddress":
-		if flen < 2 {
-			return fmt.Errorf("missing value for listenAddr at line %v", lineNumber)
-		}
-		newConfig.listenAddr = f[1]
-	case "listenPort":
-		if flen < 2 {
-			return fmt.Errorf("missing value for listenPort at line %v", lineNumber)
-		}
-		p, err := strconv.ParseUint(f[1], 10, 16)
-		if err != nil || p < 1 || p > 65535 {
-			return fmt.Errorf("invalid listenPort value: %s at line %v", err, lineNumber)
-		}
-		newConfig.listenPort = f[1]
-	case "ignoreVersions":
-		if flen < 2 {
-			return fmt.Errorf("missing value for ignoreVersions at line %v", lineNumber)
-		}
-		// split on commas (if any)
-		for _, v := range strings.Split(f[1], ",") {
-			switch strings.ToLower(v) {
-			case "v1", "1":
-				newConfig.ignoreVersions = append(newConfig.ignoreVersions, g.Version1)
-			case "v2c", "2c", "2":
-				newConfig.ignoreVersions = append(newConfig.ignoreVersions, g.Version2c)
-			case "v3", "3":
-				newConfig.ignoreVersions = append(newConfig.ignoreVersions, g.Version3)
-			default:
-				return fmt.Errorf("unsupported or invalid value (%s) for ignoreVersion at line %v", v, lineNumber)
-			}
-		}
-		if len(newConfig.ignoreVersions) > 2 {
-			return fmt.Errorf("All 3 SNMP versions are ignored at line %v. There will be no traps to process", lineNumber)
-		}
-	case "v3msgFlags":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3msgFlags at line %v", lineNumber)
-		}
-		switch f[1] {
-		case "NoAuthNoPriv":
-			newConfig.v3Params.msgFlags = g.NoAuthNoPriv
-		case "AuthNoPriv":
-			newConfig.v3Params.msgFlags = g.AuthNoPriv
-		case "AuthPriv":
-			newConfig.v3Params.msgFlags = g.AuthPriv
-		default:
-			return fmt.Errorf("unsupported or invalid value (%s) for v3msgFlags at line %v", f[1], lineNumber)
-		}
-	case "v3user":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3user at line %v", lineNumber)
-		}
-		newConfig.v3Params.username = f[1]
-	case "v3authProtocol":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3authProtocol at line %v", lineNumber)
-		}
-		switch f[1] {
-		case "SHA":
-			newConfig.v3Params.authProto = g.SHA
-		case "MD5":
-			newConfig.v3Params.authProto = g.MD5
-		default:
-			return fmt.Errorf("invalid value for v3authProtocol at line %v", lineNumber)
-		}
-	case "v3authPassword":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3authPassword at line %v", lineNumber)
-		}
-		newConfig.v3Params.authPassword = f[1]
-	case "v3privacyProtocol":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3privacyProtocol at line %v", lineNumber)
-		}
-		switch f[1] {
-		case "AES":
-			newConfig.v3Params.privacyProto = g.AES
-		case "DES":
-			newConfig.v3Params.privacyProto = g.DES
-		default:
-			return fmt.Errorf("invalid value for v3privacyProtocol at line %v", lineNumber)
-		}
-	case "v3privacyPassword":
-		if flen < 2 {
-			return fmt.Errorf("missing value for v3privacyPassword at line %v", lineNumber)
-		}
-		newConfig.v3Params.privacyPassword = f[1]
-	case "logfileMaxSize":
-		if flen < 2 {
-			return fmt.Errorf("missing value for logfileMaxSize at line %v", lineNumber)
-		}
-		p, err := strconv.Atoi(f[1])
-		if err != nil || p < 1 {
-			return fmt.Errorf("invalid logfileMaxSize value: %s at line %v", err, lineNumber)
-		}
-		newConfig.logMaxSize = p
-	case "logfileMaxBackups":
-		if flen < 2 {
-			return fmt.Errorf("missing value for logfileMaxBackups at line %v", lineNumber)
-		}
-		p, err := strconv.Atoi(f[1])
-		if err != nil || p < 1 {
-			return fmt.Errorf("invalid logfileMaxBackups value: %s at line %v", err, lineNumber)
-		}
-		newConfig.logMaxBackups = p
-	case "compressRotatedLogs":
-		newConfig.logCompress = true
-	case "prometheus_ip":
-		if flen < 2 {
-			return fmt.Errorf("missing value for prometheus_ip at line %v", lineNumber)
-		}
-		newConfig.prometheusIp = f[1]
-	case "prometheus_port":
-		if flen < 2 {
-			return fmt.Errorf("missing value for prometheus_port at line %v", lineNumber)
-		}
-		newConfig.prometheusPort = f[1]
-	case "prometheus_endpoint":
-		if flen < 2 {
-			return fmt.Errorf("missing value for prometheus_endpoint at line %v", lineNumber)
-		}
-		newConfig.prometheusEndpoint = f[1]
-	default:
-		return fmt.Errorf("Unknown/unsuppported configuration option: %s at line %v", f[0], lineNumber)
-	}
-	return nil
-}
 
 func closeTrapexHandles() {
 	for _, f := range teConfig.filters {
@@ -566,3 +494,4 @@ func closeTrapexHandles() {
 		}
 	}
 }
+

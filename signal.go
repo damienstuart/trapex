@@ -41,7 +41,7 @@ func handleSIGUSR1(sigCh chan os.Signal) {
 			fmt.Printf(" - Uptime..............: %s\n", secondsToDuration(uint(stats.UptimeInt)))
 			fmt.Printf(" - Traps Received......: %v\n", stats.TrapCount)
 			// Only show ignored trap count if we are ignoring any
-			if len(teConfig.ignoreVersions) > 0 {
+			if len(teConfig.General.IgnoreVersions) > 0 {
 				fmt.Printf(" - Traps Ignored.......: %v\n", stats.IgnoredTraps)
 			}
 			fmt.Printf(" - Traps Processed.....: %v\n", stats.HandledTraps)

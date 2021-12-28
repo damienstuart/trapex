@@ -1,0 +1,12 @@
+ipsets:
+  - out_of_range:
+    - 256.1.3.256
+    - 10.1.3.256
+    - 10.256.3.5
+    - 100.3.256.4
+# Should broadcast address be okay?
+    - 100.3.3.255
+
+  - other_chars:
+    - fred
+    - fred.goes.to.hollywood

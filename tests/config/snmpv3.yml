@@ -1,0 +1,8 @@
+snmpv3:
+  msg_flags: AuthPriv
+  username: myuser
+  auth_protocol: SHA
+  auth_password: v3authPass
+  privacy_protocol: AES
+  privacy_password: v3privPW
+

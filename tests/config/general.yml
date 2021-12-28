@@ -1,0 +1,11 @@
+general:
+  hostname: trapex_test1
+  listen_address:  127.0.0.1
+  listen_port:     168
+
+  prometheus_ip: 127.10.0.1
+  prometheus_port: 8080
+  prometheus_endpoint: statistics
+
+  ignore_versions: [ "v1", "v2c" ]
+

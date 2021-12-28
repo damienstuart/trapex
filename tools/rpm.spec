@@ -34,8 +34,8 @@ install -m 644 README.md %{buildroot}/opt/%{name}
 install -m 750 trapex %{buildroot}/opt/%{name}/bin
 
 mkdir -p %{buildroot}/opt/%{name}/etc
-install -m 644 tools/trapex.conf %{buildroot}/opt/%{name}/etc
-install -m 644 tools/trapex.conf %{buildroot}/opt/%{name}/etc/trapex.conf.example
+install -m 644 tools/trapex.yml %{buildroot}/opt/%{name}/etc
+install -m 644 tools/trapex.yml %{buildroot}/opt/%{name}/etc/trapex.yml.example
 
 mkdir -p %{buildroot}/opt/%{name}/log
 
