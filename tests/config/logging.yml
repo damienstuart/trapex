@@ -2,5 +2,5 @@ logging:
   level: info
   log_size_max:             4096
   log_backups_max:  10
-  compress: true
+  compress_rotated_logs: true
 

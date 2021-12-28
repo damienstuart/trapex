@@ -13,7 +13,7 @@ logging:
   level: info
   logfile_size_max:             4096
   logfile_backups_max:  10
-  compress: true
+  compress_rotated_logs: true
 
 snmpv3:
   msg_flags:  AuthPriv

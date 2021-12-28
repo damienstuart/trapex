@@ -82,7 +82,7 @@ type trapexConfig struct {
 	LogMaxSize     int `default:"1024" yaml:"log_size_max"`
 	LogMaxBackups  int `default:"7" yaml:"log_backups_max"`
 	LogMaxAge      int `yaml:"log_age_max"`
-	LogCompress    bool `default:"false" yaml:"compress"`
+	LogCompress    bool `default:"false" yaml:"compress_rotated_logs"`
   }
 
 	V3Params       v3Params `yaml:"snmpv3"`
