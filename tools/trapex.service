@@ -3,15 +3,16 @@ Description=SNMP trap receiver and forwarder to multiple destinations
 Documentation=https://github.com/damienstuart/trapex/tree/updates
 After=network-online.target
 Wants=network-online.target
+RequiresMountsFor=/opt
 
 [Service]
 Type=simple
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+EnvironmentFile=/etc/sysconfig/trapex
 ExecStart=/opt/trapex/bin/trapex -c /opt/trapex/etc/trapex.conf
-ExecReload=/opt/trapex/bin/trapex -c /opt/trapex/etc/trapex.conf
-RemainAfterExit=yes
-Restart=on-failure
-StartLimitBurst=3
-StartLimitInterval=60s
+ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
 WantedBy=multi-user.target
