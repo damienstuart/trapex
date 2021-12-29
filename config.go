@@ -155,7 +155,7 @@ func loadConfig(config_file string, newConfig *trapexConfig) error {
 	if err != nil {
             return err
 	}
-	err = yaml.Unmarshal(yamlFile, newConfig)
+	err = yaml.UnmarshalStrict(yamlFile, newConfig)
 	if err != nil {
             return err
 	}
@@ -272,25 +272,25 @@ func validateSnmpV3Args(newConfig *trapexConfig) error {
 
     switch strings.ToLower(newConfig.V3Params.AuthProto) {
         // AES is *NOT* supported
-        case "aes":
-            //newConfig.V3Params.authProto = g.AES
-            //  cannot use gosnmp.AES (type gosnmp.SnmpV3PrivProtocol) as type gosnmp.SnmpV3AuthProtocol in assignment
-            return fmt.Errorf("AES is not a supported value for snmpv3:auth_protocol")
-        case "sha":
+        case "noauth":
+            newConfig.V3Params.authProto = g.NoAuth
+        case "SHA":
             newConfig.V3Params.authProto = g.SHA
-        case "md5":
+        case "MD5":
             newConfig.V3Params.authProto = g.MD5
         default:
             return fmt.Errorf("invalid value for snmpv3:auth_protocol")
     }
 
     switch strings.ToLower(newConfig.V3Params.PrivacyProto) {
+        case "nopriv":
+            newConfig.V3Params.privacyProto = g.NoPriv
         case "aes":
             newConfig.V3Params.privacyProto = g.AES
         case "des":
             newConfig.V3Params.privacyProto = g.DES
         default:
-            return fmt.Errorf("invalid value for snmpv3:privacy_protocol")
+            return fmt.Errorf("invalid value for snmpv3:privacy_protocol: %s", newConfig.V3Params.PrivacyProto)
     }
 
     if (newConfig.V3Params.msgFlags & g.AuthPriv) == 1 && newConfig.V3Params.authProto < 2 {

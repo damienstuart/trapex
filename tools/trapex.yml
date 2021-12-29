@@ -26,10 +26,10 @@ logging:
   # level: debug
 
   # Max size before rotation (in MB) default is 1024.
-  logfile_size_max:             4096
+  log_size_max:             4096
 
   # How many backups to keep default is 7.
-  logfile_backups_max:  10
+  log_backups_max:  10
 
   # Uncomment to have rotated logs compressed with gzip default is no
   # compression.
