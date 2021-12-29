@@ -6,7 +6,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -120,7 +119,7 @@ func (a *trapForwarder) initAction(dest string) error {
 	if err != nil {
 		return (err)
 	}
-	fmt.Printf(" -Added trap destination: %s, port %s\n", s[0], s[1])
+	logger.Info().Str("target", s[0]).Str("port", s[1]).Msg("Added trap destination")
 	return nil
 }
 
@@ -149,7 +148,7 @@ func (a *trapLogger) initAction(logfile string, teConf *trapexConfig) error {
 	a.logFile = logfile
 	a.logHandle = log.New(fd, "", 0)
 	a.logHandle.SetOutput(makeLogger(logfile, teConf))
-	fmt.Printf(" -Added log destination: %s\n", logfile)
+	logger.Info().Str("logfile", logfile).Msg("Added log destination")
 	return nil
 }
 
@@ -177,7 +176,7 @@ func (a *trapCsvLogger) initAction(logfile string, teConf *trapexConfig) error {
 	a.logHandle = log.New(fd, "", 0)
 	a.logger = makeCsvLogger(logfile, teConf)
 	a.logHandle.SetOutput(a.logger)
-	fmt.Printf(" -Added CSV log destination: %s\n", logfile)
+	logger.Info().Str("logfile", logfile).Msg("Added CSV log destination")
 	return nil
 }
 
