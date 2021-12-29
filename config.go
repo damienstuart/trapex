@@ -155,7 +155,7 @@ func loadConfig(config_file string, newConfig *trapexConfig) error {
 	if err != nil {
             return err
 	}
-	err = yaml.Unmarshal(yamlFile, newConfig)
+	err = yaml.UnmarshalStrict(yamlFile, newConfig)
 	if err != nil {
             return err
 	}
