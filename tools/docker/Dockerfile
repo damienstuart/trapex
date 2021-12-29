@@ -10,10 +10,11 @@ RUN apk add --no-cache --upgrade bash && apk add net-snmp-tools
 
 RUN mkdir -p /opt/trapex/bin /opt/trapex/etc /opt/trapex/log
 COPY trapex /opt/trapex/bin
+COPY tools/process_csv_data.sh /opt/trapex/bin
 COPY tools/trapex.conf /opt/trapex/etc
 
 # Install root bash history
 COPY tools/docker/root_bash_history /root/.bash_history
 COPY tools/docker/root_vimrc /root/.vimrc
 
-CMD ["/opt/trapex/bin/trapex", "-c", "/opt/trapex/etc/trapex.conf"]
+CMD ["/opt/trapex/bin/trapex", "-c", "/opt/trapex/etc/trapex.yml"]
