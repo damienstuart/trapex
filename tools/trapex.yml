@@ -49,7 +49,7 @@ snmpv3:
   #        authProtocol (MD5 or SHA).
   #       If AuthPriv is set, you must specify an authProtocol (DES or AES).
   #
-  msg_flags:  AuthPriv
+  #msg_flags:  AuthPriv
 
   # Note that trapex v3 support only User Security Model (USM).
   #
