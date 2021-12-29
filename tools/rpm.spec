@@ -32,10 +32,10 @@ install -m 750 tools/%{name}.service %{buildroot}%{_sysconfdir}/systemd/system
 mkdir -p %{buildroot}/opt/%{name}/bin
 install -m 644 README.md %{buildroot}/opt/%{name}
 install -m 750 trapex %{buildroot}/opt/%{name}/bin
+install -m 750 tools/process_csv_data.sh %{buildroot}/opt/%{name}/bin
 
 mkdir -p %{buildroot}/opt/%{name}/etc
 install -m 644 tools/trapex.yml %{buildroot}/opt/%{name}/etc
-install -m 644 tools/trapex.yml %{buildroot}/opt/%{name}/etc/trapex.yml.example
 
 mkdir -p %{buildroot}/opt/%{name}/log
 
