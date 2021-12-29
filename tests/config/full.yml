@@ -12,8 +12,8 @@ general:
 
 logging:
   level: info
-  logfile_size_max:             4096
-  logfile_backups_max:  10
+  log_size_max:             4096
+  log_backups_max:  10
   compress_rotated_logs: true
 
 snmpv3:

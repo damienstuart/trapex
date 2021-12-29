@@ -64,7 +64,10 @@ func TestIgnoreVersions(t *testing.T) {
 
 func TestLogging(t *testing.T) {
         var testConfig trapexConfig
-    loadConfig( "tests/config/logging.yml" , &testConfig)
+        var err error
+    if err = loadConfig("tests/config/logging.yml", &testConfig); err != nil {
+        t.Errorf("Logging configuration broken: %s", err)
+    }
 
     if testConfig.Logging.Level != "info" {
         t.Errorf("Logging level is not set correctly: %s", testConfig.Logging.Level)
