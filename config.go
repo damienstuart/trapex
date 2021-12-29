@@ -274,12 +274,12 @@ func validateSnmpV3Args(newConfig *trapexConfig) error {
         // AES is *NOT* supported
         case "noauth":
             newConfig.V3Params.authProto = g.NoAuth
-        case "SHA":
+        case "sha":
             newConfig.V3Params.authProto = g.SHA
-        case "MD5":
+        case "md5":
             newConfig.V3Params.authProto = g.MD5
         default:
-            return fmt.Errorf("invalid value for snmpv3:auth_protocol")
+            return fmt.Errorf("invalid value for snmpv3:auth_protocol: %s", newConfig.V3Params.AuthProto)
     }
 
     switch strings.ToLower(newConfig.V3Params.PrivacyProto) {
