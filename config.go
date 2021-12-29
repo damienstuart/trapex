@@ -279,7 +279,7 @@ func validateSnmpV3Args(newConfig *trapexConfig) error {
         case "MD5":
             newConfig.V3Params.authProto = g.MD5
         default:
-            return fmt.Errorf("invalid value for snmpv3:auth_protocol")
+            return fmt.Errorf("invalid value for snmpv3:auth_protocol: %s", newConfig.V3Params.AuthProto)
     }
 
     switch strings.ToLower(newConfig.V3Params.PrivacyProto) {
