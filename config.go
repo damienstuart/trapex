@@ -371,13 +371,11 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber int) erro
 			} else if i == 1 || i == 2 { // Either of the first 2 is an IP address type
 				if strings.HasPrefix(fi, "ipset:") { // If starts with a "ipset:"" it's an IP set
 					fObj.filterType = parseTypeIPSet
-/*
-					if _, ok := newConfig.IpSets[fi[6:]]; ok {
+					if _, ok := newConfig.ipSets[fi[6:]]; ok {
 						fObj.filterValue = fi[6:]
 					} else {
 						return fmt.Errorf("Invalid ipset name specified on line %v: %s: %s", lineNumber, fi, f)
 					}
-*/
 				} else if strings.HasPrefix(fi, "/") { // If starts with a "/", it's a regex
 					fObj.filterType = parseTypeRegex
 					fObj.filterValue, err = regexp.Compile(fi[1:])
