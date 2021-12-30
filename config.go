@@ -214,6 +214,9 @@ func getConfig() error {
         if err = processIpSets(&newConfig); err != nil {
             return err
         }
+        if err = loadFilterActions(&newConfig); err != nil {
+            return err
+        }
         if err = processFilters(&newConfig); err != nil {
             return err
         }

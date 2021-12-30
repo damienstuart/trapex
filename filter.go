@@ -13,10 +13,57 @@ import (
 	"strconv"
 	"strings"
 	"time"
+        "plugin"
 
 	g "github.com/gosnmp/gosnmp"
 	"github.com/natefinch/lumberjack"
 )
+
+// Filter action plugin interface
+type FilterPlugin interface {
+   Init() error
+   Process() error
+   SigUsr1() error
+   SigUsr2() error
+}
+
+//var plugins []FilterPlugin
+func loadFilterActions(newConfig *trapexConfig) error {
+  plugin_names := []string{"noop", "clickhouse"}
+
+  for _, plugin_name := range plugin_names {
+      fmt.Println(plugin_name)
+      loadFilterPlugin(plugin_name)
+  }
+  return nil
+}
+
+func loadFilterPlugin(plugin_name string) error {
+  var plugin_filename = "actions/" + plugin_name + "/trap_action.so"
+
+  plug, err := plugin.Open(plugin_filename)
+  if err != nil {
+      fmt.Println(err)
+      return err
+  }
+
+  // Load the class from the plugin
+  symAction, err := plug.Lookup("FilterPlugin")
+  if err != nil {
+      fmt.Println(err)
+      return err
+  }
+
+  var initializer FilterPlugin
+  // Instantiate the class from the plugin
+  initializer, ok := symAction.(FilterPlugin)
+  if !ok {
+      fmt.Printf("Unexpected type from %s module symbol: %T\n", plugin_name, symAction)
+      return err
+  }
+
+  return initializer.Init()
+}
 
 // Filter types
 const (
@@ -86,7 +133,7 @@ type trapLogger struct {
 	isBroken  bool
 }
 
-// trapCsvLogger is an instace of a trap CSV logfile destination.
+// trapCsvLogger is an instance of a trap CSV logfile destination.
 //
 type trapCsvLogger struct {
 	logFile   string
