@@ -19,12 +19,15 @@ import (
 
 	g "github.com/gosnmp/gosnmp"
 	"github.com/natefinch/lumberjack"
+        "github.com/rs/zerolog"
+
 )
 
 // Filter action plugin interface
 type FilterPlugin interface {
-   Init() error
-   Process() error
+   Init(zerolog.Logger) error
+   //ProcessTrap(trap *sgTrap) error
+   ProcessTrap() error
    SigUsr1() error
    SigUsr2() error
 }
@@ -36,7 +39,7 @@ func loadFilterActions(newConfig *trapexConfig) error {
       logger.Info().Str("filter_plugin", plugin_name).Msg("Initializing plugin")
       filter_plugin, err := loadFilterPlugin(plugin_name)
       if err == nil {
-         filter_plugin.Init()
+         filter_plugin.Init(logger)
       }
   }
   return nil
@@ -127,7 +130,7 @@ type trapForwarder struct {
 	destination *g.GoSNMP
 }
 
-// trapLogger is an instace of a trap logfile destination.
+// trapLogger is an instance of a trap logfile destination.
 //
 type trapLogger struct {
 	logFile   string
