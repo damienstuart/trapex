@@ -43,7 +43,7 @@ func main() {
 	processCommandLine()
 
 	if err := getConfig(); err != nil {
-		fmt.Print(err)
+		fmt.Println(err)
                 os.Exit(1)
 	}
 

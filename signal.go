@@ -21,7 +21,7 @@ func handleSIGHUP(sigCh chan os.Signal) {
 		case <-sigCh:
 			fmt.Printf("Got SIGHUP - Reloading configuration.\n")
 			if err := getConfig(); err != nil {
-				fmt.Printf("Error parsing configuration: %s\nConfiguration was not changed.", err)
+				fmt.Printf("Error parsing configuration: %s\nConfiguration was not changed.\n", err)
 			}
 		}
 	}
