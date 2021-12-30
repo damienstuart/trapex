@@ -15,6 +15,9 @@ import (
 	"time"
 
 	g "github.com/gosnmp/gosnmp"
+
+	"github.com/rs/zerolog"
+//	zlog "github.com/rs/zerolog/log"
 )
 
 // sgTrap holds a pointer to a trap and the source IP of
@@ -30,8 +33,10 @@ type sgTrap struct {
 }
 
 var trapRateTracker = newTrapRateTracker()
+var logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 func main() {
+        zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	flag.Usage = func() {
 		fmt.Printf("Usage:\n")
 		fmt.Printf("   %s\n", filepath.Base(os.Args[0]))
@@ -43,14 +48,15 @@ func main() {
 	processCommandLine()
 
 	if err := getConfig(); err != nil {
-		fmt.Println(err)
+                logger.Fatal().Err(err).Msg("Unable to load configuration")
                 os.Exit(1)
 	}
 
 	initSigHandlers()
         go exposeMetrics()
-        fmt.Printf("Prometheus metrics exported on http://%s:%s/%s\n",
+        var exporter = fmt.Sprintf("http://%s:%s/%s\n",
                    teConfig.General.PrometheusIp, teConfig.General.PrometheusPort, teConfig.General.PrometheusEndpoint)
+        logger.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
 
 	stats.StartTime = time.Now()
 
@@ -64,7 +70,7 @@ func main() {
 
 	// Uncomment for debugging gosnmp
 	if teConfig.Logging.Level == "debug" {
-		fmt.Println("*DEBUG MODE ENABLED*")
+                logger.Info().Msg("gosnmp debug mode enabled")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}
 
@@ -81,7 +87,7 @@ func main() {
 	}
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.General.ListenAddr, teConfig.General.ListenPort)
-	fmt.Printf("Start trapex listener on %s\n", listenAddr)
+        logger.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
 	err := tl.Listen(listenAddr)
 	if err != nil {
 		log.Panicf("error in listen on %s: %s", listenAddr, err)
@@ -126,13 +132,16 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	if p.Version > g.Version1 {
 		err := translateToV1(&trap)
 		if err != nil {
-			fmt.Printf("Error translating to v1: %v\n", err)
-			fmt.Printf(makeTrapLogEntry(&trap))
+                  var info string
+			info = makeTrapLogEntry(&trap)
+        logger.Warn().Err(err).Str("trap", info).Msg("Error translating to v1")
 		}
 	}
 
 	if teConfig.Logging.Level == "debug" {
-		fmt.Printf(makeTrapLogEntry(&trap))
+                  var info string
+			info = makeTrapLogEntry(&trap)
+        logger.Debug().Str("trap", info).Msg("Raw trap info")
 	}
 
 	processTrap(&trap)

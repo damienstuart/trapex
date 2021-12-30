@@ -189,13 +189,14 @@ func applyCliOverrides(newConfig *trapexConfig) {
 
 
 func getConfig() error {
+        var operation string
 	// If this is a reconfig close any current handles
 	if teConfig != nil && teConfig.teConfigured {
-		fmt.Printf("Reloading ")
+            operation = "Reloading "
 	} else {
-		fmt.Printf("Loading ")
+            operation = "Loading "
 	}
-	fmt.Printf("configuration for trapex version %s from %s\n", myVersion, teCmdLine.configFile)
+        logger.Info().Str("version", myVersion).Str("configuration_file", teCmdLine.configFile).Msg(operation + "configuration for trapex")
 
 	var newConfig trapexConfig
         err := loadConfig(teCmdLine.configFile, &newConfig)
@@ -305,16 +306,13 @@ func validateSnmpV3Args(newConfig *trapexConfig) error {
 
 func processIpSets(newConfig *trapexConfig) error {
    for _, stanza := range newConfig.IpSets {
-   //for stanza_num, stanza := range newConfig.IpSets {
-       //fmt.Printf("IpSet stanza %d: %s\n", stanza_num, stanza)
        for ipsName, ips := range stanza {
-           //fmt.Printf("IpSet entry %s: %s\n", ipsName, ips)
+           logger.Debug().Str("ipset", ipsName).Msg("Loading IpSet")
            newConfig.ipSets[ipsName] = make(map[string]bool)
-           //fmt.Printf(" -Add IPSet: %s - ", ipsName)
            for _, ip := range ips {
                if ipRe.MatchString(ip) {
                    newConfig.ipSets[ipsName][ip] = true
-                   //fmt.Printf(" -IPSet %s:  %s\n", ipsName, ip)
+                   logger.Debug().Str("ipset", ipsName).Str("ip", ip).Msg("Adding IP to IpSet")
                } else {
                    return fmt.Errorf("Invalid IP address (%s) in ipset: %s", ip, ipsName)
                }
@@ -327,7 +325,7 @@ func processIpSets(newConfig *trapexConfig) error {
 func processFilters(newConfig *trapexConfig) error {
 
    for lineNumber, filter_line := range newConfig.RawFilters {
-       //fmt.Printf("Filter %d: %s\n", lineNumber, filter_line)
+       logger.Debug().Str("filter", filter_line).Int("line_number", lineNumber).Msg("Examining filter")
        if err := processFilterLine(strings.Fields(filter_line), newConfig, lineNumber); err != nil {
            return err
        }

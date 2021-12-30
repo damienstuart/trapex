@@ -21,7 +21,7 @@ func handleSIGHUP(sigCh chan os.Signal) {
 		case <-sigCh:
 			fmt.Printf("Got SIGHUP - Reloading configuration.\n")
 			if err := getConfig(); err != nil {
-				fmt.Printf("Error parsing configuration: %s\nConfiguration was not changed.\n", err)
+        logger.Info().Err(err).Msg("Error parsing configuration\nConfiguration was not changed")
 			}
 		}
 	}
@@ -33,7 +33,7 @@ func handleSIGUSR1(sigCh chan os.Signal) {
 	for {
 		select {
 		case <-sigCh:
-			fmt.Printf("Got SIGUSR1\n")
+                            logger.Info().Msg("Got SIGUSR1")
 			// Compute uptime
 			now := time.Now()
 			stats.UptimeInt = now.Unix() - stats.StartTime.Unix()
@@ -72,11 +72,11 @@ func handleSIGUSR2(sigCh chan os.Signal) {
 	for {
 		select {
 		case <-sigCh:
-			fmt.Printf("Got SIGUSR2.\n")
+                        logger.Info().Msg("Got SIGUSR2")
 			for _, f := range teConfig.filters {
 				if f.actionType == actionCsv || f.actionType == actionCsvBreak {
 					f.action.(*trapCsvLogger).rotateLog()
-					fmt.Printf("Rotated CSV file: %v\n", f.action.(*trapCsvLogger).logfileName())
+                        logger.Info().Str("logfile", f.action.(*trapCsvLogger).logfileName()).Msg("Rotated CSV file")
 				}
 			}
 		}
