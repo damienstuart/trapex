@@ -6,6 +6,8 @@
 package main
 
 import (
+	"fmt"
+	"errors"
 	"log"
 	"net"
 	"os"
@@ -29,40 +31,41 @@ type FilterPlugin interface {
 
 //var plugins []FilterPlugin
 func loadFilterActions(newConfig *trapexConfig) error {
-  plugin_names := []string{"noop", "clickhouse"}
 
-  for _, plugin_name := range plugin_names {
-      fmt.Println(plugin_name)
-      loadFilterPlugin(plugin_name)
+  for _, plugin_name := range newConfig.General.FilterPlugins {
+      logger.Info().Str("filter_plugin", plugin_name).Msg("Initializing plugin")
+      filter_plugin, err := loadFilterPlugin(plugin_name)
+      if err == nil {
+         filter_plugin.Init()
+      }
   }
   return nil
 }
 
-func loadFilterPlugin(plugin_name string) error {
+func loadFilterPlugin(plugin_name string) (FilterPlugin, error) {
   var plugin_filename = "actions/" + plugin_name + "/trap_action.so"
 
   plug, err := plugin.Open(plugin_filename)
   if err != nil {
-      fmt.Println(err)
-      return err
+      return nil, err
   }
 
   // Load the class from the plugin
   symAction, err := plug.Lookup("FilterPlugin")
   if err != nil {
-      fmt.Println(err)
-      return err
+      return nil, err
   }
 
   var initializer FilterPlugin
   // Instantiate the class from the plugin
   initializer, ok := symAction.(FilterPlugin)
   if !ok {
-      fmt.Printf("Unexpected type from %s module symbol: %T\n", plugin_name, symAction)
-      return err
+      symbolType := fmt.Sprintf("%T", symAction)
+      logger.Error().Str("filter_plugin", plugin_name).Str("data type", symbolType).Msg("Unexpected type from plugin")
+      return nil, errors.New("Unexpected type from plugin")
   }
 
-  return initializer.Init()
+  return initializer, nil
 }
 
 // Filter types

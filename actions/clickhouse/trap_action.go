@@ -6,20 +6,21 @@
 package main
 
 /*
-This plugin performs no useful action, but can be used for unit testing or performance
-testing purposes.
+Dump data out in Clickhouse CSV data format, for adding to a Clickhouse database
  */
 
 import (
   "fmt"
 )
 
+const plugin_name = "Clickhouse"
+
 type filter_data struct {
     isLoaded bool
 }
 
 func (f filter_data) Init() error {
-   fmt.Println("Load")
+   fmt.Println("initialized " + plugin_name)
    return nil
 }
 

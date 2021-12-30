@@ -75,6 +75,8 @@ type trapexConfig struct {
 	PrometheusIp   string `default:"0.0.0.0" yaml:"prometheus_ip"`
 	PrometheusPort string `default:"80" yaml:"prometheus_port"`
 	PrometheusEndpoint string `default:"metrics" yaml:"prometheus_endpoint"`
+
+	FilterPlugins []string `default:"[]" yaml:"filter_plugins"`
   }
 
   Logging struct {
