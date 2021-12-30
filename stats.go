@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-        "github.com/prometheus/client_golang/prometheus"
-        "github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 const tBufSize int = 1448
@@ -48,30 +48,30 @@ var stats teStats
 
 // Prometheus statistics
 var (
-    trapsCount = promauto.NewCounter(prometheus.CounterOpts{
-        Name: "trapex_incoming_traps_total",
-        Help: "The total number of incoming SNMP traps",
-    })
-    trapsHandled = promauto.NewCounter(prometheus.CounterOpts{
-        Name: "trapex_handled_traps_total",
-        Help: "The total number of handled SNMP traps",
-    })
-    trapsDropped = promauto.NewCounter(prometheus.CounterOpts{
-        Name: "trapex_dropped_traps_total",
-        Help: "The total number of dropped SNMP traps",
-    })
-    trapsIgnored = promauto.NewCounter(prometheus.CounterOpts{
-        Name: "trapex_ignored_traps_total",
-        Help: "The total number of ignored SNMP traps",
-    })
-    trapsFromV2c = promauto.NewCounter(prometheus.CounterOpts{
-        Name: "trapex_v2c_traps_total",
-        Help: "The total number of SNMPv2c traps translated",
-    })
-    trapsFromV3 = promauto.NewCounter(prometheus.CounterOpts{
-        Name: "trapex_v3_traps_total",
-        Help: "The total number of SNMPv3 traps translated",
-    })
+	trapsCount = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "trapex_incoming_traps_total",
+		Help: "The total number of incoming SNMP traps",
+	})
+	trapsHandled = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "trapex_handled_traps_total",
+		Help: "The total number of handled SNMP traps",
+	})
+	trapsDropped = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "trapex_dropped_traps_total",
+		Help: "The total number of dropped SNMP traps",
+	})
+	trapsIgnored = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "trapex_ignored_traps_total",
+		Help: "The total number of ignored SNMP traps",
+	})
+	trapsFromV2c = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "trapex_v2c_traps_total",
+		Help: "The total number of SNMPv2c traps translated",
+	})
+	trapsFromV3 = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "trapex_v3_traps_total",
+		Help: "The total number of SNMPv3 traps translated",
+	})
 )
 
 type tcountRingBuf struct {

@@ -27,4 +27,3 @@ func initSigHandlers() {
 	signal.Notify(sigUsr2Ch, syscall.SIGUSR2)
 	go handleSIGUSR2(sigUsr2Ch)
 }
-

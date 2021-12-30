@@ -6,17 +6,15 @@
 package main
 
 import (
-    "net/http"
-    "github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
 )
-
 
 // exposeMetrics
 // Allow Prometheus to gather current performance metrics via /metrics URL
 func exposeMetrics() {
-    server := http.NewServeMux()
-    server.Handle("/" + teConfig.General.PrometheusEndpoint, promhttp.Handler())
-    var listenAddress = teConfig.General.PrometheusIp + ":" + teConfig.General.PrometheusPort
-    http.ListenAndServe(listenAddress, server)
+	server := http.NewServeMux()
+	server.Handle("/"+teConfig.General.PrometheusEndpoint, promhttp.Handler())
+	var listenAddress = teConfig.General.PrometheusIp + ":" + teConfig.General.PrometheusPort
+	http.ListenAndServe(listenAddress, server)
 }
-
