@@ -17,4 +17,3 @@ func initSigHandlers() {
 	signal.Notify(sigHupCh, syscall.SIGHUP)
 	go handleSIGHUP(sigHupCh)
 }
-
