@@ -19,9 +19,8 @@ import (
 	"github.com/rs/zerolog"
 	//zlog "github.com/rs/zerolog/log"
 
-        "github.com/damienstuart/trapex/actions"
+	"github.com/damienstuart/trapex/actions"
 )
-
 
 var trapRateTracker = newTrapRateTracker()
 var logger = zerolog.New(os.Stdout).With().Timestamp().Logger()

@@ -14,10 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/damienstuart/trapex/actions"
 	g "github.com/gosnmp/gosnmp"
 	"github.com/natefinch/lumberjack"
-"github.com/damienstuart/trapex/actions"
-
 )
 
 // trapType is an array of trap Generic Type human-friendly names

@@ -8,38 +8,35 @@ package main
 /*
 This plugin performs no useful action, but can be used for unit testing or performance
 testing purposes.
- */
+*/
 
 import (
-        "github.com/rs/zerolog"
-        "github.com/damienstuart/trapex/actions"
-
+	"github.com/damienstuart/trapex/actions"
+	"github.com/rs/zerolog"
 )
 
 type noopFilter string
+
 const plugin_name = "no op"
 
-
 func (p noopFilter) Init(logger zerolog.Logger) error {
-        logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 
-   return nil
+	return nil
 }
 
 func (p noopFilter) ProcessTrap(trap *plugin_interface.Trap) error {
-        //logger.Info().Str("plugin", plugin_name).Msg("Noop processing trap")
-   return nil
+	//logger.Info().Str("plugin", plugin_name).Msg("Noop processing trap")
+	return nil
 }
 
 func (p noopFilter) SigUsr1() error {
-   return nil
+	return nil
 }
 
 func (p noopFilter) SigUsr2() error {
-   return nil
+	return nil
 }
-
 
 // Exported symbol which supports filter.go's FilterAction type
 var FilterPlugin noopFilter
-

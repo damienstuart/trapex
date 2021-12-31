@@ -6,69 +6,69 @@
 package main
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"os"
+	"plugin"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
-        "plugin"
 
 	g "github.com/gosnmp/gosnmp"
 	"github.com/natefinch/lumberjack"
-        "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 
-"github.com/damienstuart/trapex/actions"
+	"github.com/damienstuart/trapex/actions"
 )
 
 // Filter action plugin interface
 type FilterPlugin interface {
-   Init(zerolog.Logger) error
-   ProcessTrap(trap *plugin_interface.Trap) error
-   SigUsr1() error
-   SigUsr2() error
+	Init(zerolog.Logger) error
+	ProcessTrap(trap *plugin_interface.Trap) error
+	SigUsr1() error
+	SigUsr2() error
 }
 
 //var plugins []FilterPlugin
 func loadFilterActions(newConfig *trapexConfig) error {
 
-  for _, plugin_name := range newConfig.General.FilterPlugins {
-      logger.Info().Str("filter_plugin", plugin_name).Msg("Initializing plugin")
-      filter_plugin, err := loadFilterPlugin(plugin_name)
-      if err == nil {
-         filter_plugin.Init(logger)
-      }
-  }
-  return nil
+	for _, plugin_name := range newConfig.General.FilterPlugins {
+		logger.Info().Str("filter_plugin", plugin_name).Msg("Initializing plugin")
+		filter_plugin, err := loadFilterPlugin(plugin_name)
+		if err == nil {
+			filter_plugin.Init(logger)
+		}
+	}
+	return nil
 }
 
 func loadFilterPlugin(plugin_name string) (FilterPlugin, error) {
-  var plugin_filename = "actions/plugins/" + plugin_name + ".so"
+	var plugin_filename = "actions/plugins/" + plugin_name + ".so"
 
-  plug, err := plugin.Open(plugin_filename)
-  if err != nil {
-      return nil, err
-  }
+	plug, err := plugin.Open(plugin_filename)
+	if err != nil {
+		return nil, err
+	}
 
-  // Load the class from the plugin
-  symAction, err := plug.Lookup("FilterPlugin")
-  if err != nil {
-      return nil, err
-  }
+	// Load the class from the plugin
+	symAction, err := plug.Lookup("FilterPlugin")
+	if err != nil {
+		return nil, err
+	}
 
-  var initializer FilterPlugin
-  // Instantiate the class from the plugin
-  initializer, ok := symAction.(FilterPlugin)
-  if !ok {
-      symbolType := fmt.Sprintf("%T", symAction)
-      logger.Error().Str("filter_plugin", plugin_name).Str("data type", symbolType).Msg("Unexpected type from plugin")
-      return nil, errors.New("Unexpected type from plugin")
-  }
+	var initializer FilterPlugin
+	// Instantiate the class from the plugin
+	initializer, ok := symAction.(FilterPlugin)
+	if !ok {
+		symbolType := fmt.Sprintf("%T", symAction)
+		logger.Error().Str("filter_plugin", plugin_name).Str("data type", symbolType).Msg("Unexpected type from plugin")
+		return nil, errors.New("Unexpected type from plugin")
+	}
 
-  return initializer, nil
+	return initializer, nil
 }
 
 // Filter types

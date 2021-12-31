@@ -10,9 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/damienstuart/trapex/actions"
 	g "github.com/gosnmp/gosnmp"
-"github.com/damienstuart/trapex/actions"
-
 )
 
 // OID constants we will need for v2c to v1 conversion.

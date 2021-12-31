@@ -71,10 +71,10 @@ type trapexConfig struct {
 		IgnoreVersions []string        `default:"[]" yaml:"ignore_versions"`
 		ignoreVersions []g.SnmpVersion `default:"[]"`
 
-		PrometheusIp       string `default:"0.0.0.0" yaml:"prometheus_ip"`
-		PrometheusPort     string `default:"80" yaml:"prometheus_port"`
-		PrometheusEndpoint string `default:"metrics" yaml:"prometheus_endpoint"`
-		FilterPlugins []string `default:"[]" yaml:"filter_plugins"`
+		PrometheusIp       string   `default:"0.0.0.0" yaml:"prometheus_ip"`
+		PrometheusPort     string   `default:"80" yaml:"prometheus_port"`
+		PrometheusEndpoint string   `default:"metrics" yaml:"prometheus_endpoint"`
+		FilterPlugins      []string `default:"[]" yaml:"filter_plugins"`
 	}
 
 	Logging struct {
@@ -211,9 +211,9 @@ func getConfig() error {
 	if err = processIpSets(&newConfig); err != nil {
 		return err
 	}
-        if err = loadFilterActions(&newConfig); err != nil {
-            return err
-        }
+	if err = loadFilterActions(&newConfig); err != nil {
+		return err
+	}
 	if err = processFilters(&newConfig); err != nil {
 		return err
 	}
