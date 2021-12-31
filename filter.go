@@ -27,8 +27,7 @@ import (
 // Filter action plugin interface
 type FilterPlugin interface {
    Init(zerolog.Logger) error
-   //ProcessTrap(trap *Trap) error
-   ProcessTrap() error
+   ProcessTrap(trap *plugin_interface.Trap) error
    SigUsr1() error
    SigUsr2() error
 }

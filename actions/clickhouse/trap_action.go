@@ -16,29 +16,13 @@ import (
   "time"
   "strings"
   "encoding/hex"
-       "net"
         g "github.com/gosnmp/gosnmp"
 
         "github.com/rs/zerolog"
 
         "github.com/natefinch/lumberjack"
         "github.com/damienstuart/trapex/actions"
-
 )
-
-/*
-// sgTrap holds a pointer to a trap and the source IP of
-// the incoming trap.
-//
-type sgTrap struct {
-        trapNumber uint64
-        data       g.SnmpTrap
-        trapVer    g.SnmpVersion
-        srcIP      net.IP
-        translated bool
-        dropped    bool
-}
-*/
 
 
 const plugin_name = "Clickhouse"
@@ -80,9 +64,8 @@ func (a trapCsvLogger) Init(logger zerolog.Logger) error {
     return nil
 }
 
-func (a trapCsvLogger) ProcessTrap() error {
-//func (a trapCsvLogger) ProcessTrap(trap *Trap) error {
-   //logCsvTrap(trap, a.logHandle)
+func (a trapCsvLogger) ProcessTrap(trap *plugin_interface.Trap) error {
+   logCsvTrap(trap, a.logHandle)
    return nil
 }
 
@@ -103,17 +86,17 @@ func (a trapCsvLogger) SigUsr2() error {
 // logCsvTrap takes care of logging the given trap to the given trapCsvLogger
 // destination.
 //
-func logCsvTrap(sgt *Trap, l *log.Logger) {
+func logCsvTrap(sgt *plugin_interface.Trap, l *log.Logger) {
         l.Printf(makeTrapLogCsvEntry(sgt))
 }
 
 // makeTrapLogEntry creates a log entry string for the given trap data.
-// Note that this particulare implementation expects to be dealing with
+// Note that this particular implementation expects to be dealing with
 // only v1 traps.
 //
-func makeTrapLogCsvEntry(sgt *Trap) string {
+func makeTrapLogCsvEntry(sgt *plugin_interface.Trap) string {
         var csv [11]string
-        trap := sgt.data
+        trap := sgt.Data
 
         /* Fields in order:
         TrapDate,
@@ -139,7 +122,7 @@ func makeTrapLogCsvEntry(sgt *Trap) string {
         //csv[3] = fmt.Sprintf("%v", stats.TrapCount)
 // FIXME: global stats object not visible in plugin space
         csv[3] = fmt.Sprintf("%v", 1)
-        csv[4] = fmt.Sprintf("\"%v\"", sgt.srcIP)
+        csv[4] = fmt.Sprintf("\"%v\"", sgt.SrcIP)
         csv[5] = fmt.Sprintf("\"%v\"", trap.AgentAddress)
         csv[6] = fmt.Sprintf("%v", trap.GenericTrap)
         csv[7] = fmt.Sprintf("%v", trap.SpecificTrap)
