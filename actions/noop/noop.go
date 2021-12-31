@@ -15,8 +15,11 @@ import (
         g "github.com/gosnmp/gosnmp"
 
         "github.com/rs/zerolog"
+        "github.com/damienstuart/trapex/actions"
+
 )
 
+/*
 // sgTrap holds a pointer to a trap and the source IP of
 // the incoming trap.
 //
@@ -28,7 +31,7 @@ type sgTrap struct {
         translated bool
         dropped    bool
 }
-
+*/
 
 type noopFilter string
 const plugin_name = "no op"
@@ -44,14 +47,14 @@ func (p noopFilter) Init(logger zerolog.Logger) error {
   .................
 Plugin issue: how to pass in data types to a plugin?
 I think that Golang might be comparing a hash of some sort, rather than
-a structure-based method, so that the locally declared sgTrap is different
+a structure-based method, so that the locally declared Trap is different
 than the trapex.go sgTrap type
 
 Ugh.  This sucks
 
 */
 func (p noopFilter) ProcessTrap() error {
-//func (p noopFilter) ProcessTrap(trap *sgTrap) error {
+//func (p noopFilter) ProcessTrap(trap *Trap) error {
         //logger.Info().Str("plugin", plugin_name).Msg("Noop processing trap")
    return nil
 }

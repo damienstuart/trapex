@@ -21,12 +21,13 @@ import (
 	"github.com/natefinch/lumberjack"
         "github.com/rs/zerolog"
 
+"github.com/damienstuart/trapex/actions"
 )
 
 // Filter action plugin interface
 type FilterPlugin interface {
    Init(zerolog.Logger) error
-   //ProcessTrap(trap *sgTrap) error
+   //ProcessTrap(trap *Trap) error
    ProcessTrap() error
    SigUsr1() error
    SigUsr2() error
@@ -46,7 +47,7 @@ func loadFilterActions(newConfig *trapexConfig) error {
 }
 
 func loadFilterPlugin(plugin_name string) (FilterPlugin, error) {
-  var plugin_filename = "actions/" + plugin_name + ".so"
+  var plugin_filename = "actions/" + plugin_name + "/trapex_plugin.so"
 
   plug, err := plugin.Open(plugin_filename)
   if err != nil {
@@ -179,8 +180,8 @@ func (a *trapForwarder) initAction(dest string) error {
 // Hook for sending a trap to the destination defined for this trapForwarder
 // instance.
 //
-func (a trapForwarder) processTrap(trap *sgTrap) error {
-	_, err := a.destination.SendTrap(trap.data)
+func (a trapForwarder) processTrap(trap *plugin_interface.Trap) error {
+	_, err := a.destination.SendTrap(trap.Data)
 	return err
 }
 
@@ -207,7 +208,7 @@ func (a *trapLogger) initAction(logfile string, teConf *trapexConfig) error {
 
 // Hook for logging a trap for this instance of a log action.
 //
-func (a *trapLogger) processTrap(trap *sgTrap) {
+func (a *trapLogger) processTrap(trap *plugin_interface.Trap) {
 	logTrap(trap, a.logHandle)
 }
 
@@ -235,7 +236,7 @@ func (a *trapCsvLogger) initAction(logfile string, teConf *trapexConfig) error {
 
 // Hook for logging a trap for this instance of a log action.
 //
-func (a *trapCsvLogger) processTrap(trap *sgTrap) {
+func (a *trapCsvLogger) processTrap(trap *plugin_interface.Trap) {
 	logCsvTrap(trap, a.logHandle)
 }
 
@@ -258,25 +259,25 @@ func (a *trapCsvLogger) close() {
 // isFilterMatch checks trap data against a trapexFilter and returns a boolean
 // to indicate whether or not the trap data matches the filter criteria.
 //
-func (f *trapexFilter) isFilterMatch(sgt *sgTrap) bool {
+func (f *trapexFilter) isFilterMatch(sgt *plugin_interface.Trap) bool {
 	// Assume true - until one of the filter items does not match
-	trap := &(sgt.data)
+	trap := &(sgt.Data)
 	for _, fo := range f.filterItems {
 		fval := fo.filterValue
 		switch fo.filterItem {
 		case version:
-			if fval != sgt.trapVer {
+			if fval != sgt.TrapVer {
 				return false
 			}
 		case srcIP:
-			if fo.filterType == parseTypeString && fval.(string) != sgt.srcIP.String() {
+			if fo.filterType == parseTypeString && fval.(string) != sgt.SrcIP.String() {
 				return false
-			} else if fo.filterType == parseTypeCIDR && !fval.(*network).contains(sgt.srcIP) {
+			} else if fo.filterType == parseTypeCIDR && !fval.(*network).contains(sgt.SrcIP) {
 				return false
-			} else if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(sgt.srcIP.String()) {
+			} else if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(sgt.SrcIP.String()) {
 				return false
 			} else if fo.filterType == parseTypeIPSet {
-				_, ok := teConfig.ipSets[fval.(string)][sgt.srcIP.String()]
+				_, ok := teConfig.ipSets[fval.(string)][sgt.SrcIP.String()]
 				if ok != true {
 					return false
 				}
@@ -316,42 +317,42 @@ func (f *trapexFilter) isFilterMatch(sgt *sgTrap) bool {
 // processAction handles the execution of the action for the
 // trapexFilter instance on the the given trap data.
 //
-func (f *trapexFilter) processAction(sgt *sgTrap) {
+func (f *trapexFilter) processAction(sgt *plugin_interface.Trap) {
 	switch f.actionType {
 	case actionBreak:
-		sgt.dropped = true
+		sgt.Dropped = true
 		return
 	case actionNat:
 		if f.actionArg == "$SRC_IP" {
-			sgt.data.AgentAddress = sgt.srcIP.String()
+			sgt.Data.AgentAddress = sgt.SrcIP.String()
 		} else {
-			sgt.data.AgentAddress = f.actionArg
+			sgt.Data.AgentAddress = f.actionArg
 		}
 	case actionForward:
 		f.action.(*trapForwarder).processTrap(sgt)
 	case actionForwardBreak:
 		f.action.(*trapForwarder).processTrap(sgt)
-		sgt.dropped = true
+		sgt.Dropped = true
 		return
 	case actionLog:
-		if !sgt.dropped {
+		if !sgt.Dropped {
 			f.action.(*trapLogger).processTrap(sgt)
 		}
 	case actionLogBreak:
-		if !sgt.dropped {
+		if !sgt.Dropped {
 			f.action.(*trapLogger).processTrap(sgt)
 		}
-		sgt.dropped = true
+		sgt.Dropped = true
 		return
 	case actionCsv:
-		if !sgt.dropped {
+		if !sgt.Dropped {
 			f.action.(*trapCsvLogger).processTrap(sgt)
 		}
 	case actionCsvBreak:
-		if !sgt.dropped {
+		if !sgt.Dropped {
 			f.action.(*trapCsvLogger).processTrap(sgt)
 		}
-		sgt.dropped = true
+		sgt.Dropped = true
 		return
 	}
 }

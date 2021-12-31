@@ -18,19 +18,10 @@ import (
 
 	"github.com/rs/zerolog"
 	//zlog "github.com/rs/zerolog/log"
+
+        "github.com/damienstuart/trapex/actions"
 )
 
-// sgTrap holds a pointer to a trap and the source IP of
-// the incoming trap.
-//
-type sgTrap struct {
-	trapNumber uint64
-	data       g.SnmpTrap
-	trapVer    g.SnmpVersion
-	srcIP      net.IP
-	translated bool
-	dropped    bool
-}
 
 var trapRateTracker = newTrapRateTracker()
 var logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
@@ -113,8 +104,8 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	trapsHandled.Inc()
 
 	// Make the trap
-	trap := sgTrap{
-		data: g.SnmpTrap{
+	trap := plugin_interface.Trap{
+		Data: g.SnmpTrap{
 			Variables:    p.Variables,
 			Enterprise:   p.Enterprise,
 			AgentAddress: p.AgentAddress,
@@ -122,8 +113,8 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 			SpecificTrap: p.SpecificTrap,
 			Timestamp:    p.Timestamp,
 		},
-		srcIP:   addr.IP,
-		trapVer: p.Version,
+		SrcIP:   addr.IP,
+		TrapVer: p.Version,
 	}
 
 	// Translate to v1 if needed
@@ -150,10 +141,10 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 // processTrap is the entry point to code that checks the incoming trap
 // against the filter list and processes the trap accordingly.
 //
-func processTrap(sgt *sgTrap) {
+func processTrap(sgt *plugin_interface.Trap) {
 	for _, f := range teConfig.filters {
 		// If this trap is tagged to drop, then continue.
-		if sgt.dropped {
+		if sgt.Dropped {
 			continue
 		}
 		// If matchAll is true, just process the action.
@@ -161,14 +152,14 @@ func processTrap(sgt *sgTrap) {
 			// We don't expect to see this here (set a wide open filter for
 			// drop).... (but...)
 			if f.actionType == actionBreak {
-				sgt.dropped = true
+				sgt.Dropped = true
 				stats.DroppedTraps++
 				trapsDropped.Inc()
 				continue
 			}
 			f.processAction(sgt)
 			if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
-				sgt.dropped = true
+				sgt.Dropped = true
 				stats.DroppedTraps++
 				trapsDropped.Inc()
 				continue
@@ -177,14 +168,14 @@ func processTrap(sgt *sgTrap) {
 			// Determine if this trap matches this filter
 			if f.isFilterMatch(sgt) {
 				if f.actionType == actionBreak {
-					sgt.dropped = true
+					sgt.Dropped = true
 					stats.DroppedTraps++
 					trapsDropped.Inc()
 					continue
 				}
 				f.processAction(sgt)
 				if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
-					sgt.dropped = true
+					sgt.Dropped = true
 					stats.DroppedTraps++
 					trapsDropped.Inc()
 					continue

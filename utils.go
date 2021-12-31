@@ -16,6 +16,8 @@ import (
 
 	g "github.com/gosnmp/gosnmp"
 	"github.com/natefinch/lumberjack"
+"github.com/damienstuart/trapex/actions"
+
 )
 
 // trapType is an array of trap Generic Type human-friendly names
@@ -63,14 +65,14 @@ func (n *network) contains(ip net.IP) bool {
 // logTrap takes care of logging the given trap to the given trapLogger
 // destination.
 //
-func logTrap(sgt *sgTrap, l *log.Logger) {
+func logTrap(sgt *plugin_interface.Trap, l *log.Logger) {
 	l.Printf(makeTrapLogEntry(sgt))
 }
 
 // logCsvTrap takes care of logging the given trap to the given trapCsvLogger
 // destination.
 //
-func logCsvTrap(sgt *sgTrap, l *log.Logger) {
+func logCsvTrap(sgt *plugin_interface.Trap, l *log.Logger) {
 	l.Printf(makeTrapLogCsvEntry(sgt))
 }
 
@@ -111,10 +113,10 @@ func makeCsvLogger(logfile string, teConf *trapexConfig) *lumberjack.Logger {
 // Note that this particulare implementation expects to be dealing with
 // only v1 traps.
 //
-func makeTrapLogEntry(sgt *sgTrap) string {
+func makeTrapLogEntry(sgt *plugin_interface.Trap) string {
 	var b strings.Builder
 	var genTrapType string
-	trap := sgt.data
+	trap := sgt.Data
 
 	if trap.GenericTrap >= 0 && trap.GenericTrap <= 6 {
 		genTrapType = trapType[trap.GenericTrap]
@@ -122,11 +124,11 @@ func makeTrapLogEntry(sgt *sgTrap) string {
 		genTrapType = strconv.Itoa(trap.GenericTrap)
 	}
 	b.WriteString(fmt.Sprintf("\nTrap: %v", stats.TrapCount))
-	if sgt.translated == true {
-		b.WriteString(fmt.Sprintf(" (translated from v%s)", sgt.trapVer.String()))
+	if sgt.Translated == true {
+		b.WriteString(fmt.Sprintf(" (translated from v%s)", sgt.TrapVer.String()))
 	}
 	b.WriteString(fmt.Sprintf("\n\t%s\n", time.Now().Format(time.ANSIC)))
-	b.WriteString(fmt.Sprintf("\tSrc IP: %s\n", sgt.srcIP))
+	b.WriteString(fmt.Sprintf("\tSrc IP: %s\n", sgt.SrcIP))
 	b.WriteString(fmt.Sprintf("\tAgent: %s\n", trap.AgentAddress))
 	b.WriteString(fmt.Sprintf("\tTrap Type: %s\n", genTrapType))
 	b.WriteString(fmt.Sprintf("\tSpecific Type: %v\n", trap.SpecificTrap))
@@ -168,9 +170,9 @@ func makeTrapLogEntry(sgt *sgTrap) string {
 // Note that this particulare implementation expects to be dealing with
 // only v1 traps.
 //
-func makeTrapLogCsvEntry(sgt *sgTrap) string {
+func makeTrapLogCsvEntry(sgt *plugin_interface.Trap) string {
 	var csv [11]string
-	trap := sgt.data
+	trap := sgt.Data
 
 	/* Fields in order:
 	TrapDate,
@@ -192,7 +194,7 @@ func makeTrapLogCsvEntry(sgt *sgTrap) string {
 	csv[1] = fmt.Sprintf("%v %v", ts[:10], ts[11:19])
 	csv[2] = fmt.Sprintf("\"%v\"", teConfig.General.Hostname)
 	csv[3] = fmt.Sprintf("%v", stats.TrapCount)
-	csv[4] = fmt.Sprintf("\"%v\"", sgt.srcIP)
+	csv[4] = fmt.Sprintf("\"%v\"", sgt.SrcIP)
 	csv[5] = fmt.Sprintf("\"%v\"", trap.AgentAddress)
 	csv[6] = fmt.Sprintf("%v", trap.GenericTrap)
 	csv[7] = fmt.Sprintf("%v", trap.SpecificTrap)

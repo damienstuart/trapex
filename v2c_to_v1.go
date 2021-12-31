@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	g "github.com/gosnmp/gosnmp"
+"github.com/damienstuart/trapex/actions"
+
 )
 
 // OID constants we will need for v2c to v1 conversion.
@@ -24,13 +26,13 @@ const (
 
 // translateToV1 converts a trap from v2c/v3 to v1 per RFC-3584
 //
-func translateToV1(t *sgTrap) error {
+func translateToV1(t *plugin_interface.Trap) error {
 	// If this is already a v1 trap, there is nothing to do.
-	if t.trapVer == g.Version1 {
+	if t.TrapVer == g.Version1 {
 		return nil
 	}
 
-	trap := &t.data
+	trap := &t.Data
 	if len(trap.Variables) < 2 {
 		return fmt.Errorf("got invalid v2 trap with less than 2 varbinds: %v", trap)
 	}
@@ -143,16 +145,16 @@ func translateToV1(t *sgTrap) error {
 	if len(agentAddress) > 0 {
 		trap.AgentAddress = agentAddress
 	} else {
-		trap.AgentAddress = t.srcIP.String()
+		trap.AgentAddress = t.SrcIP.String()
 	}
 
-	t.translated = true
+	t.Translated = true
 
 	// Update the translate stats
-	if t.trapVer == g.Version2c {
+	if t.TrapVer == g.Version2c {
 		stats.TranslatedFromV2c++
 		trapsFromV2c.Inc()
-	} else if t.trapVer == g.Version3 {
+	} else if t.TrapVer == g.Version3 {
 		stats.TranslatedFromV3++
 		trapsFromV3.Inc()
 	}

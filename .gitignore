@@ -13,6 +13,7 @@
 
 trapex
 log
+*.log
 # DSS Misc
 *.[0-9]
 *-dss.*
