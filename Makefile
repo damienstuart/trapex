@@ -11,8 +11,8 @@ container_clickhouse = clickhouse
 
 
 build:
-	go build -buildmode=plugin -o actions/noop/trap_action.so actions/noop/trap_action.go
-	go build -buildmode=plugin -o actions/clickhouse/trap_action.so actions/clickhouse/trap_action.go
+	go build -buildmode=plugin -o actions/noop.so actions/noop.go
+	go build -buildmode=plugin -o actions/clickhouse.so actions/clickhouse.go
 	go build
 
 deps:
