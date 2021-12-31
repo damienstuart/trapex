@@ -11,8 +11,7 @@ container_clickhouse = clickhouse
 
 
 build:
-	go build -buildmode=plugin -o actions/plugins/noop.so actions/plugins/noop.go
-	go build -buildmode=plugin -o actions/plugins/clickhouse.so actions/plugins/clickhouse.go
+	cd actions && ./build_plugins.sh
 	go build
 
 deps:

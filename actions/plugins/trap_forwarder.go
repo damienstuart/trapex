@@ -10,6 +10,8 @@ This plugin sends SNMP traps to a new destination
  */
 
 import (
+        g "github.com/gosnmp/gosnmp"
+
         "github.com/rs/zerolog"
         "github.com/damienstuart/trapex/actions"
 
@@ -23,7 +25,7 @@ const plugin_name = "trap forwarder"
 
 
 func (a trapForwarder) Init(logger zerolog.Logger) error {
-        logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+        //logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 
 /*
 func (a *trapForwarder) initAction(dest string) error {
@@ -57,7 +59,7 @@ func (a trapForwarder) ProcessTrap(trap *plugin_interface.Trap) error {
         _, err := a.destination.SendTrap(trap.Data)
         return err
 
-        logger.Info().Str("plugin", plugin_name).Msg("Processing trap")
+        //logger.Info().Str("plugin", plugin_name).Msg("Processing trap")
    return nil
 }
 
