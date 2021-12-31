@@ -46,7 +46,7 @@ func loadFilterActions(newConfig *trapexConfig) error {
 }
 
 func loadFilterPlugin(plugin_name string) (FilterPlugin, error) {
-  var plugin_filename = "actions/" + plugin_name + "/trapex_plugin.so"
+  var plugin_filename = "actions/plugins/" + plugin_name + ".so"
 
   plug, err := plugin.Open(plugin_filename)
   if err != nil {
