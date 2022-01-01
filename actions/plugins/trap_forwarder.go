@@ -73,8 +73,9 @@ func (p trapForwarder) SigUsr2() error {
 	return nil
 }
 
-func (a trapForwarder) Close() {
+func (a trapForwarder) Close() error {
 	a.destination.Conn.Close()
+return nil
 }
 
 // Exported symbol which supports filter.go's FilterAction type

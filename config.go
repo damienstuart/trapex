@@ -389,19 +389,18 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		if err == nil {
 			forwarder.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
 		}
-		filter.action = &forwarder
+		filter.action = forwarder
 	case "log":
 		if breakAfter {
 			filter.actionType = actionLogBreak
 		} else {
 			filter.actionType = actionLog
 		}
-		logger, err := loadFilterPlugin("trap_logger")
+		filter.action, err = loadFilterPlugin("trap_logger")
 		if err == nil {
-			logger.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+			filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
 		}
 
-		filter.action = &logger
 	case "csv":
 		if breakAfter {
 			filter.actionType = actionCsvBreak
@@ -412,7 +411,7 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		if err == nil {
 			csvLogger.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
 		}
-		filter.action = &csvLogger
+		filter.action = csvLogger
 	default:
 		return fmt.Errorf("unknown action: %s at line %v", action, lineNumber)
 	}

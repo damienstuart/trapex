@@ -101,7 +101,8 @@ type filterObj struct {
 type trapexFilter struct {
 	filterItems []filterObj
 	matchAll    bool
-	action      interface{}
+	//action      interface{}
+	action      FilterPlugin
 	actionType  int
 	actionArg   string
 }
