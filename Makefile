@@ -26,6 +26,7 @@ fmt:
 	gofmt -w *.go
 	gofmt -w actions/*.go
 	gofmt -w actions/plugins/*.go
+	git commit -m "gofmt" -a
 
 rpm: build
 	rpmbuild -ba tools/rpm.spec
