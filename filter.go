@@ -27,7 +27,6 @@ type FilterPlugin interface {
 	Close() error
 }
 
-
 func loadFilterPlugin(plugin_name string) (FilterPlugin, error) {
 	var plugin_filename = "actions/plugins/" + plugin_name + ".so"
 
@@ -100,13 +99,12 @@ type filterObj struct {
 // trapexFilter holds the filter data and action for a specfic
 // filter line from the config file.
 type trapexFilter struct {
-        filterItems []filterObj
-        matchAll    bool
-        action      interface{}
-        actionType  int
-        actionArg   string
+	filterItems []filterObj
+	matchAll    bool
+	action      interface{}
+	actionType  int
+	actionArg   string
 }
-
 
 // isFilterMatch checks trap data against a trapexFilter and returns a boolean
 // to indicate whether or not the trap data matches the filter criteria.

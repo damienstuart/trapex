@@ -385,10 +385,10 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		} else {
 			filter.actionType = actionForward
 		}
-                forwarder, err := loadFilterPlugin("trap_forwarder")
-        if err == nil {
-                forwarder.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
-        }
+		forwarder, err := loadFilterPlugin("trap_forwarder")
+		if err == nil {
+			forwarder.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+		}
 		filter.action = &forwarder
 	case "log":
 		if breakAfter {
@@ -396,10 +396,10 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		} else {
 			filter.actionType = actionLog
 		}
-                logger, err := loadFilterPlugin("trap_logger")
-        if err == nil {
-                logger.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
-        }
+		logger, err := loadFilterPlugin("trap_logger")
+		if err == nil {
+			logger.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+		}
 
 		filter.action = &logger
 	case "csv":
@@ -408,10 +408,10 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		} else {
 			filter.actionType = actionCsv
 		}
-                csvLogger, err := loadFilterPlugin("clickhouse")
-        if err == nil {
-                csvLogger.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
-        }
+		csvLogger, err := loadFilterPlugin("clickhouse")
+		if err == nil {
+			csvLogger.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+		}
 		filter.action = &csvLogger
 	default:
 		return fmt.Errorf("unknown action: %s at line %v", action, lineNumber)
@@ -428,7 +428,7 @@ func closeTrapexHandles() {
 			f.action.(FilterPlugin).Close()
 		}
 		if f.actionType == actionLog || f.actionType == actionLogBreak {
- fmt.Println("Would be closing filehandle now" )
+			fmt.Println("Would be closing filehandle now")
 			//f.action.(FilterPlugin).Close()
 		}
 		if f.actionType == actionCsv || f.actionType == actionCsvBreak {

@@ -61,4 +61,3 @@ type TrapexConfig struct {
 	Filters_str []string `default:"[]" yaml:"filters"`
 	filters     []trapexFilter
 }
-

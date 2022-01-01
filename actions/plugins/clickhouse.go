@@ -76,7 +76,7 @@ func (a trapCsvLogger) SigUsr1() error {
 
 func (a trapCsvLogger) Close() error {
 	fmt.Println("Close")
-        a.fd.Close()
+	a.fd.Close()
 	return nil
 }
 
