@@ -27,7 +27,7 @@ func TestPluginInterfacess(t *testing.T) {
 	                           filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
 	                   }
 
-	   	var testConfig TrapexConfig
+	   	var testConfig trapexConfig
 	   	loadConfig("tests/config/general.yml", &testConfig)
 	*/
 

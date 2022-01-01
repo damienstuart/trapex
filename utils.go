@@ -88,7 +88,7 @@ func panicOnError(e error) {
 // makeLogger initializes and returns a lumberjack.Logger (logger with
 // built-in log rotation management).
 //
-func makeLogger(logfile string, teConf *TrapexConfig) *lumberjack.Logger {
+func makeLogger(logfile string, teConf *trapexConfig) *lumberjack.Logger {
 	l := lumberjack.Logger{
 		Filename:   logfile,
 		MaxSize:    teConf.Logging.LogMaxSize,
@@ -101,7 +101,7 @@ func makeLogger(logfile string, teConf *TrapexConfig) *lumberjack.Logger {
 // makeCsvLogger initializes and returns a lumberjack.Logger (logger with
 // built-in log rotation management).
 //
-func makeCsvLogger(logfile string, teConf *TrapexConfig) *lumberjack.Logger {
+func makeCsvLogger(logfile string, teConf *trapexConfig) *lumberjack.Logger {
 	l := lumberjack.Logger{
 		Filename: logfile,
 	}

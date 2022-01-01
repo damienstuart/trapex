@@ -25,10 +25,8 @@ type v3Params struct {
 
 type IpSet map[string]bool
 
-type TrapexConfig struct {
-	Configured bool
-	RunLogFile string
-	ConfigFile string
+type trapexConfig struct {
+	teConfigured bool
 
 	General struct {
 		Hostname   string `yaml:"hostname"`

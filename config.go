@@ -53,7 +53,7 @@ type trapexCommandLine struct {
 
 // Global vars
 //
-var teConfig *TrapexConfig
+var teConfig *trapexConfig
 var teCmdLine trapexCommandLine
 var ipRe = regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
 
@@ -94,7 +94,7 @@ func processCommandLine() {
 
 // loadConfig
 // Load a YAML file with configuration, and create a new object
-func loadConfig(config_file string, newConfig *TrapexConfig) error {
+func loadConfig(config_file string, newConfig *trapexConfig) error {
 	defaults.Set(newConfig)
 
 	newConfig.IpSets = make(map[string]IpSet)
@@ -112,7 +112,7 @@ func loadConfig(config_file string, newConfig *TrapexConfig) error {
 	return nil
 }
 
-func applyCliOverrides(newConfig *TrapexConfig) {
+func applyCliOverrides(newConfig *trapexConfig) {
 	// Override the listen address:port if they were specified on the
 	// command line.  If not and the listener values were not set in
 	// the config file, fallback to defaults.
@@ -138,14 +138,14 @@ func applyCliOverrides(newConfig *TrapexConfig) {
 func getConfig() error {
 	var operation string
 	// If this is a reconfig close any current handles
-	if teConfig != nil && teConfig.Configured {
+	if teConfig != nil && teConfig.teConfigured {
 		operation = "Reloading "
 	} else {
 		operation = "Loading "
 	}
 	trapex_logger.Info().Str("version", myVersion).Str("configuration_file", teCmdLine.configFile).Msg(operation + "configuration for trapex")
 
-	var newConfig TrapexConfig
+	var newConfig trapexConfig
 	err := loadConfig(teCmdLine.configFile, &newConfig)
 	if err != nil {
 		return err
@@ -166,17 +166,17 @@ func getConfig() error {
 	}
 
 	// If this is a reconfigure, close the old handles here
-	if teConfig != nil && teConfig.Configured {
+	if teConfig != nil && teConfig.teConfigured {
 		closeTrapexHandles()
 	}
 	// Set our global config pointer to this configuration
-	newConfig.Configured = true
+	newConfig.teConfigured = true
 	teConfig = &newConfig
 
 	return nil
 }
 
-func validateIgnoreVersions(newConfig *TrapexConfig) error {
+func validateIgnoreVersions(newConfig *trapexConfig) error {
 	var ignorev1, ignorev2c, ignorev3 bool = false, false, false
 	for _, candidate := range newConfig.General.IgnoreVersions_str {
 		switch strings.ToLower(candidate) {
@@ -205,7 +205,7 @@ func validateIgnoreVersions(newConfig *TrapexConfig) error {
 	return nil
 }
 
-func validateSnmpV3Args(newConfig *TrapexConfig) error {
+func validateSnmpV3Args(newConfig *trapexConfig) error {
 	switch strings.ToLower(newConfig.V3Params.MsgFlags_str) {
 	case "noauthnopriv":
 		newConfig.V3Params.MsgFlags = g.NoAuthNoPriv
@@ -250,7 +250,7 @@ func validateSnmpV3Args(newConfig *TrapexConfig) error {
 	return nil
 }
 
-func processIpSets(newConfig *TrapexConfig) error {
+func processIpSets(newConfig *trapexConfig) error {
 	for _, stanza := range newConfig.IpSets_str {
 		for ipsName, ips := range stanza {
 			trapex_logger.Debug().Str("ipset", ipsName).Msg("Loading IpSet")
@@ -268,7 +268,7 @@ func processIpSets(newConfig *TrapexConfig) error {
 	return nil
 }
 
-func processFilters(newConfig *TrapexConfig) error {
+func processFilters(newConfig *trapexConfig) error {
 
 	for lineNumber, filter_line := range newConfig.Filters_str {
 		trapex_logger.Debug().Str("filter", filter_line).Int("line_number", lineNumber).Msg("Examining filter")
@@ -282,7 +282,7 @@ func processFilters(newConfig *TrapexConfig) error {
 // processFilterLine parses a "filter" line and sets
 // the appropriate values in a corresponding trapexFilter struct.
 //
-func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) error {
+func processFilterLine(f []string, newConfig *trapexConfig, lineNumber int) error {
 	var err error
 	if len(f) < 7 {
 		return fmt.Errorf("Not enough fields in filter line(%v): %s", lineNumber, "filter "+strings.Join(f, " "))
