@@ -385,10 +385,10 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		} else {
 			filter.actionType = actionForward
 		}
-		forwarder := trapForwarder{}
-		if err := forwarder.initAction(actionArg); err != nil {
-			return err
-		}
+                forwarder, err := loadFilterPlugin("trap_forwarder")
+        if err == nil {
+                forwarder.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+        }
 		filter.action = &forwarder
 	case "log":
 		if breakAfter {
@@ -425,7 +425,7 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 func closeTrapexHandles() {
 	for _, f := range teConfig.filters {
 		if f.actionType == actionForward || f.actionType == actionForwardBreak {
-			f.action.(*trapForwarder).close()
+			f.action.(FilterPlugin).Close()
 		}
 		if f.actionType == actionLog || f.actionType == actionLogBreak {
  fmt.Println("Would be closing filehandle now" )

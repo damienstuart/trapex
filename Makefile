@@ -11,7 +11,7 @@ container_clickhouse = clickhouse
 
 
 build:
-#	cd actions && ./build_plugins.sh
+	cd actions && ./build_plugins.sh
 	go build
 
 deps:

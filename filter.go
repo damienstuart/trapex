@@ -13,11 +13,8 @@ import (
 	"os"
 	"plugin"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 
-	g "github.com/gosnmp/gosnmp"
 	"github.com/natefinch/lumberjack"
 	"github.com/rs/zerolog"
 
@@ -114,13 +111,6 @@ type trapexFilter struct {
 }
 
 
-// trapForwarder is an instance of a forward destination.
-//
-type trapForwarder struct {
-	destination *g.GoSNMP
-}
-
-
 // trapCsvLogger is an instance of a trap CSV logfile destination.
 //
 type trapCsvLogger struct {
@@ -129,47 +119,6 @@ type trapCsvLogger struct {
 	logger    *lumberjack.Logger
 	logHandle *log.Logger
 	isBroken  bool
-}
-
-// Initialize a trapForwarder instance.
-//
-func (a *trapForwarder) initAction(dest string) error {
-	s := strings.Split(dest, ":")
-	port, err := strconv.Atoi(s[1])
-	if err != nil {
-		panic("Invalid destination port: " + s[1])
-	}
-	a.destination = &g.GoSNMP{
-		Target:             s[0],
-		Port:               uint16(port),
-		Transport:          "udp",
-		Community:          "",
-		Version:            g.Version1,
-		Timeout:            time.Duration(2) * time.Second,
-		Retries:            3,
-		ExponentialTimeout: true,
-		MaxOids:            g.MaxOids,
-	}
-	err = a.destination.Connect()
-	if err != nil {
-		return (err)
-	}
-	trapex_logger.Info().Str("target", s[0]).Str("port", s[1]).Msg("Added trap destination")
-	return nil
-}
-
-// Hook for sending a trap to the destination defined for this trapForwarder
-// instance.
-//
-func (a trapForwarder) processTrap(trap *plugin_interface.Trap) error {
-	_, err := a.destination.SendTrap(trap.Data)
-	return err
-}
-
-// Close the trapForwarder connection
-//
-func (a trapForwarder) close() {
-	a.destination.Conn.Close()
 }
 
 
@@ -284,9 +233,9 @@ func (f *trapexFilter) processAction(sgt *plugin_interface.Trap) {
 			sgt.Data.AgentAddress = f.actionArg
 		}
 	case actionForward:
-		f.action.(*trapForwarder).processTrap(sgt)
+		f.action.(FilterPlugin).ProcessTrap(sgt)
 	case actionForwardBreak:
-		f.action.(*trapForwarder).processTrap(sgt)
+		f.action.(FilterPlugin).ProcessTrap(sgt)
 		sgt.Dropped = true
 		return
 	case actionLog:
