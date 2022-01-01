@@ -144,17 +144,17 @@ func processTrap(sgt *plugin_interface.Trap) {
 			continue
 		}
 		// If matchAll is true, just process the action.
-		if f.MatchAll == true {
+		if f.matchAll == true {
 			// We don't expect to see this here (set a wide open filter for
 			// drop).... (but...)
-			if f.ActionType == actionBreak {
+			if f.actionType == actionBreak {
 				sgt.Dropped = true
 				stats.DroppedTraps++
 				trapsDropped.Inc()
 				continue
 			}
 			f.processAction(sgt)
-			if f.ActionType == actionForwardBreak || f.ActionType == actionLogBreak || f.ActionType == actionCsvBreak {
+			if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
 				sgt.Dropped = true
 				stats.DroppedTraps++
 				trapsDropped.Inc()
@@ -163,14 +163,14 @@ func processTrap(sgt *plugin_interface.Trap) {
 		} else {
 			// Determine if this trap matches this filter
 			if f.isFilterMatch(sgt) {
-				if f.ActionType == actionBreak {
+				if f.actionType == actionBreak {
 					sgt.Dropped = true
 					stats.DroppedTraps++
 					trapsDropped.Inc()
 					continue
 				}
 				f.processAction(sgt)
-				if f.ActionType == actionForwardBreak || f.ActionType == actionLogBreak || f.ActionType == actionCsvBreak {
+				if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
 					sgt.Dropped = true
 					stats.DroppedTraps++
 					trapsDropped.Inc()

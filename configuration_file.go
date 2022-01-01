@@ -59,25 +59,6 @@ type TrapexConfig struct {
 	IpSets     map[string]IpSet      `default:"{}"`
 
 	Filters_str []string `default:"[]" yaml:"filters"`
-	filters     []TrapexFilter
+	filters     []trapexFilter
 }
 
-// filterObj represents one of the filterable items in a filter line from
-// the config file (i.e. Src IP, AgentAddress, GenericType, SpecificType,
-// and Enterprise OID).
-//
-type FilterObj struct {
-	FilterItem  int
-	FilterType  int
-	FilterValue interface{} // string, *regex.Regexp, *network, int
-}
-
-// trapexFilter holds the filter data and action for a specfic
-// filter line from the config file.
-type TrapexFilter struct {
-	FilterItems []FilterObj
-	MatchAll    bool
-	Action      interface{}
-	ActionType  int
-	ActionArg   string
-}

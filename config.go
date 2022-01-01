@@ -290,68 +290,68 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 
 	// Process the filter criteria
 	//
-	filter := TrapexFilter{}
+	filter := trapexFilter{}
 	if strings.HasPrefix(strings.Join(f, " "), "* * * * * *") {
-		filter.MatchAll = true
+		filter.matchAll = true
 	} else {
-		fObj := FilterObj{}
+		fObj := filterObj{}
 		// Construct the filter criteria
 		for i, fi := range f[:6] {
 			if fi == "*" {
 				continue
 			}
-			fObj.FilterItem = i
+			fObj.filterItem = i
 			if i == 0 {
 				switch strings.ToLower(fi) {
 				case "v1", "1":
-					fObj.FilterValue = g.Version1
+					fObj.filterValue = g.Version1
 				case "v2c", "2c", "2":
-					fObj.FilterValue = g.Version2c
+					fObj.filterValue = g.Version2c
 				case "v3", "3":
-					fObj.FilterValue = g.Version3
+					fObj.filterValue = g.Version3
 				default:
 					return fmt.Errorf("Unsupported or invalid SNMP version (%s) on line %v for filter: %s", fi, lineNumber, f)
 				}
-				fObj.FilterType = parseTypeInt // Just because we should set this to something.
+				fObj.filterType = parseTypeInt // Just because we should set this to something.
 			} else if i == 1 || i == 2 { // Either of the first 2 is an IP address type
 				if strings.HasPrefix(fi, "ipset:") { // If starts with a "ipset:"" it's an IP set
-					fObj.FilterType = parseTypeIPSet
+					fObj.filterType = parseTypeIPSet
 					if _, ok := newConfig.IpSets[fi[6:]]; ok {
-						fObj.FilterValue = fi[6:]
+						fObj.filterValue = fi[6:]
 					} else {
 						return fmt.Errorf("Invalid ipset name specified on line %v: %s: %s", lineNumber, fi, f)
 					}
 				} else if strings.HasPrefix(fi, "/") { // If starts with a "/", it's a regex
-					fObj.FilterType = parseTypeRegex
-					fObj.FilterValue, err = regexp.Compile(fi[1:])
+					fObj.filterType = parseTypeRegex
+					fObj.filterValue, err = regexp.Compile(fi[1:])
 					if err != nil {
 						return fmt.Errorf("unable to compile regexp for IP on line %v: %s: %s\n%s", lineNumber, fi, err, f)
 					}
 				} else if strings.Contains(fi, "/") {
-					fObj.FilterType = parseTypeCIDR
-					fObj.FilterValue, err = newNetwork(fi)
+					fObj.filterType = parseTypeCIDR
+					fObj.filterValue, err = newNetwork(fi)
 					if err != nil {
 						return fmt.Errorf("invalid IP/CIDR at line %v: %s, %s", lineNumber, fi, f)
 					}
 				} else {
-					fObj.FilterType = parseTypeString
-					fObj.FilterValue = fi
+					fObj.filterType = parseTypeString
+					fObj.filterValue = fi
 				}
 			} else if i > 2 && i < 5 { // Generic and Specific type
 				val, e := strconv.Atoi(fi)
 				if e != nil {
 					return fmt.Errorf("invalid integer value at line %v: %s: %s", lineNumber, fi, e)
 				}
-				fObj.FilterType = parseTypeInt
-				fObj.FilterValue = val
+				fObj.filterType = parseTypeInt
+				fObj.filterValue = val
 			} else { // The enterprise OID
-				fObj.FilterType = parseTypeRegex
-				fObj.FilterValue, err = regexp.Compile(fi)
+				fObj.filterType = parseTypeRegex
+				fObj.filterValue, err = regexp.Compile(fi)
 				if err != nil {
 					return fmt.Errorf("unable to compile regexp at line %v for OID: %s: %s", lineNumber, fi, err)
 				}
 			}
-			filter.FilterItems = append(filter.FilterItems, fObj)
+			filter.filterItems = append(filter.filterItems, fObj)
 		}
 	}
 	// Process the filter action
@@ -372,47 +372,47 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 
 	switch action {
 	case "break", "drop":
-		filter.ActionType = actionBreak
+		filter.actionType = actionBreak
 	case "nat":
-		filter.ActionType = actionNat
+		filter.actionType = actionNat
 		if actionArg == "" {
 			return fmt.Errorf("missing nat argument at line %v", lineNumber)
 		}
-		filter.ActionArg = actionArg
+		filter.actionArg = actionArg
 	case "forward":
 		if breakAfter {
-			filter.ActionType = actionForwardBreak
+			filter.actionType = actionForwardBreak
 		} else {
-			filter.ActionType = actionForward
+			filter.actionType = actionForward
 		}
 		forwarder := trapForwarder{}
 		if err := forwarder.initAction(actionArg); err != nil {
 			return err
 		}
-		filter.Action = &forwarder
+		filter.action = &forwarder
 	case "log":
 		if breakAfter {
-			filter.ActionType = actionLogBreak
+			filter.actionType = actionLogBreak
 		} else {
-			filter.ActionType = actionLog
+			filter.actionType = actionLog
 		}
                 logger, err := loadFilterPlugin("trap_logger")
         if err == nil {
                 logger.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
         }
 
-		filter.Action = &logger
+		filter.action = &logger
 	case "csv":
 		if breakAfter {
-			filter.ActionType = actionCsvBreak
+			filter.actionType = actionCsvBreak
 		} else {
-			filter.ActionType = actionCsv
+			filter.actionType = actionCsv
 		}
 		csvLogger := trapCsvLogger{}
 		if err := csvLogger.initAction(actionArg, newConfig); err != nil {
 			return err
 		}
-		filter.Action = &csvLogger
+		filter.action = &csvLogger
 	default:
 		return fmt.Errorf("unknown action: %s at line %v", action, lineNumber)
 	}
@@ -424,14 +424,15 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 
 func closeTrapexHandles() {
 	for _, f := range teConfig.filters {
-		if f.ActionType == actionForward || f.ActionType == actionForwardBreak {
-			f.Action.(*trapForwarder).close()
+		if f.actionType == actionForward || f.actionType == actionForwardBreak {
+			f.action.(*trapForwarder).close()
 		}
-		if f.ActionType == actionLog || f.ActionType == actionLogBreak {
-			f.Action.(FilterPlugin).Close()
+		if f.actionType == actionLog || f.actionType == actionLogBreak {
+ fmt.Println("Would be closing filehandle now" )
+			//f.action.(FilterPlugin).Close()
 		}
-		if f.ActionType == actionCsv || f.ActionType == actionCsvBreak {
-			f.Action.(*trapCsvLogger).close()
+		if f.actionType == actionCsv || f.actionType == actionCsvBreak {
+			f.action.(*trapCsvLogger).close()
 		}
 	}
 }

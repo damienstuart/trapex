@@ -103,6 +103,17 @@ type filterObj struct {
 	filterValue interface{} // string, *regex.Regexp, *network, int
 }
 
+// trapexFilter holds the filter data and action for a specfic
+// filter line from the config file.
+type trapexFilter struct {
+        filterItems []filterObj
+        matchAll    bool
+        action      interface{}
+        actionType  int
+        actionArg   string
+}
+
+
 // trapForwarder is an instance of a forward destination.
 //
 type trapForwarder struct {
@@ -203,54 +214,54 @@ func (a *trapCsvLogger) close() {
 // isFilterMatch checks trap data against a trapexFilter and returns a boolean
 // to indicate whether or not the trap data matches the filter criteria.
 //
-func (f *TrapexFilter) isFilterMatch(sgt *plugin_interface.Trap) bool {
+func (f *trapexFilter) isFilterMatch(sgt *plugin_interface.Trap) bool {
 	// Assume true - until one of the filter items does not match
 	trap := &(sgt.Data)
-	for _, fo := range f.FilterItems {
-		fval := fo.FilterValue
-		switch fo.FilterItem {
+	for _, fo := range f.filterItems {
+		fval := fo.filterValue
+		switch fo.filterItem {
 		case version:
 			if fval != sgt.TrapVer {
 				return false
 			}
 		case srcIP:
-			if fo.FilterType == parseTypeString && fval.(string) != sgt.SrcIP.String() {
+			if fo.filterType == parseTypeString && fval.(string) != sgt.SrcIP.String() {
 				return false
-			} else if fo.FilterType == parseTypeCIDR && !fval.(*network).contains(sgt.SrcIP) {
+			} else if fo.filterType == parseTypeCIDR && !fval.(*network).contains(sgt.SrcIP) {
 				return false
-			} else if fo.FilterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(sgt.SrcIP.String()) {
+			} else if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(sgt.SrcIP.String()) {
 				return false
-			} else if fo.FilterType == parseTypeIPSet {
+			} else if fo.filterType == parseTypeIPSet {
 				_, ok := teConfig.IpSets[fval.(string)][sgt.SrcIP.String()]
 				if ok != true {
 					return false
 				}
 			}
 		case agentAddr:
-			if fo.FilterType == parseTypeString && fval.(string) != trap.AgentAddress {
+			if fo.filterType == parseTypeString && fval.(string) != trap.AgentAddress {
 				return false
-			} else if fo.FilterType == parseTypeCIDR && !fval.(*network).contains(net.ParseIP(trap.AgentAddress)) {
+			} else if fo.filterType == parseTypeCIDR && !fval.(*network).contains(net.ParseIP(trap.AgentAddress)) {
 				return false
-			} else if fo.FilterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(trap.AgentAddress) {
+			} else if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(trap.AgentAddress) {
 				return false
-			} else if fo.FilterType == parseTypeIPSet {
+			} else if fo.filterType == parseTypeIPSet {
 				_, ok := teConfig.IpSets[fval.(string)][trap.AgentAddress]
 				if ok != true {
 					return false
 				}
 			}
 		case enterprise:
-			if fo.FilterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(strings.TrimLeft(trap.Enterprise, ".")) {
+			if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(strings.TrimLeft(trap.Enterprise, ".")) {
 				return false
-			} else if fo.FilterType == parseTypeString && fval.(string) != strings.TrimLeft(trap.Enterprise, ".") {
+			} else if fo.filterType == parseTypeString && fval.(string) != strings.TrimLeft(trap.Enterprise, ".") {
 				return false
 			}
 		case genericType:
-			if fo.FilterType == parseTypeInt && fval.(int) != trap.GenericTrap {
+			if fo.filterType == parseTypeInt && fval.(int) != trap.GenericTrap {
 				return false
 			}
 		case specificType:
-			if fo.FilterType == parseTypeInt && fval.(int) != trap.SpecificTrap {
+			if fo.filterType == parseTypeInt && fval.(int) != trap.SpecificTrap {
 				return false
 			}
 		}
@@ -261,40 +272,40 @@ func (f *TrapexFilter) isFilterMatch(sgt *plugin_interface.Trap) bool {
 // processAction handles the execution of the action for the
 // trapexFilter instance on the the given trap data.
 //
-func (f *TrapexFilter) processAction(sgt *plugin_interface.Trap) {
-	switch f.ActionType {
+func (f *trapexFilter) processAction(sgt *plugin_interface.Trap) {
+	switch f.actionType {
 	case actionBreak:
 		sgt.Dropped = true
 		return
 	case actionNat:
-		if f.ActionArg == "$SRC_IP" {
+		if f.actionArg == "$SRC_IP" {
 			sgt.Data.AgentAddress = sgt.SrcIP.String()
 		} else {
-			sgt.Data.AgentAddress = f.ActionArg
+			sgt.Data.AgentAddress = f.actionArg
 		}
 	case actionForward:
-		f.Action.(*trapForwarder).processTrap(sgt)
+		f.action.(*trapForwarder).processTrap(sgt)
 	case actionForwardBreak:
-		f.Action.(*trapForwarder).processTrap(sgt)
+		f.action.(*trapForwarder).processTrap(sgt)
 		sgt.Dropped = true
 		return
 	case actionLog:
 		if !sgt.Dropped {
-			f.Action.(FilterPlugin).ProcessTrap(sgt)
+			f.action.(FilterPlugin).ProcessTrap(sgt)
 		}
 	case actionLogBreak:
 		if !sgt.Dropped {
-			f.Action.(FilterPlugin).ProcessTrap(sgt)
+			f.action.(FilterPlugin).ProcessTrap(sgt)
 		}
 		sgt.Dropped = true
 		return
 	case actionCsv:
 		if !sgt.Dropped {
-			f.Action.(*trapCsvLogger).processTrap(sgt)
+			f.action.(*trapCsvLogger).processTrap(sgt)
 		}
 	case actionCsvBreak:
 		if !sgt.Dropped {
-			f.Action.(*trapCsvLogger).processTrap(sgt)
+			f.action.(*trapCsvLogger).processTrap(sgt)
 		}
 		sgt.Dropped = true
 		return
