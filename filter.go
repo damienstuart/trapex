@@ -102,9 +102,9 @@ type trapexFilter struct {
 	filterItems []filterObj
 	matchAll    bool
 	//action      interface{}
-	action      FilterPlugin
-	actionType  int
-	actionArg   string
+	action     FilterPlugin
+	actionType int
+	actionArg  string
 }
 
 // isFilterMatch checks trap data against a trapexFilter and returns a boolean

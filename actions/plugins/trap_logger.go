@@ -10,17 +10,17 @@ This plugin logs SNMP trap data to a log file
 */
 
 import (
+	"encoding/hex"
+	"fmt"
 	"log"
 	"os"
-	"encoding/hex"
 	"strconv"
 	"strings"
-	"fmt"
 	"time"
 
+	"github.com/damienstuart/trapex/actions"
 	g "github.com/gosnmp/gosnmp"
 	"github.com/natefinch/lumberjack"
-	"github.com/damienstuart/trapex/actions"
 	"github.com/rs/zerolog"
 )
 
@@ -45,12 +45,11 @@ func makeLogger(logfile string, pluginConfig *plugin_interface.PluginsConfig) *l
 	return &l
 }
 
-
 func (a trapLogger) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
 	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 	a.trapex_log = logger
 
-        logger.Debug().Str("plugin", plugin_name).Int("maxsize", pluginConfig.Logger.LogMaxSize).Int("maxbackups", pluginConfig.Logger.LogMaxBackups).Bool("compress", pluginConfig.Logger.LogCompress).Msg("Showing plugin variables")
+	logger.Debug().Str("plugin", plugin_name).Int("maxsize", pluginConfig.Logger.LogMaxSize).Int("maxbackups", pluginConfig.Logger.LogMaxBackups).Bool("compress", pluginConfig.Logger.LogCompress).Msg("Showing plugin variables")
 
 	a.logFile = actionArg
 	fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -82,7 +81,7 @@ func (a trapLogger) SigUsr2() error {
 
 func (a trapLogger) Close() error {
 	a.fd.Close()
-return nil
+	return nil
 }
 
 // makeTrapLogEntry creates a log entry string for the given trap data.
@@ -147,4 +146,3 @@ func makeTrapLogEntry(sgt *plugin_interface.Trap) string {
 
 // Exported symbol which supports filter.go's FilterAction type
 var FilterPlugin trapLogger
-
