@@ -18,11 +18,14 @@ import (
 
 type trapForwarder struct {
 	destination *g.GoSNMP
+        trapex_log zerolog.Logger
 }
 
 const plugin_name = "trap forwarder"
 
-func (a trapForwarder) Init(logger zerolog.Logger) error {
+func (p trapForwarder) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
+        p.trapex_log = logger
+
 	//logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 
 	/*

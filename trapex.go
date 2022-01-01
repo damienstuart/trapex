@@ -17,13 +17,12 @@ import (
 	g "github.com/gosnmp/gosnmp"
 
 	"github.com/rs/zerolog"
-	//zlog "github.com/rs/zerolog/log"
 
 	"github.com/damienstuart/trapex/actions"
 )
 
 var trapRateTracker = newTrapRateTracker()
-var logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+var trapex_logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 func main() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
@@ -38,7 +37,7 @@ func main() {
 	processCommandLine()
 
 	if err := getConfig(); err != nil {
-		logger.Fatal().Err(err).Msg("Unable to load configuration")
+		trapex_logger.Fatal().Err(err).Msg("Unable to load configuration")
 		os.Exit(1)
 	}
 
@@ -46,7 +45,7 @@ func main() {
 	go exposeMetrics()
 	var exporter = fmt.Sprintf("http://%s:%s/%s\n",
 		teConfig.General.PrometheusIp, teConfig.General.PrometheusPort, teConfig.General.PrometheusEndpoint)
-	logger.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
+	trapex_logger.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
 
 	stats.StartTime = time.Now()
 
@@ -60,24 +59,24 @@ func main() {
 
 	// Uncomment for debugging gosnmp
 	if teConfig.Logging.Level == "debug" {
-		logger.Info().Msg("gosnmp debug mode enabled")
+		trapex_logger.Info().Msg("gosnmp debug mode enabled")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}
 
 	// SNMP v3 stuff
 	tl.Params.SecurityModel = g.UserSecurityModel
-	tl.Params.MsgFlags = teConfig.V3Params.msgFlags
+	tl.Params.MsgFlags = teConfig.V3Params.MsgFlags
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
 		UserName:                 teConfig.V3Params.Username,
-		AuthenticationProtocol:   teConfig.V3Params.authProto,
+		AuthenticationProtocol:   teConfig.V3Params.AuthProto,
 		AuthenticationPassphrase: teConfig.V3Params.AuthPassword,
-		PrivacyProtocol:          teConfig.V3Params.privacyProto,
+		PrivacyProtocol:          teConfig.V3Params.PrivacyProto,
 		PrivacyPassphrase:        teConfig.V3Params.PrivacyPassword,
 	}
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.General.ListenAddr, teConfig.General.ListenPort)
-	logger.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
+	trapex_logger.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
 	err := tl.Listen(listenAddr)
 	if err != nil {
 		log.Panicf("error in listen on %s: %s", listenAddr, err)
@@ -124,14 +123,14 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 		if err != nil {
 			var info string
 			info = makeTrapLogEntry(&trap)
-			logger.Warn().Err(err).Str("trap", info).Msg("Error translating to v1")
+			trapex_logger.Warn().Err(err).Str("trap", info).Msg("Error translating to v1")
 		}
 	}
 
 	if teConfig.Logging.Level == "debug" {
 		var info string
 		info = makeTrapLogEntry(&trap)
-		logger.Debug().Str("trap", info).Msg("Raw trap info")
+		trapex_logger.Debug().Str("trap", info).Msg("Raw trap info")
 	}
 
 	processTrap(&trap)
@@ -147,17 +146,17 @@ func processTrap(sgt *plugin_interface.Trap) {
 			continue
 		}
 		// If matchAll is true, just process the action.
-		if f.matchAll == true {
+		if f.MatchAll == true {
 			// We don't expect to see this here (set a wide open filter for
 			// drop).... (but...)
-			if f.actionType == actionBreak {
+			if f.ActionType == actionBreak {
 				sgt.Dropped = true
 				stats.DroppedTraps++
 				trapsDropped.Inc()
 				continue
 			}
 			f.processAction(sgt)
-			if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
+			if f.ActionType == actionForwardBreak || f.ActionType == actionLogBreak || f.ActionType == actionCsvBreak {
 				sgt.Dropped = true
 				stats.DroppedTraps++
 				trapsDropped.Inc()
@@ -166,14 +165,14 @@ func processTrap(sgt *plugin_interface.Trap) {
 		} else {
 			// Determine if this trap matches this filter
 			if f.isFilterMatch(sgt) {
-				if f.actionType == actionBreak {
+				if f.ActionType == actionBreak {
 					sgt.Dropped = true
 					stats.DroppedTraps++
 					trapsDropped.Inc()
 					continue
 				}
 				f.processAction(sgt)
-				if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
+				if f.ActionType == actionForwardBreak || f.ActionType == actionLogBreak || f.ActionType == actionCsvBreak {
 					sgt.Dropped = true
 					stats.DroppedTraps++
 					trapsDropped.Inc()

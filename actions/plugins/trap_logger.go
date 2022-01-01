@@ -28,12 +28,15 @@ type trapLogger struct {
 	fd        *os.File
 	logHandle *log.Logger
 	isBroken  bool
+
+        trapex_log zerolog.Logger
 }
 
 const plugin_name = "trap logger"
 
-func (a trapLogger) Init(logger zerolog.Logger) error {
-	//logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+func (p trapLogger) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
+        logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+        p.trapex_log = logger
 
 	/*
 	   fd, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

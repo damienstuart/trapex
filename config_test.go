@@ -23,8 +23,8 @@ func TestGeneralSection(t *testing.T) {
 		t.Errorf("Listen port is not set correctly: %s", testConfig.General.ListenPort)
 	}
 
-	if len(testConfig.General.IgnoreVersions) != 2 {
-		t.Errorf("Ignore versions is not set correctly: %s", testConfig.General.IgnoreVersions)
+	if len(testConfig.General.IgnoreVersions_str) != 2 {
+		t.Errorf("Ignore versions is not set correctly: %s", testConfig.General.IgnoreVersions_str)
 	}
 
 	if testConfig.General.PrometheusIp != "127.10.0.1" {
@@ -45,19 +45,19 @@ func TestIgnoreVersions(t *testing.T) {
 	loadConfig("tests/config/ignore_versions_bad.yml", &testConfig)
 	err = validateIgnoreVersions(&testConfig)
 	if err == nil {
-		t.Errorf("general:ignore_versions did not detect invalid version: %s", testConfig.General.IgnoreVersions)
+		t.Errorf("general:ignore_versions did not detect invalid version: %s", testConfig.General.IgnoreVersions_str)
 	}
 
 	loadConfig("tests/config/ignore_versions_multiple.yml", &testConfig)
 	err = validateIgnoreVersions(&testConfig)
-	if len(testConfig.General.ignoreVersions) != 2 {
-		t.Errorf("general:ignore_versions unable to deduplicate versions: %s", testConfig.General.IgnoreVersions)
+	if len(testConfig.General.IgnoreVersions) != 2 {
+		t.Errorf("general:ignore_versions unable to deduplicate versions: %s", testConfig.General.IgnoreVersions_str)
 	}
 
 	loadConfig("tests/config/ignore_versions_all.yml", &testConfig)
 	err = validateIgnoreVersions(&testConfig)
 	if err == nil {
-		t.Errorf("general:ignore_versions did not detect all versions: %s", testConfig.General.IgnoreVersions)
+		t.Errorf("general:ignore_versions did not detect all versions: %s", testConfig.General.IgnoreVersions_str)
 	}
 }
 
@@ -86,20 +86,20 @@ func TestSnmpv3(t *testing.T) {
 	var testConfig trapexConfig
 	loadConfig("tests/config/snmpv3.yml", &testConfig)
 
-	if testConfig.V3Params.MsgFlags != "AuthPriv" {
-		t.Errorf("username is not set correctly: %s", testConfig.V3Params.MsgFlags)
+	if testConfig.V3Params.MsgFlags_str != "AuthPriv" {
+		t.Errorf("username is not set correctly: %s", testConfig.V3Params.MsgFlags_str)
 	}
 	if testConfig.V3Params.Username != "myuser" {
 		t.Errorf("username is not set correctly: %s", testConfig.V3Params.Username)
 	}
-	if testConfig.V3Params.AuthProto != "SHA" {
-		t.Errorf("auth proto is not set correctly: %s", testConfig.V3Params.AuthProto)
+	if testConfig.V3Params.AuthProto_str != "SHA" {
+		t.Errorf("auth proto is not set correctly: %s", testConfig.V3Params.AuthProto_str)
 	}
 	if testConfig.V3Params.AuthPassword != "v3authPass" {
 		t.Errorf("auth password is not set correctly: %s", testConfig.V3Params.AuthPassword)
 	}
-	if testConfig.V3Params.PrivacyProto != "AES" {
-		t.Errorf("Privacy proto is not set correctly: %s", testConfig.V3Params.PrivacyProto)
+	if testConfig.V3Params.PrivacyProto_str != "AES" {
+		t.Errorf("Privacy proto is not set correctly: %s", testConfig.V3Params.PrivacyProto_str)
 	}
 	if testConfig.V3Params.PrivacyPassword != "v3privPW" {
 		t.Errorf("Privacy password is not set correctly: %s", testConfig.V3Params.PrivacyPassword)
@@ -110,7 +110,7 @@ func TestIpSetsGood(t *testing.T) {
 	var testConfig trapexConfig
 	loadConfig("tests/config/ipsets.yml", &testConfig)
 
-	var numsets = len(testConfig.IpSets)
+	var numsets = len(testConfig.IpSets_str)
 	if numsets != 3 {
 		t.Errorf("Have different number of expected ip sets (expected 3, got %d)", numsets)
 	}

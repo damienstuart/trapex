@@ -88,7 +88,7 @@ func panicOnError(e error) {
 // makeLogger initializes and returns a lumberjack.Logger (logger with
 // built-in log rotation management).
 //
-func makeLogger(logfile string, teConf *trapexConfig) *lumberjack.Logger {
+func makeLogger(logfile string, teConf *TrapexConfig) *lumberjack.Logger {
 	l := lumberjack.Logger{
 		Filename:   logfile,
 		MaxSize:    teConf.Logging.LogMaxSize,
@@ -101,7 +101,7 @@ func makeLogger(logfile string, teConf *trapexConfig) *lumberjack.Logger {
 // makeCsvLogger initializes and returns a lumberjack.Logger (logger with
 // built-in log rotation management).
 //
-func makeCsvLogger(logfile string, teConf *trapexConfig) *lumberjack.Logger {
+func makeCsvLogger(logfile string, teConf *TrapexConfig) *lumberjack.Logger {
 	l := lumberjack.Logger{
 		Filename: logfile,
 	}
@@ -269,7 +269,7 @@ func secondsToDuration(s uint) string {
 // SnmpVersion value is being ignored.
 //
 func isIgnoredVersion(ver g.SnmpVersion) bool {
-	for _, v := range teConfig.General.ignoreVersions {
+	for _, v := range teConfig.General.IgnoreVersions {
 		if ver == v {
 			return true
 		}

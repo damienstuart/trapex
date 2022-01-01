@@ -15,13 +15,15 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type noopFilter string
+type noopFilter struct {
+	trapex_log zerolog.Logger
+}
 
 const plugin_name = "no op"
 
-func (p noopFilter) Init(logger zerolog.Logger) error {
+func (p noopFilter) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
 	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
-
+        p.trapex_log = logger
 	return nil
 }
 

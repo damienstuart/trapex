@@ -5,11 +5,6 @@
 //
 package plugin_interface
 
-/*
- * Externalize data types into a separate file in order to pass data from
- * the main program to plugins
- */
-
 import (
 	g "github.com/gosnmp/gosnmp"
 	"net"
