@@ -50,16 +50,16 @@ func (a trapCsvLogger) Configure(logger zerolog.Logger, actionArg string, plugin
 	logger.Info().Str("plugin", plugin_name).Msg("Added CSV log destination")
 	a.trapex_log = logger
 
-        a.logFile = actionArg
-        fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-        if err != nil {
-                return err
-        }
-        a.fd = fd
-        a.logHandle = log.New(fd, "", 0)
-        a.logger = makeCsvLogger(a.logFile)
-        a.logHandle.SetOutput(a.logger)
-        logger.Info().Str("logfile", a.logFile).Msg("Added CSV log destination")
+	a.logFile = actionArg
+	fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	a.fd = fd
+	a.logHandle = log.New(fd, "", 0)
+	a.logger = makeCsvLogger(a.logFile)
+	a.logHandle.SetOutput(a.logger)
+	logger.Info().Str("logfile", a.logFile).Msg("Added CSV log destination")
 
 	return nil
 }

@@ -7,8 +7,8 @@ package plugin_interface
 
 type PluginsConfig struct {
 	Noop struct {
-		Test1    string  `default:"hello world" yaml:"test_1"`
-		Test2    string  `default:"hello back" yaml:"test_2"`
+		Test1 string `default:"hello world" yaml:"test_1"`
+		Test2 string `default:"hello back" yaml:"test_2"`
 	} `yaml:"noop"`
 	Clickhouse struct {
 		LogMaxSize    int  `default:"1024" yaml:"log_size_max"`

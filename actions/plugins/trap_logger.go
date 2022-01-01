@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"fmt"
-"github.com/natefinch/lumberjack"
 	"github.com/damienstuart/trapex/actions"
+	"github.com/natefinch/lumberjack"
 	"github.com/rs/zerolog"
 )
 
@@ -35,31 +35,29 @@ type trapLogger struct {
 
 const plugin_name = "trap logger"
 
-
 func makeLogger(logfile string, pluginConfig *plugin_interface.PluginsConfig) *lumberjack.Logger {
-        l := lumberjack.Logger{
-                Filename:   logfile,
-                MaxSize:    pluginConfig.Logger.LogMaxSize,
-                MaxBackups: pluginConfig.Logger.LogMaxBackups,
-                Compress:   pluginConfig.Logger.LogCompress,
-        }
-        return &l
+	l := lumberjack.Logger{
+		Filename:   logfile,
+		MaxSize:    pluginConfig.Logger.LogMaxSize,
+		MaxBackups: pluginConfig.Logger.LogMaxBackups,
+		Compress:   pluginConfig.Logger.LogCompress,
+	}
+	return &l
 }
-
 
 func (a trapLogger) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
 	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 	a.trapex_log = logger
 
 	a.logFile = actionArg
-	   fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	   if err != nil {
-	           return err
-	   }
-	   a.fd = fd
-	   a.logHandle = log.New(fd, "", 0)
-	   a.logHandle.SetOutput(makeLogger(a.logFile, pluginConfig))
-	   logger.Info().Str("logfile", a.logFile).Msg("Added log destination")
+	fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	a.fd = fd
+	a.logHandle = log.New(fd, "", 0)
+	a.logHandle.SetOutput(makeLogger(a.logFile, pluginConfig))
+	logger.Info().Str("logfile", a.logFile).Msg("Added log destination")
 	return nil
 }
 

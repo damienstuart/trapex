@@ -10,10 +10,10 @@ This plugin sends SNMP traps to a new destination
 */
 
 import (
-"strings"
-"strconv"
-"time"
 	g "github.com/gosnmp/gosnmp"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/damienstuart/trapex/actions"
 	"github.com/rs/zerolog"
@@ -31,28 +31,28 @@ func (a trapForwarder) Configure(logger zerolog.Logger, actionArg string, plugin
 
 	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 
-        dest := actionArg
-	           s := strings.Split(dest, ":")
-	           port, err := strconv.Atoi(s[1])
-	           if err != nil {
-	                   panic("Invalid destination port: " + s[1])
-	           }
-	           a.destination = &g.GoSNMP{
-	                   Target:             s[0],
-	                   Port:               uint16(port),
-	                   Transport:          "udp",
-	                   Community:          "",
-	                   Version:            g.Version1,
-	                   Timeout:            time.Duration(2) * time.Second,
-	                   Retries:            3,
-	                   ExponentialTimeout: true,
-	                   MaxOids:            g.MaxOids,
-	           }
-	           err = a.destination.Connect()
-	           if err != nil {
-	                   return (err)
-	           }
-	           logger.Info().Str("target", s[0]).Str("port", s[1]).Msg("Added trap destination")
+	dest := actionArg
+	s := strings.Split(dest, ":")
+	port, err := strconv.Atoi(s[1])
+	if err != nil {
+		panic("Invalid destination port: " + s[1])
+	}
+	a.destination = &g.GoSNMP{
+		Target:             s[0],
+		Port:               uint16(port),
+		Transport:          "udp",
+		Community:          "",
+		Version:            g.Version1,
+		Timeout:            time.Duration(2) * time.Second,
+		Retries:            3,
+		ExponentialTimeout: true,
+		MaxOids:            g.MaxOids,
+	}
+	err = a.destination.Connect()
+	if err != nil {
+		return (err)
+	}
+	logger.Info().Str("target", s[0]).Str("port", s[1]).Msg("Added trap destination")
 
 	return nil
 }
