@@ -389,9 +389,9 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		if err != nil {
 			return fmt.Errorf("Unable to load plugin forwarder at line %v", lineNumber)
 		}
-     if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
-                        return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
-}
+		if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
+			return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
+		}
 
 	case "log":
 		if breakAfter {
@@ -403,10 +403,9 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		if err != nil {
 			return fmt.Errorf("Unable to load plugin log at line %v", lineNumber)
 		}
-     if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
+		if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
 			return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
-}
-
+		}
 
 	case "csv":
 		if breakAfter {
@@ -418,9 +417,9 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		if err != nil {
 			return fmt.Errorf("Unable to load plugin csv at line %v", lineNumber)
 		}
-     if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
-                        return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
-}
+		if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
+			return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
+		}
 
 	default:
 		return fmt.Errorf("unknown action: %s at line %v", action, lineNumber)
