@@ -32,6 +32,10 @@ func (p noopFilter) ProcessTrap(trap *plugin_interface.Trap) error {
 	return nil
 }
 
+func (p noopFilter) Close() error {
+	return nil
+}
+
 func (p noopFilter) SigUsr1() error {
 	return nil
 }

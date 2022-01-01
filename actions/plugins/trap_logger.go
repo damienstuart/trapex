@@ -80,7 +80,7 @@ func (p trapLogger) SigUsr2() error {
 	return nil
 }
 
-func (a *trapLogger) close() {
+func (a *trapLogger) Close() {
 	a.fd.Close()
 }
 

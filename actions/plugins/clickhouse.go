@@ -74,12 +74,18 @@ func (a trapCsvLogger) SigUsr1() error {
 	return nil
 }
 
+func (a trapCsvLogger) Close() error {
+	fmt.Println("Close")
+        a.fd.Close()
+	return nil
+}
+
 func (a trapCsvLogger) SigUsr2() error {
 	fmt.Println("SigUsr2")
-	// f.action.(*trapCsvLogger).rotateLog()
+	// a.action.(*trapCsvLogger).rotateLog()
 	a.logger.Rotate()
 
-	//logger.Info().Str("logfile", f.action.(*trapCsvLogger).logfileName()).Msg("Rotated CSV file")
+	a.trapex_log.Info().Str("logfile", a.logFile).Msg("Rotated CSV file")
 	return nil
 }
 

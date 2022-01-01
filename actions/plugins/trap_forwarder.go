@@ -73,7 +73,7 @@ func (p trapForwarder) SigUsr2() error {
 	return nil
 }
 
-func (a trapForwarder) close() {
+func (a trapForwarder) Close() {
 	a.destination.Conn.Close()
 }
 
