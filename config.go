@@ -161,9 +161,6 @@ func getConfig() error {
 	if err = processIpSets(&newConfig); err != nil {
 		return err
 	}
-	if err = loadFilterActions(&newConfig); err != nil {
-		return err
-	}
 	if err = processFilters(&newConfig); err != nil {
 		return err
 	}
@@ -288,7 +285,7 @@ func processFilters(newConfig *TrapexConfig) error {
 func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) error {
 	var err error
 	if len(f) < 7 {
-		return fmt.Errorf("not enough fields in filter line(%v): %s", lineNumber, "filter "+strings.Join(f, " "))
+		return fmt.Errorf("Not enough fields in filter line(%v): %s", lineNumber, "filter "+strings.Join(f, " "))
 	}
 
 	// Process the filter criteria
@@ -313,7 +310,7 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 				case "v3", "3":
 					fObj.FilterValue = g.Version3
 				default:
-					return fmt.Errorf("unsupported or invalid SNMP version (%s) on line %v for filter: %s", fi, lineNumber, f)
+					return fmt.Errorf("Unsupported or invalid SNMP version (%s) on line %v for filter: %s", fi, lineNumber, f)
 				}
 				fObj.FilterType = parseTypeInt // Just because we should set this to something.
 			} else if i == 1 || i == 2 { // Either of the first 2 is an IP address type
@@ -399,10 +396,11 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		} else {
 			filter.ActionType = actionLog
 		}
-		logger := trapLogger{}
-		if err := logger.initAction(actionArg, newConfig); err != nil {
-			return err
-		}
+                logger, err := loadFilterPlugin("trap_logger")
+        if err == nil {
+                logger.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+        }
+
 		filter.Action = &logger
 	case "csv":
 		if breakAfter {
@@ -430,7 +428,7 @@ func closeTrapexHandles() {
 			f.Action.(*trapForwarder).close()
 		}
 		if f.ActionType == actionLog || f.ActionType == actionLogBreak {
-			f.Action.(*trapLogger).close()
+			f.Action.(FilterPlugin).Close()
 		}
 		if f.ActionType == actionCsv || f.ActionType == actionCsvBreak {
 			f.Action.(*trapCsvLogger).close()

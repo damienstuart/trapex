@@ -30,18 +30,9 @@ type FilterPlugin interface {
 	ProcessTrap(trap *plugin_interface.Trap) error
 	SigUsr1() error
 	SigUsr2() error
+	Close() error
 }
 
-//var plugins []FilterPlugin
-func loadFilterActions(newConfig *TrapexConfig) error {
-	var plugin_name string = "noop"
-	trapex_logger.Info().Str("filter_plugin", plugin_name).Msg("Initializing plugin")
-	filter_plugin, err := loadFilterPlugin(plugin_name)
-	if err == nil {
-		filter_plugin.Configure(trapex_logger, "", &newConfig.FilterPluginsConfig)
-	}
-	return nil
-}
 
 func loadFilterPlugin(plugin_name string) (FilterPlugin, error) {
 	var plugin_filename = "actions/plugins/" + plugin_name + ".so"
@@ -118,14 +109,6 @@ type trapForwarder struct {
 	destination *g.GoSNMP
 }
 
-// trapLogger is an instance of a trap logfile destination.
-//
-type trapLogger struct {
-	logFile   string
-	fd        *os.File
-	logHandle *log.Logger
-	isBroken  bool
-}
 
 // trapCsvLogger is an instance of a trap CSV logfile destination.
 //
@@ -178,32 +161,6 @@ func (a trapForwarder) close() {
 	a.destination.Conn.Close()
 }
 
-// Initialize a trapLogger instance.
-//
-func (a *trapLogger) initAction(logfile string, teConf *TrapexConfig) error {
-	fd, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	a.fd = fd
-	a.logFile = logfile
-	a.logHandle = log.New(fd, "", 0)
-	a.logHandle.SetOutput(makeLogger(logfile, teConf))
-	trapex_logger.Info().Str("logfile", logfile).Msg("Added log destination")
-	return nil
-}
-
-// Hook for logging a trap for this instance of a log action.
-//
-func (a *trapLogger) processTrap(trap *plugin_interface.Trap) {
-	logTrap(trap, a.logHandle)
-}
-
-// Close a trap logger handle
-//
-func (a *trapLogger) close() {
-	a.fd.Close()
-}
 
 // Initialize a trapCsvLogger instance.
 //
@@ -323,11 +280,11 @@ func (f *TrapexFilter) processAction(sgt *plugin_interface.Trap) {
 		return
 	case actionLog:
 		if !sgt.Dropped {
-			f.Action.(*trapLogger).processTrap(sgt)
+			f.Action.(FilterPlugin).ProcessTrap(sgt)
 		}
 	case actionLogBreak:
 		if !sgt.Dropped {
-			f.Action.(*trapLogger).processTrap(sgt)
+			f.Action.(FilterPlugin).ProcessTrap(sgt)
 		}
 		sgt.Dropped = true
 		return
