@@ -26,10 +26,10 @@ logging:
   # level: debug
 
   # Max size before rotation (in MB) default is 1024.
-  log_size_max:             4096
+  log_size_max: 1024
 
   # How many backups to keep default is 7.
-  log_backups_max:  10
+  log_backups_max: 7
 
   # Uncomment to have rotated logs compressed with gzip default is no
   # compression.
@@ -49,7 +49,7 @@ snmpv3:
   #        authProtocol (MD5 or SHA).
   #       If AuthPriv is set, you must specify an authProtocol (DES or AES).
   #
-  #msg_flags:  AuthPriv
+  msg_flags:  NoAuthNoPriv
 
   # Note that trapex v3 support only User Security Model (USM).
   #
@@ -59,12 +59,12 @@ snmpv3:
   #username:  myuser
 
   # v3 Authentication protocol can be NoAuth, MD5, or SHA
-  #auth_protocol:  SHA
+  auth_protocol:  NoAuth
 
   # Note:  The Authentication password can contain 8 to 12 characters in length
   #         and include any combination of alphanumeric characters (uppercase
   #         letters, lowercase letters, and numbers)
-  auth_password:  v3authPass
+  #auth_password:  v3authPass
 
   # v3 Privacy Protocol (encryption) can be NoPriv, DES, or AES
   #privacy_protocol:   AES
@@ -84,11 +84,11 @@ snmpv3:
 # In the filter lines, you can then use "ipset:<ipset_name>" in either or
 # both the Source IP or Agent Address fields.
 ##############################################################################
-ipsets:
-  - network1:
-    - 10.1.3.4
-    - 10.1.3.5
-    - 100.3.66.4
+#ipsets:
+#  - network1:
+#    - 10.1.3.4
+#    - 10.1.3.5
+#    - 100.3.66.4
 
 
 ##############################################################################
@@ -115,47 +115,46 @@ ipsets:
 ##############################################################################
 #
 # Recommend filters that drop/ignore all traps should be first - and any that
-# are on source IP should be first, followed by agent_addr, then OID.
+# are on source IP should be next, followed by agent_addr, then OID.
 #
 ##############################################################################
 filters:
   # "<version> <srcIP> <agentIP> <Generic> <Specific> <Enterprise> action [options]"
 
   # Filter all SysEdge traps
-  - "* * * * * ^1\\.3\\.6\\.1\\.4.1\\.546\\.1\\.1 break"
+  #- "* * * * * ^1\\.3\\.6\\.1\\.4.1\\.546\\.1\\.1 break"
 
   # Block Radware ivSignatureAlert traps (note this has Enterprise and Specific trap type)
-  - "* * * * 1 ^1\\.3\\.6\\.1\\.4\\.1\\.89\\.35\\.1\\.65\\.107 break"
+  #- "* * * * 1 ^1\\.3\\.6\\.1\\.4\\.1\\.89\\.35\\.1\\.65\\.107 break"
 
   # Set Agent Address to a single IP for any Agent address in the specified
   # subnet 10.66.48.0/20 to 10.66.48.1
-  - "* * 10.66.48.0/20 * * * nat 10.66.48.1"
+  #- "* * 10.66.48.0/20 * * * nat 10.66.48.1"
 
   # Force agent_addr 0.0.0.0 to be source IP
   - "* * 0.0.0.0 * * * nat $SRC_IP"
 
   # Filter to drop traps for agent_addr IPs that are in the sample ip set: "network1":
-  - "* * ipset:network1 * * * break"
+  #- "* * ipset:network1 * * * break"
 
   # Or just NAT to some other IP
-  - "* * 10.1.8.217 * * * nat 10.13.37.58"
-  - "* * 10.1.8.216 * * * nat 10.13.37.57"
+  #- "* * 10.1.8.217 * * * nat 10.13.37.58"
+  #- "* * 10.1.8.216 * * * nat 10.13.37.57"
 
   # Forward destinations (ip_address:port)
-  - "* * * * * * forward 192.168.7.7:162"
+  #- "* * * * * * forward 192.168.7.7:162"
 
   # Note: log directories *must* exist prior to use
 
   # Log only cold start traps
-  - "* * * 0 * ^1\\.3\\.6\\.1\\.6\\.3\\.1\\.1\\.5 log /opt/trapex/log/cold_start.log"
+  #- "* * * 0 * ^1\\.3\\.6\\.1\\.6\\.3\\.1\\.1\\.5 log /opt/trapex/log/cold_start.log"
 
   # Log only SNMP v3 traps then stop further processing
   #- "v3 * * * * * log /opt/trapex/log/snmpv3.log break"
 
   # Log all traps after the filtering above
-  - "* * * * * * log /opt/trapex/log/filtered.log"
+  - "* * * * * * log /opt/trapex/log/trapex.log"
 
   # Also send traps to a CSV file. Note that this CSV format is specific to
   # a particular table structure in a Clickhouse database: see trapex.sql
-  - "* * * * * * csv /opt/trapex/log/filtered.csv"
-
+  #- "* * * * * * csv /opt/trapex/log/trapex.csv"

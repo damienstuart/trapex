@@ -2,7 +2,7 @@
 BUILDARCH=x86_64
 TARGET=trapex
 image = alpine:3.15
-docker_tag_trapex = damientstuart/trapex
+docker_tag_trapex = damienstuart/trapex
 container_trapex = trapex
 configuration_path_trapex = /Users/kellskearney/go/src/trapex/tools
 docker_tag_clickhouse = damientstuart/clickhouse
@@ -32,6 +32,7 @@ push:
 	git push -u origin $(shell git symbolic-ref --short HEAD)
 
 # ----  Docker: trapex  ----------------------------
+.PHONY: trapex
 trapex:
 	DOCKER_BUILD=0 docker build -t $(docker_tag_trapex) -f tools/docker/Dockerfile .
 

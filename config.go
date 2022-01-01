@@ -77,7 +77,7 @@ type trapexConfig struct {
 	}
 
 	Logging struct {
-		Level         string `default:"debug" yaml:"level"`
+		Level         string `default:"info" yaml:"level"`
 		LogMaxSize    int    `default:"1024" yaml:"log_size_max"`
 		LogMaxBackups int    `default:"7" yaml:"log_backups_max"`
 		LogMaxAge     int    `yaml:"log_age_max"`

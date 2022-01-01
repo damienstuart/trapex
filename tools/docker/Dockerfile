@@ -1,7 +1,7 @@
 
 FROM public.ecr.aws/docker/library/alpine:3.15
 
-EXPOSE 162
+EXPOSE 162/udp
 EXPOSE 80
 
 # Package inventory:
@@ -10,8 +10,7 @@ RUN apk add --no-cache --upgrade bash && apk add net-snmp-tools
 
 RUN mkdir -p /opt/trapex/bin /opt/trapex/etc /opt/trapex/log
 COPY trapex /opt/trapex/bin
-COPY tools/process_csv_data.sh /opt/trapex/bin
-COPY tools/trapex.conf /opt/trapex/etc
+COPY tools/trapex.yml /opt/trapex/etc
 
 # Install root bash history
 COPY tools/docker/root_bash_history /root/.bash_history
