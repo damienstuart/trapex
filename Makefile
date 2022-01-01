@@ -10,9 +10,11 @@ container_clickhouse = clickhouse
 #configuration_path_clickhouse = /Users/kellskearney/go/src/trapex/tools
 
 
-build:
-	cd actions && ./build_plugins.sh
+build: plugins
 	go build
+
+plugins:
+	cd actions && ./build_plugins.sh
 
 deps:
 	go get ./...
@@ -28,8 +30,12 @@ fmt:
 rpm: build
 	rpmbuild -ba tools/rpm.spec
 
-clean:
+clean: clean_plugins
 	rm -rf ~/rpmbuild/BUILD/${TARGET} ~/rpmbuild/BUILD/${BUILDARCH}/*
+	go clean
+
+clean_plugins:
+	cd actions/plugins && go clean
 
 install:
 	cd ~/rpmbuild/RPMS/${BUILDARCH} && sudo yum install -y `ls -1rt | tail -1`
