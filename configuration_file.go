@@ -6,29 +6,29 @@
 package main
 
 import (
-        "github.com/damienstuart/trapex/actions"
+	"github.com/damienstuart/trapex/actions"
 
 	g "github.com/gosnmp/gosnmp"
 )
 
 type v3Params struct {
-	MsgFlags_str        string               `default:"NoAuthNoPriv" yaml:"msg_flags"`
-	MsgFlags        g.SnmpV3MsgFlags     `default:"g.NoAuthNoPriv"`
-	Username        string               `default:"XXv3Username" yaml:"username"`
-	AuthProto_str       string               `default:"NoAuth" yaml:"auth_protocol"`
-	AuthProto       g.SnmpV3AuthProtocol `default:"g.NoAuth"`
-	AuthPassword    string               `default:"XXv3authPass" yaml:"auth_password"`
-	PrivacyProto_str    string               `default:"NoPriv" yaml:"privacy_protocol"`
-	PrivacyProto    g.SnmpV3PrivProtocol `default:"g.NoPriv"`
-	PrivacyPassword string               `default:"XXv3Pass" yaml:"privacy_password"`
+	MsgFlags_str     string               `default:"NoAuthNoPriv" yaml:"msg_flags"`
+	MsgFlags         g.SnmpV3MsgFlags     `default:"g.NoAuthNoPriv"`
+	Username         string               `default:"XXv3Username" yaml:"username"`
+	AuthProto_str    string               `default:"NoAuth" yaml:"auth_protocol"`
+	AuthProto        g.SnmpV3AuthProtocol `default:"g.NoAuth"`
+	AuthPassword     string               `default:"XXv3authPass" yaml:"auth_password"`
+	PrivacyProto_str string               `default:"NoPriv" yaml:"privacy_protocol"`
+	PrivacyProto     g.SnmpV3PrivProtocol `default:"g.NoPriv"`
+	PrivacyPassword  string               `default:"XXv3Pass" yaml:"privacy_password"`
 }
 
 type IpSet map[string]bool
 
 type TrapexConfig struct {
 	Configured bool
-	RunLogFile   string
-	ConfigFile   string
+	RunLogFile string
+	ConfigFile string
 
 	General struct {
 		Hostname   string `yaml:"hostname"`
@@ -36,11 +36,11 @@ type TrapexConfig struct {
 		ListenPort string `default:"162" yaml:"listen_port"`
 
 		IgnoreVersions_str []string        `default:"[]" yaml:"ignore_versions"`
-		IgnoreVersions []g.SnmpVersion `default:"[]"`
+		IgnoreVersions     []g.SnmpVersion `default:"[]"`
 
-		PrometheusIp       string   `default:"0.0.0.0" yaml:"prometheus_ip"`
-		PrometheusPort     string   `default:"80" yaml:"prometheus_port"`
-		PrometheusEndpoint string   `default:"metrics" yaml:"prometheus_endpoint"`
+		PrometheusIp       string `default:"0.0.0.0" yaml:"prometheus_ip"`
+		PrometheusPort     string `default:"80" yaml:"prometheus_port"`
+		PrometheusEndpoint string `default:"metrics" yaml:"prometheus_endpoint"`
 	}
 
 	Logging struct {
@@ -53,13 +53,13 @@ type TrapexConfig struct {
 
 	V3Params v3Params `yaml:"snmpv3"`
 
-        FilterPluginsConfig plugin_interface.PluginsConfig `yaml:"filter_plugins_config"`
+	FilterPluginsConfig plugin_interface.PluginsConfig `yaml:"filter_plugins_config"`
 
 	IpSets_str []map[string][]string `default:"{}" yaml:"ip_sets"`
-	IpSets map[string]IpSet      `default:"{}"`
+	IpSets     map[string]IpSet      `default:"{}"`
 
 	Filters_str []string `default:"[]" yaml:"filters"`
-	filters    []TrapexFilter
+	filters     []TrapexFilter
 }
 
 // filterObj represents one of the filterable items in a filter line from
@@ -67,18 +67,17 @@ type TrapexConfig struct {
 // and Enterprise OID).
 //
 type FilterObj struct {
-        FilterItem  int
-        FilterType  int
-        FilterValue interface{} // string, *regex.Regexp, *network, int
+	FilterItem  int
+	FilterType  int
+	FilterValue interface{} // string, *regex.Regexp, *network, int
 }
 
 // trapexFilter holds the filter data and action for a specfic
 // filter line from the config file.
 type TrapexFilter struct {
-        FilterItems []FilterObj
-        MatchAll    bool
-        Action      interface{}
-        ActionType  int
-        ActionArg   string
+	FilterItems []FilterObj
+	MatchAll    bool
+	Action      interface{}
+	ActionType  int
+	ActionArg   string
 }
-

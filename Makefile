@@ -20,6 +20,11 @@ deps:
 test: build
 	go test
 
+fmt:
+	gofmt -w *.go
+	gofmt -w actions/*.go
+	gofmt -w actions/plugins/*.go
+
 rpm: build
 	rpmbuild -ba tools/rpm.spec
 

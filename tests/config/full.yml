@@ -24,7 +24,7 @@ snmpv3:
   privacy_protocol:   AES
   privacy_password:   v3privPW
 
-ipsets:
+ip_sets:
   - network1:
     - 10.1.3.4
     - 10.1.3.5

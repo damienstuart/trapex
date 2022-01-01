@@ -34,12 +34,12 @@ type FilterPlugin interface {
 
 //var plugins []FilterPlugin
 func loadFilterActions(newConfig *TrapexConfig) error {
- var plugin_name string = "noop"
-		trapex_logger.Info().Str("filter_plugin", plugin_name).Msg("Initializing plugin")
-		filter_plugin, err := loadFilterPlugin(plugin_name)
-		if err == nil {
-			filter_plugin.Configure(trapex_logger, "", &newConfig.FilterPluginsConfig)
-		}
+	var plugin_name string = "noop"
+	trapex_logger.Info().Str("filter_plugin", plugin_name).Msg("Initializing plugin")
+	filter_plugin, err := loadFilterPlugin(plugin_name)
+	if err == nil {
+		filter_plugin.Configure(trapex_logger, "", &newConfig.FilterPluginsConfig)
+	}
 	return nil
 }
 
@@ -343,4 +343,3 @@ func (f *TrapexFilter) processAction(sgt *plugin_interface.Trap) {
 		return
 	}
 }
-

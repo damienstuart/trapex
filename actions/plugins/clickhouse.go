@@ -33,7 +33,7 @@ type trapCsvLogger struct {
 	logHandle *log.Logger
 	isBroken  bool
 
-        trapex_log zerolog.Logger
+	trapex_log zerolog.Logger
 }
 
 // makeCsvLogger initializes and returns a lumberjack.Logger (logger with
@@ -62,7 +62,7 @@ func (a trapCsvLogger) initLogger(logfile string, logger zerolog.Logger) error {
 
 func (p trapCsvLogger) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
 	logger.Info().Str("plugin", plugin_name).Msg("Added CSV log destination")
-        p.trapex_log = logger
+	p.trapex_log = logger
 	return nil
 }
 
