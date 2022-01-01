@@ -65,8 +65,7 @@ func handleSIGUSR2(sigCh chan os.Signal) {
 			trapex_logger.Info().Msg("Got SIGUSR2")
 			for _, f := range teConfig.filters {
 				if f.actionType == actionCsv || f.actionType == actionCsvBreak {
-					f.action.(*trapCsvLogger).rotateLog()
-					trapex_logger.Info().Str("logfile", f.action.(*trapCsvLogger).logfileName()).Msg("Rotated CSV file")
+					f.action.(FilterPlugin).SigUsr2()
 				}
 			}
 		}

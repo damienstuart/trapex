@@ -8,14 +8,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
-	"os"
 	"plugin"
 	"regexp"
 	"strings"
 
-	"github.com/natefinch/lumberjack"
 	"github.com/rs/zerolog"
 
 	"github.com/damienstuart/trapex/actions"
@@ -111,55 +108,6 @@ type trapexFilter struct {
 }
 
 
-// trapCsvLogger is an instance of a trap CSV logfile destination.
-//
-type trapCsvLogger struct {
-	logFile   string
-	fd        *os.File
-	logger    *lumberjack.Logger
-	logHandle *log.Logger
-	isBroken  bool
-}
-
-
-// Initialize a trapCsvLogger instance.
-//
-func (a *trapCsvLogger) initAction(logfile string, teConf *TrapexConfig) error {
-	fd, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	a.fd = fd
-	a.logFile = logfile
-	a.logHandle = log.New(fd, "", 0)
-	a.logger = makeCsvLogger(logfile, teConf)
-	a.logHandle.SetOutput(a.logger)
-	trapex_logger.Info().Str("logfile", logfile).Msg("Added CSV log destination")
-	return nil
-}
-
-// Hook for logging a trap for this instance of a log action.
-//
-func (a *trapCsvLogger) processTrap(trap *plugin_interface.Trap) {
-	logCsvTrap(trap, a.logHandle)
-}
-
-// Get this logger's file name
-func (a *trapCsvLogger) logfileName() string {
-	return a.logFile
-}
-
-// Force a CSV log rotation
-func (a *trapCsvLogger) rotateLog() {
-	a.logger.Rotate()
-}
-
-// Close a trap logger handle
-//
-func (a *trapCsvLogger) close() {
-	a.fd.Close()
-}
-
 // isFilterMatch checks trap data against a trapexFilter and returns a boolean
 // to indicate whether or not the trap data matches the filter criteria.
 //
@@ -250,11 +198,11 @@ func (f *trapexFilter) processAction(sgt *plugin_interface.Trap) {
 		return
 	case actionCsv:
 		if !sgt.Dropped {
-			f.action.(*trapCsvLogger).processTrap(sgt)
+			f.action.(FilterPlugin).ProcessTrap(sgt)
 		}
 	case actionCsvBreak:
 		if !sgt.Dropped {
-			f.action.(*trapCsvLogger).processTrap(sgt)
+			f.action.(FilterPlugin).ProcessTrap(sgt)
 		}
 		sgt.Dropped = true
 		return

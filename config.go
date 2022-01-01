@@ -408,10 +408,10 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		} else {
 			filter.actionType = actionCsv
 		}
-		csvLogger := trapCsvLogger{}
-		if err := csvLogger.initAction(actionArg, newConfig); err != nil {
-			return err
-		}
+                csvLogger, err := loadFilterPlugin("clickhouse")
+        if err == nil {
+                csvLogger.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+        }
 		filter.action = &csvLogger
 	default:
 		return fmt.Errorf("unknown action: %s at line %v", action, lineNumber)
@@ -432,7 +432,7 @@ func closeTrapexHandles() {
 			//f.action.(FilterPlugin).Close()
 		}
 		if f.actionType == actionCsv || f.actionType == actionCsvBreak {
-			f.action.(*trapCsvLogger).close()
+			f.action.(FilterPlugin).Close()
 		}
 	}
 }
