@@ -6,8 +6,8 @@
 package main
 
 /*
-Dump data out in Clickhouse CSV data format, for adding to a Clickhouse database
-*/
+ * Dump data out in Clickhouse CSV data format, for adding to a Clickhouse database
+ */
 
 import (
 	"encoding/hex"
@@ -46,23 +46,21 @@ func makeCsvLogger(logfile string) *lumberjack.Logger {
 	return &l
 }
 
-func (a trapCsvLogger) initLogger(logfile string, logger zerolog.Logger) error {
-	fd, err := os.OpenFile(logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	a.fd = fd
-	a.logFile = logfile
-	a.logHandle = log.New(fd, "", 0)
-	a.logger = makeCsvLogger(logfile)
-	a.logHandle.SetOutput(a.logger)
-	logger.Info().Str("logfile", logfile).Msg("Added CSV log destination")
-	return nil
-}
-
-func (p trapCsvLogger) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
+func (a trapCsvLogger) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
 	logger.Info().Str("plugin", plugin_name).Msg("Added CSV log destination")
-	p.trapex_log = logger
+	a.trapex_log = logger
+
+        a.logFile = actionArg
+        fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+        if err != nil {
+                return err
+        }
+        a.fd = fd
+        a.logHandle = log.New(fd, "", 0)
+        a.logger = makeCsvLogger(a.logFile)
+        a.logHandle.SetOutput(a.logger)
+        logger.Info().Str("logfile", a.logFile).Msg("Added CSV log destination")
+
 	return nil
 }
 

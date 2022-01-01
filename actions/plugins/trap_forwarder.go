@@ -10,6 +10,9 @@ This plugin sends SNMP traps to a new destination
 */
 
 import (
+"strings"
+"strconv"
+"time"
 	g "github.com/gosnmp/gosnmp"
 
 	"github.com/damienstuart/trapex/actions"
@@ -23,13 +26,12 @@ type trapForwarder struct {
 
 const plugin_name = "trap forwarder"
 
-func (p trapForwarder) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
-	p.trapex_log = logger
+func (a trapForwarder) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
+	a.trapex_log = logger
 
-	//logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 
-	/*
-	   func (a *trapForwarder) initAction(dest string) error {
+        dest := actionArg
 	           s := strings.Split(dest, ":")
 	           port, err := strconv.Atoi(s[1])
 	           if err != nil {
@@ -52,7 +54,6 @@ func (p trapForwarder) Configure(logger zerolog.Logger, actionArg string, plugin
 	           }
 	           logger.Info().Str("target", s[0]).Str("port", s[1]).Msg("Added trap destination")
 
-	*/
 	return nil
 }
 

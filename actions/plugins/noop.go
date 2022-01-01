@@ -22,7 +22,7 @@ type noopFilter struct {
 const plugin_name = "no op"
 
 func (p noopFilter) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
-	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+	logger.Info().Str("plugin", plugin_name).Str("test1", pluginConfig.Noop.Test1).Str("test2", pluginConfig.Noop.Test2).Msg("Initialization of plugin")
 	p.trapex_log = logger
 	return nil
 }
