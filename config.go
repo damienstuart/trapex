@@ -385,11 +385,14 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		} else {
 			filter.actionType = actionForward
 		}
-		forwarder, err := loadFilterPlugin("trap_forwarder")
-		if err == nil {
-			forwarder.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+		filter.action, err = loadFilterPlugin("trap_forwarder")
+		if err != nil {
+			return fmt.Errorf("Unable to load plugin forwarder at line %v", lineNumber)
 		}
-		filter.action = forwarder
+     if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
+                        return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
+}
+
 	case "log":
 		if breakAfter {
 			filter.actionType = actionLogBreak
@@ -397,9 +400,13 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 			filter.actionType = actionLog
 		}
 		filter.action, err = loadFilterPlugin("trap_logger")
-		if err == nil {
-			filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+		if err != nil {
+			return fmt.Errorf("Unable to load plugin log at line %v", lineNumber)
 		}
+     if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
+			return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
+}
+
 
 	case "csv":
 		if breakAfter {
@@ -407,11 +414,14 @@ func processFilterLine(f []string, newConfig *TrapexConfig, lineNumber int) erro
 		} else {
 			filter.actionType = actionCsv
 		}
-		csvLogger, err := loadFilterPlugin("clickhouse")
-		if err == nil {
-			csvLogger.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+		filter.action, err = loadFilterPlugin("clickhouse")
+		if err != nil {
+			return fmt.Errorf("Unable to load plugin csv at line %v", lineNumber)
 		}
-		filter.action = csvLogger
+     if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
+                        return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
+}
+
 	default:
 		return fmt.Errorf("unknown action: %s at line %v", action, lineNumber)
 	}
