@@ -6,31 +6,12 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
-	"log"
 	"net"
-	"strconv"
-	"strings"
-	"time"
 
-	"github.com/damienstuart/trapex/actions"
 	g "github.com/gosnmp/gosnmp"
-	"github.com/natefinch/lumberjack"
 )
 
-// trapType is an array of trap Generic Type human-friendly names
-// ordered by the type value.
-//
-var trapType = [...]string{
-	"Cold Start",
-	"Warm Start",
-	"Link Down",
-	"Link Up",
-	"Authentication Failure",
-	"EGP Neighbor Loss",
-	"Vendor Specific",
-}
 
 // network stuct holds the data parsed from a CIDR representation of a
 // subnet.

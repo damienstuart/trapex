@@ -24,6 +24,19 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// trapType is an array of trap Generic Type human-friendly names
+// ordered by the type value.
+//
+var trapType = [...]string{
+        "Cold Start",
+        "Warm Start",
+        "Link Down",
+        "Link Up",
+        "Authentication Failure",
+        "EGP Neighbor Loss",
+        "Vendor Specific",
+}
+
 type trapLogger struct {
 	logFile   string
 	fd        *os.File
@@ -94,9 +107,7 @@ func makeTrapLogEntry(sgt *plugin_data.Trap) string {
 	trap := sgt.Data
 
 	if trap.GenericTrap >= 0 && trap.GenericTrap <= 6 {
-		// FIXME: can't find trapType
-		//genTrapType = trapType[trap.GenericTrap]
-		genTrapType = strconv.Itoa(trap.GenericTrap)
+		genTrapType = trapType[trap.GenericTrap]
 	} else {
 		genTrapType = strconv.Itoa(trap.GenericTrap)
 	}
