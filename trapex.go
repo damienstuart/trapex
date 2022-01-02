@@ -102,7 +102,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	trapsHandled.Inc()
 
 	// Make the trap
-	trap := plugin_interface.Trap{
+	trap := plugin_data.Trap{
 		Data: g.SnmpTrap{
 			Variables:    p.Variables,
 			Enterprise:   p.Enterprise,
@@ -137,7 +137,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 // processTrap is the entry point to code that checks the incoming trap
 // against the filter list and processes the trap accordingly.
 //
-func processTrap(sgt *plugin_interface.Trap) {
+func processTrap(sgt *plugin_data.Trap) {
 	for _, f := range teConfig.filters {
 		// If this trap is tagged to drop, then continue.
 		if sgt.Dropped {

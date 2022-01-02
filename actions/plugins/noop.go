@@ -21,13 +21,13 @@ type noopFilter struct {
 
 const plugin_name = "no op"
 
-func (p noopFilter) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
+func (p noopFilter) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
 	logger.Info().Str("plugin", plugin_name).Str("test1", pluginConfig.Noop.Test1).Str("test2", pluginConfig.Noop.Test2).Msg("Initialization of plugin")
 	p.trapex_log = logger
 	return nil
 }
 
-func (p noopFilter) ProcessTrap(trap *plugin_interface.Trap) error {
+func (p noopFilter) ProcessTrap(trap *plugin_data.Trap) error {
 	//logger.Info().Str("plugin", plugin_name).Msg("Noop processing trap")
 	return nil
 }

@@ -35,7 +35,7 @@ type trapLogger struct {
 
 const plugin_name = "trap logger"
 
-func makeLogger(logfile string, pluginConfig *plugin_interface.PluginsConfig) *lumberjack.Logger {
+func makeLogger(logfile string, pluginConfig *plugin_data.PluginsConfig) *lumberjack.Logger {
 	l := lumberjack.Logger{
 		Filename:   logfile,
 		MaxSize:    pluginConfig.Logger.LogMaxSize,
@@ -45,7 +45,7 @@ func makeLogger(logfile string, pluginConfig *plugin_interface.PluginsConfig) *l
 	return &l
 }
 
-func (a trapLogger) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
+func (a trapLogger) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
 	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 	a.trapex_log = logger
 
@@ -63,7 +63,7 @@ func (a trapLogger) Configure(logger zerolog.Logger, actionArg string, pluginCon
 	return nil
 }
 
-func (a trapLogger) ProcessTrap(trap *plugin_interface.Trap) error {
+func (a trapLogger) ProcessTrap(trap *plugin_data.Trap) error {
 	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Processing trap")
 	//a.logHandle.Printf(makeTrapLogEntry(trap))
 	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Processed trap")
@@ -88,7 +88,7 @@ func (a trapLogger) Close() error {
 // Note that this particulare implementation expects to be dealing with
 // only v1 traps.
 //
-func makeTrapLogEntry(sgt *plugin_interface.Trap) string {
+func makeTrapLogEntry(sgt *plugin_data.Trap) string {
 	var b strings.Builder
 	var genTrapType string
 	trap := sgt.Data

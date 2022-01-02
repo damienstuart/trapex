@@ -26,7 +26,7 @@ type trapForwarder struct {
 
 const plugin_name = "trap forwarder"
 
-func (a trapForwarder) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
+func (a trapForwarder) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
 	a.trapex_log = logger
 
 	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
@@ -57,7 +57,7 @@ func (a trapForwarder) Configure(logger zerolog.Logger, actionArg string, plugin
 	return nil
 }
 
-func (a trapForwarder) ProcessTrap(trap *plugin_interface.Trap) error {
+func (a trapForwarder) ProcessTrap(trap *plugin_data.Trap) error {
 	_, err := a.destination.SendTrap(trap.Data)
 	return err
 

@@ -43,7 +43,7 @@ func makeCsvLogger(logfile string) *lumberjack.Logger {
 	return &l
 }
 
-func (a ClickhouseExport) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
+func (a ClickhouseExport) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
 	a.trapex_log = logger
 	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Added exporter")
 
@@ -61,7 +61,7 @@ func (a ClickhouseExport) Configure(logger zerolog.Logger, actionArg string, plu
 	return nil
 }
 
-func (a ClickhouseExport) ProcessTrap(trap *plugin_interface.Trap) error {
+func (a ClickhouseExport) ProcessTrap(trap *plugin_data.Trap) error {
 	logCsvTrap(trap, a.logHandle)
 	return nil
 }
@@ -88,7 +88,7 @@ func (a ClickhouseExport) SigUsr2() error {
 // logCsvTrap takes care of logging the given trap to the given ClickhouseExport
 // destination.
 //
-func logCsvTrap(trap *plugin_interface.Trap, l *log.Logger) {
+func logCsvTrap(trap *plugin_data.Trap, l *log.Logger) {
 	l.Printf(makeTrapLogCsvEntry(trap))
 }
 
@@ -96,7 +96,7 @@ func logCsvTrap(trap *plugin_interface.Trap, l *log.Logger) {
 // Note that this particular implementation expects to be dealing with
 // only v1 traps.
 //
-func makeTrapLogCsvEntry(trap *plugin_interface.Trap) string {
+func makeTrapLogCsvEntry(trap *plugin_data.Trap) string {
 	var csv [11]string
 	trapMap := trap.V1Trap2Map()
 

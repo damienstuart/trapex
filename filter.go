@@ -20,8 +20,8 @@ import (
 
 // Filter action plugin interface
 type FilterPlugin interface {
-	Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error
-	ProcessTrap(trap *plugin_interface.Trap) error
+	Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error
+	ProcessTrap(trap *plugin_data.Trap) error
 	SigUsr1() error
 	SigUsr2() error
 	Close() error
@@ -106,7 +106,7 @@ type trapexFilter struct {
 // isFilterMatch checks trap data against a trapexFilter and returns a boolean
 // to indicate whether or not the trap data matches the filter criteria.
 //
-func (f *trapexFilter) isFilterMatch(sgt *plugin_interface.Trap) bool {
+func (f *trapexFilter) isFilterMatch(sgt *plugin_data.Trap) bool {
 	// Assume true - until one of the filter items does not match
 	trap := &(sgt.Data)
 	for _, fo := range f.filterItems {
@@ -164,7 +164,7 @@ func (f *trapexFilter) isFilterMatch(sgt *plugin_interface.Trap) bool {
 // processAction handles the execution of the action for the
 // trapexFilter instance on the the given trap data.
 //
-func (f *trapexFilter) processAction(sgt *plugin_interface.Trap) {
+func (f *trapexFilter) processAction(sgt *plugin_data.Trap) {
 	switch f.actionType {
 	case actionBreak:
 		sgt.Dropped = true

@@ -28,7 +28,7 @@ type webhookForwarder struct {
 
 const plugin_name = "webhook"
 
-func (a webhookForwarder) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
+func (a webhookForwarder) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
 	a.trapex_log = logger
 
 	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
@@ -37,7 +37,7 @@ func (a webhookForwarder) Configure(logger zerolog.Logger, actionArg string, plu
 	return nil
 }
 
-func (a webhookForwarder) ProcessTrap(trap *plugin_interface.Trap) error {
+func (a webhookForwarder) ProcessTrap(trap *plugin_data.Trap) error {
 	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Processing HTTP post -- fake")
 	trapMap := trap.V1Trap2Map()
 	jsonBytes, err := json.Marshal(trapMap)
