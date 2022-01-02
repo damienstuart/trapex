@@ -357,11 +357,10 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber int) erro
 	// Process the filter action
 	//
 	var actionArg string
-	var breakAfter bool
 	if len(f) > 8 && f[8] == "break" {
-		breakAfter = true
+		filter.breakAfter = true
 	} else {
-		breakAfter = false
+		filter.breakAfter = false
 	}
 
 	var action = f[6]
@@ -379,50 +378,15 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber int) erro
 			return fmt.Errorf("missing nat argument at line %v", lineNumber)
 		}
 		filter.actionArg = actionArg
-	case "forward":
-		if breakAfter {
-			filter.actionType = actionForwardBreak
-		} else {
-			filter.actionType = actionForward
-		}
-		filter.action, err = loadFilterPlugin("trap_forwarder")
-		if err != nil {
-			return fmt.Errorf("Unable to load plugin forwarder at line %v", lineNumber)
-		}
-		if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
-			return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
-		}
-
-	case "log":
-		if breakAfter {
-			filter.actionType = actionLogBreak
-		} else {
-			filter.actionType = actionLog
-		}
-		filter.action, err = loadFilterPlugin("trap_logger")
-		if err != nil {
-			return fmt.Errorf("Unable to load plugin log at line %v", lineNumber)
-		}
-		if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
-			return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
-		}
-
-	case "csv":
-		if breakAfter {
-			filter.actionType = actionCsvBreak
-		} else {
-			filter.actionType = actionCsv
-		}
-		filter.action, err = loadFilterPlugin("clickhouse")
-		if err != nil {
-			return fmt.Errorf("Unable to load plugin csv at line %v", lineNumber)
-		}
-		if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
-			return fmt.Errorf("Unable to configure plugin at line %v: %s", lineNumber, err)
-		}
-
 	default:
-		return fmt.Errorf("unknown action: %s at line %v", action, lineNumber)
+		filter.actionType = actionPlugin
+		filter.action, err = loadFilterPlugin(action)
+		if err != nil {
+			return fmt.Errorf("Unable to load plugin %s at line %v: %s", action, lineNumber, err)
+		}
+		if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
+			return fmt.Errorf("Unable to configure plugin %s at line %v: %s", action, lineNumber, err)
+		}
 	}
 
 	newConfig.filters = append(newConfig.filters, filter)
@@ -432,14 +396,7 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber int) erro
 
 func closeTrapexHandles() {
 	for _, f := range teConfig.filters {
-		if f.actionType == actionForward || f.actionType == actionForwardBreak {
-			f.action.(FilterPlugin).Close()
-		}
-		if f.actionType == actionLog || f.actionType == actionLogBreak {
-			fmt.Println("Would be closing filehandle now")
-			//f.action.(FilterPlugin).Close()
-		}
-		if f.actionType == actionCsv || f.actionType == actionCsvBreak {
+		if f.actionType == actionPlugin {
 			f.action.(FilterPlugin).Close()
 		}
 	}

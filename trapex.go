@@ -154,7 +154,7 @@ func processTrap(sgt *plugin_interface.Trap) {
 				continue
 			}
 			f.processAction(sgt)
-			if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
+			if f.breakAfter {
 				sgt.Dropped = true
 				stats.DroppedTraps++
 				trapsDropped.Inc()
@@ -170,7 +170,7 @@ func processTrap(sgt *plugin_interface.Trap) {
 					continue
 				}
 				f.processAction(sgt)
-				if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
+			if f.breakAfter {
 					sgt.Dropped = true
 					stats.DroppedTraps++
 					trapsDropped.Inc()

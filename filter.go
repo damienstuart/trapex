@@ -78,12 +78,7 @@ const (
 const (
 	actionBreak int = iota
 	actionNat
-	actionForward
-	actionForwardBreak
-	actionLog
-	actionLogBreak
-	actionCsv
-	actionCsvBreak
+	actionPlugin
 )
 
 // filterObj represents one of the filterable items in a filter line from
@@ -103,6 +98,7 @@ type trapexFilter struct {
 	matchAll    bool
 	//action      interface{}
 	action     FilterPlugin
+	breakAfter bool
 	actionType int
 	actionArg  string
 }
@@ -179,31 +175,11 @@ func (f *trapexFilter) processAction(sgt *plugin_interface.Trap) {
 		} else {
 			sgt.Data.AgentAddress = f.actionArg
 		}
-	case actionForward:
-		f.action.(FilterPlugin).ProcessTrap(sgt)
-	case actionForwardBreak:
-		f.action.(FilterPlugin).ProcessTrap(sgt)
-		sgt.Dropped = true
 		return
-	case actionLog:
-		if !sgt.Dropped {
+	case actionPlugin:
 			f.action.(FilterPlugin).ProcessTrap(sgt)
-		}
-	case actionLogBreak:
-		if !sgt.Dropped {
-			f.action.(FilterPlugin).ProcessTrap(sgt)
-		}
-		sgt.Dropped = true
-		return
-	case actionCsv:
-		if !sgt.Dropped {
-			f.action.(FilterPlugin).ProcessTrap(sgt)
-		}
-	case actionCsvBreak:
-		if !sgt.Dropped {
-			f.action.(FilterPlugin).ProcessTrap(sgt)
-		}
-		sgt.Dropped = true
-		return
 	}
+        if f.breakAfter {
+		sgt.Dropped = true
+        }
 }

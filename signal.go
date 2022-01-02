@@ -64,7 +64,7 @@ func handleSIGUSR2(sigCh chan os.Signal) {
 		case <-sigCh:
 			trapex_logger.Info().Msg("Got SIGUSR2")
 			for _, f := range teConfig.filters {
-				if f.actionType == actionCsv || f.actionType == actionCsvBreak {
+				if f.actionType == actionPlugin {
 					f.action.(FilterPlugin).SigUsr2()
 				}
 			}
