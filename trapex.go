@@ -170,7 +170,7 @@ func processTrap(sgt *plugin_interface.Trap) {
 					continue
 				}
 				f.processAction(sgt)
-			if f.breakAfter {
+				if f.breakAfter {
 					sgt.Dropped = true
 					stats.DroppedTraps++
 					trapsDropped.Inc()

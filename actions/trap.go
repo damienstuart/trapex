@@ -6,11 +6,11 @@
 package plugin_interface
 
 import (
+	"encoding/hex"
 	"fmt"
 	"net"
-	"time"
 	"strings"
-        "encoding/hex"
+	"time"
 
 	g "github.com/gosnmp/gosnmp"
 )
@@ -24,14 +24,14 @@ type Trap struct {
 	SrcIP      net.IP
 	Translated bool
 	Dropped    bool
-	Hostname    string
+	Hostname   string
 }
 
-func (trap *Trap)V1Trap2Map() map[string]string {
-        trapMap := make(map[string]string)
+func (trap *Trap) V1Trap2Map() map[string]string {
+	trapMap := make(map[string]string)
 	raw_trap := trap.Data
 
-// FIXME: should include a check to validate that we work with only SNMP v1 traps?
+	// FIXME: should include a check to validate that we work with only SNMP v1 traps?
 	var ts = time.Now().Format(time.RFC3339)
 	trapMap["TrapDate"] = fmt.Sprintf("%v", ts[:10])
 	trapMap["TrapTimestamp"] = fmt.Sprintf("%v %v", ts[:10], ts[11:19])
@@ -53,7 +53,7 @@ func (trap *Trap)V1Trap2Map() map[string]string {
 	replacer := strings.NewReplacer("\"", "\"\"", "'", "''", "\\", "\\\\", "\n", " - ", "%", "%%")
 
 	// Process the Varbinds for this raw_trap.
-        var oidPath, oidValue string
+	var oidPath, oidValue string
 	for _, v := range raw_trap.Variables {
 		// Get the OID
 		oidPath = strings.Trim(v.Name, ".")
@@ -80,9 +80,8 @@ func (trap *Trap)V1Trap2Map() map[string]string {
 		default:
 			oidValue = replacer.Replace(fmt.Sprintf("%v", v.Value))
 		}
-trapMap[oidPath] = oidValue
+		trapMap[oidPath] = oidValue
 	}
 
 	return trapMap
 }
-

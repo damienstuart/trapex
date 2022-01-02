@@ -10,20 +10,20 @@ package main
  */
 
 import (
-"encoding/json"
-/*
-"net/http"
-"bytes"
-*/
+	"encoding/json"
+	/*
+	   "net/http"
+	   "bytes"
+	*/
 
 	"github.com/damienstuart/trapex/actions"
 	"github.com/rs/zerolog"
 )
 
 type webhookForwarder struct {
-	url string
-	timeout uint
-	trapex_log  zerolog.Logger
+	url        string
+	timeout    uint
+	trapex_log zerolog.Logger
 }
 
 const plugin_name = "webhook"
@@ -38,33 +38,33 @@ func (a webhookForwarder) Configure(logger zerolog.Logger, actionArg string, plu
 }
 
 func (a webhookForwarder) ProcessTrap(trap *plugin_interface.Trap) error {
-a.trapex_log.Info().Str("plugin", plugin_name).Msg("Processing HTTP post -- fake")
-trapMap := trap.V1Trap2Map()
-jsonBytes, err := json.Marshal(trapMap)
-if err != nil {
-   return err
-}
+	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Processing HTTP post -- fake")
+	trapMap := trap.V1Trap2Map()
+	jsonBytes, err := json.Marshal(trapMap)
+	if err != nil {
+		return err
+	}
 
-a.trapex_log.Info().Str("plugin", plugin_name).Str("json", string(jsonBytes[:])).Msg("Converted trap to JSON")
-/*
-body := new(bytes.Buffer)
-trap.toJson(&body)
-// need timeout information
-req, _ := http.NewRequest("POST", a.url, body)
+	a.trapex_log.Info().Str("plugin", plugin_name).Str("json", string(jsonBytes[:])).Msg("Converted trap to JSON")
+	/*
+	   body := new(bytes.Buffer)
+	   trap.toJson(&body)
+	   // need timeout information
+	   req, _ := http.NewRequest("POST", a.url, body)
 
-client := &http.Client()
-result, err := client.Do(req)
-if err != nil {
-return err
-}
+	   client := &http.Client()
+	   result, err := client.Do(req)
+	   if err != nil {
+	   return err
+	   }
 
-defer result.Body.Close()
-a.trapex_log.Info().Str("url", a.url).Int("http_status", result.Status).Msg("Webhook HTTP status")
-if result.Status == 200 {
-a.trapex_log.Info().Str("url", a.url).Str("body, result.Body).Msg("Webhook HTTP result")
-} else {
-return error.New("Unable to forward to webhook server")
-*/
+	   defer result.Body.Close()
+	   a.trapex_log.Info().Str("url", a.url).Int("http_status", result.Status).Msg("Webhook HTTP status")
+	   if result.Status == 200 {
+	   a.trapex_log.Info().Str("url", a.url).Str("body, result.Body).Msg("Webhook HTTP result")
+	   } else {
+	   return error.New("Unable to forward to webhook server")
+	*/
 	return nil
 }
 

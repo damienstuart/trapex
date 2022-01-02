@@ -98,7 +98,7 @@ func logCsvTrap(trap *plugin_interface.Trap, l *log.Logger) {
 //
 func makeTrapLogCsvEntry(trap *plugin_interface.Trap) string {
 	var csv [11]string
-trapMap := trap.V1Trap2Map()
+	trapMap := trap.V1Trap2Map()
 
 	csv[0] = trapMap["TrapDate"]
 	csv[1] = trapMap["TrapTimestamp"]
@@ -116,9 +116,9 @@ trapMap := trap.V1Trap2Map()
 	var vbVal []string
 
 	for key, value := range trapMap {
-                if strings.HasPrefix(key, "Trap") {
-                  continue
-                }
+		if strings.HasPrefix(key, "Trap") {
+			continue
+		}
 		vbObj = append(vbObj, key)
 		vbVal = append(vbVal, value)
 	}

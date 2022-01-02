@@ -177,9 +177,9 @@ func (f *trapexFilter) processAction(sgt *plugin_interface.Trap) {
 		}
 		return
 	case actionPlugin:
-			f.action.(FilterPlugin).ProcessTrap(sgt)
+		f.action.(FilterPlugin).ProcessTrap(sgt)
 	}
-        if f.breakAfter {
+	if f.breakAfter {
 		sgt.Dropped = true
-        }
+	}
 }
