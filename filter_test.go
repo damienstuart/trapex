@@ -24,7 +24,7 @@ func TestPluginInterfacess(t *testing.T) {
 	}
 	/*
 	                   if err == nil {
-	                           filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig)
+	                           filter.action.Configure(trapexLog, actionArg, &newConfig.FilterPluginsConfig)
 	                   }
 
 	   	var testConfig trapexConfig

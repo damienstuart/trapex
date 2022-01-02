@@ -22,7 +22,7 @@ import (
 )
 
 var trapRateTracker = newTrapRateTracker()
-var trapex_logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+var trapexLog = zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 func main() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
@@ -37,7 +37,7 @@ func main() {
 	processCommandLine()
 
 	if err := getConfig(); err != nil {
-		trapex_logger.Fatal().Err(err).Msg("Unable to load configuration")
+		trapexLog.Fatal().Err(err).Msg("Unable to load configuration")
 		os.Exit(1)
 	}
 
@@ -45,7 +45,7 @@ func main() {
 	go exposeMetrics()
 	var exporter = fmt.Sprintf("http://%s:%s/%s\n",
 		teConfig.General.PrometheusIp, teConfig.General.PrometheusPort, teConfig.General.PrometheusEndpoint)
-	trapex_logger.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
+	trapexLog.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
 
 	stats.StartTime = time.Now()
 
@@ -59,7 +59,7 @@ func main() {
 
 	// Uncomment for debugging gosnmp
 	if teConfig.Logging.Level == "debug" {
-		trapex_logger.Info().Msg("gosnmp debug mode enabled")
+		trapexLog.Info().Msg("gosnmp debug mode enabled")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}
 
@@ -76,7 +76,7 @@ func main() {
 	}
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.General.ListenAddr, teConfig.General.ListenPort)
-	trapex_logger.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
+	trapexLog.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
 	err := tl.Listen(listenAddr)
 	if err != nil {
 		log.Panicf("error in listen on %s: %s", listenAddr, err)
@@ -123,14 +123,14 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 		if err != nil {
 			var info string
 			info = makeTrapLogEntry(&trap)
-			trapex_logger.Warn().Err(err).Str("trap", info).Msg("Error translating to v1")
+			trapexLog.Warn().Err(err).Str("trap", info).Msg("Error translating to v1")
 		}
 	}
 
 	if teConfig.Logging.Level == "debug" {
 		var info string
 		info = makeTrapLogEntry(&trap)
-		trapex_logger.Debug().Str("trap", info).Msg("Raw trap info")
+		trapexLog.Debug().Str("trap", info).Msg("Raw trap info")
 	}
 
 	processTrap(&trap)

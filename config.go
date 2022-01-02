@@ -143,7 +143,7 @@ func getConfig() error {
 	} else {
 		operation = "Loading "
 	}
-	trapex_logger.Info().Str("version", myVersion).Str("configuration_file", teCmdLine.configFile).Msg(operation + "configuration for trapex")
+	trapexLog.Info().Str("version", myVersion).Str("configuration_file", teCmdLine.configFile).Msg(operation + "configuration for trapex")
 
 	var newConfig trapexConfig
 	err := loadConfig(teCmdLine.configFile, &newConfig)
@@ -253,12 +253,12 @@ func validateSnmpV3Args(newConfig *trapexConfig) error {
 func processIpSets(newConfig *trapexConfig) error {
 	for _, stanza := range newConfig.IpSets_str {
 		for ipsName, ips := range stanza {
-			trapex_log.Debug().Str("ipset", ipsName).Msg("Loading IpSet")
+			trapexLog.Debug().Str("ipset", ipsName).Msg("Loading IpSet")
 			newConfig.IpSets[ipsName] = make(map[string]bool)
 			for _, ip := range ips {
 				if ipRe.MatchString(ip) {
 					newConfig.IpSets[ipsName][ip] = true
-					trapex_logger.Debug().Str("ipset", ipsName).Str("ip", ip).Msg("Adding IP to IpSet")
+					trapexLog.Debug().Str("ipset", ipsName).Str("ip", ip).Msg("Adding IP to IpSet")
 				} else {
 					return fmt.Errorf("Invalid IP address (%s) in ipset: %s", ip, ipsName)
 				}
@@ -271,7 +271,7 @@ func processIpSets(newConfig *trapexConfig) error {
 func processFilters(newConfig *trapexConfig) error {
 
 	for lineNumber, filter_line := range newConfig.Filters_str {
-		trapex_logger.Debug().Str("filter", filter_line).Int("line_number", lineNumber).Msg("Examining filter")
+		trapexLog.Debug().Str("filter", filter_line).Int("line_number", lineNumber).Msg("Examining filter")
 		if err := processFilterLine(strings.Fields(filter_line), newConfig, lineNumber); err != nil {
 			return err
 		}
@@ -384,7 +384,7 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber int) erro
 		if err != nil {
 			return fmt.Errorf("Unable to load plugin %s at line %v: %s", action, lineNumber, err)
 		}
-		if err = filter.action.Configure(trapex_logger, actionArg, &newConfig.FilterPluginsConfig); err != nil {
+		if err = filter.action.Configure(trapexLog, actionArg, &newConfig.FilterPluginsConfig); err != nil {
 			return fmt.Errorf("Unable to configure plugin %s at line %v: %s", action, lineNumber, err)
 		}
 	}

@@ -19,7 +19,7 @@ func handleSIGHUP(sigCh chan os.Signal) {
 		case <-sigCh:
 			fmt.Printf("Got SIGHUP - Reloading configuration.\n")
 			if err := getConfig(); err != nil {
-				trapex_logger.Info().Err(err).Msg("Error parsing configuration\nConfiguration was not changed")
+				trapexLog.Info().Err(err).Msg("Error parsing configuration\nConfiguration was not changed")
 			}
 		}
 	}
@@ -31,10 +31,10 @@ func handleSIGUSR1(sigCh chan os.Signal) {
 	for {
 		select {
 		case <-sigCh:
-			//trapex_logger.Info().Msg("Got SIGUSR1 to dump stats")
+			//trapexLog.Info().Msg("Got SIGUSR1 to dump stats")
 			// Compute uptime
 			stats.UptimeInt = time.Now().Unix() - stats.StartTime.Unix()
-			trapex_logger.Info().
+			trapexLog.Info().
 				Str("uptime_str", secondsToDuration(uint(stats.UptimeInt))).
 				Uint("uptime", uint(stats.UptimeInt)).
 				Uint("traps_received", stats.TrapCount).
@@ -62,7 +62,7 @@ func handleSIGUSR2(sigCh chan os.Signal) {
 	for {
 		select {
 		case <-sigCh:
-			trapex_logger.Info().Msg("Got SIGUSR2")
+			trapexLog.Info().Msg("Got SIGUSR2")
 			for _, f := range teConfig.filters {
 				if f.actionType == actionPlugin {
 					f.action.(FilterPlugin).SigUsr2()

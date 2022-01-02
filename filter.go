@@ -46,7 +46,7 @@ func loadFilterPlugin(plugin_name string) (FilterPlugin, error) {
 	initializer, ok := symAction.(FilterPlugin)
 	if !ok {
 		symbolType := fmt.Sprintf("%T", symAction)
-		trapex_logger.Error().Str("filter_plugin", plugin_name).Str("data type", symbolType).Msg("Unable to load plugin")
+		trapexLog.Error().Str("filter_plugin", plugin_name).Str("data type", symbolType).Msg("Unable to load plugin")
 		return nil, errors.New("Unexpected type from plugin")
 	}
 
