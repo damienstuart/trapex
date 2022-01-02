@@ -28,13 +28,13 @@ import (
 // ordered by the type value.
 //
 var trapType = [...]string{
-        "Cold Start",
-        "Warm Start",
-        "Link Down",
-        "Link Up",
-        "Authentication Failure",
-        "EGP Neighbor Loss",
-        "Vendor Specific",
+	"Cold Start",
+	"Warm Start",
+	"Link Down",
+	"Link Up",
+	"Authentication Failure",
+	"EGP Neighbor Loss",
+	"Vendor Specific",
 }
 
 type trapLogger struct {

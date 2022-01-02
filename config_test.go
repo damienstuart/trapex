@@ -6,13 +6,12 @@
 package main
 
 import (
+	"github.com/rs/zerolog"
 	"testing"
-        "github.com/rs/zerolog"
-
 )
 
 func init() {
-        zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	zerolog.SetGlobalLevel(zerolog.WarnLevel)
 }
 
 func TestGeneralSection(t *testing.T) {

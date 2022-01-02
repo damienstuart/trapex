@@ -6,14 +6,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
-        "encoding/json"
 
-        "github.com/damienstuart/trapex/actions"
+	"github.com/damienstuart/trapex/actions"
 	g "github.com/gosnmp/gosnmp"
 )
-
 
 // network stuct holds the data parsed from a CIDR representation of a
 // subnet.
@@ -57,11 +56,10 @@ func panicOnError(e error) {
 // only v1 traps.
 //
 func makeTrapLogEntry(trap *plugin_data.Trap) string {
-        trapMap := trap.V1Trap2Map()
-        jsonBytes, _ := json.Marshal(trapMap)
-return string(jsonBytes[:])
+	trapMap := trap.V1Trap2Map()
+	jsonBytes, _ := json.Marshal(trapMap)
+	return string(jsonBytes[:])
 }
-
 
 // secondsToDuration converts the given number of seconds into a more
 // human-readable formatted string.
