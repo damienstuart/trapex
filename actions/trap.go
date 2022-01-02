@@ -27,7 +27,7 @@ type Trap struct {
 	Hostname    string
 }
 
-func (trap *Trap)v1Trap2Map() map[string]string {
+func (trap *Trap)V1Trap2Map() map[string]string {
         trapMap := make(map[string]string)
 	raw_trap := trap.Data
 
