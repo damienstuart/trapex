@@ -96,11 +96,11 @@ type filterObj struct {
 type trapexFilter struct {
 	filterItems []filterObj
 	matchAll    bool
-	action     FilterPlugin
-	actionName string
-	breakAfter bool
-	actionType int
-	actionArg  string
+	action      FilterPlugin
+	actionName  string
+	breakAfter  bool
+	actionType  int
+	actionArg   string
 }
 
 // isFilterMatch checks trap data against a trapexFilter and returns a boolean
@@ -177,9 +177,9 @@ func (f *trapexFilter) processAction(trap *plugin_data.Trap) {
 		}
 		return
 	case actionPlugin:
-                trapexLog.Debug().Str("plugin", f.actionName).Msg("About to process trap")
+		trapexLog.Debug().Str("plugin", f.actionName).Msg("About to process trap")
 		f.action.(FilterPlugin).ProcessTrap(trap)
-                trapexLog.Debug().Str("plugin", f.actionName).Msg("Processed trap")
+		trapexLog.Debug().Str("plugin", f.actionName).Msg("Processed trap")
 	}
 	if f.breakAfter {
 		trap.Dropped = true

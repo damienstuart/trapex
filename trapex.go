@@ -58,7 +58,7 @@ func main() {
 	tl.Params.Community = ""
 
 	// Uncomment for debugging gosnmp
-	if teConfig.General.gosnmpDebug  {
+	if teConfig.General.gosnmpDebug {
 		trapexLog.Info().Msg("gosnmp debug mode enabled")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}
@@ -111,9 +111,9 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 			SpecificTrap: p.SpecificTrap,
 			Timestamp:    p.Timestamp,
 		},
-		SrcIP:   addr.IP,
-		TrapVer: p.Version,
-		Hostname: teConfig.General.Hostname,
+		SrcIP:      addr.IP,
+		TrapVer:    p.Version,
+		Hostname:   teConfig.General.Hostname,
 		TrapNumber: stats.TrapCount,
 	}
 
