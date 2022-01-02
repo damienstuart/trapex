@@ -1,7 +1,0 @@
-# The listen address (what IP to bind to) and listen port. To bind to all
-# interfaces/IPs, use "0.0.0.0"
-#
-listenAddress  0.0.0.0
-listenPort     162
-
-
