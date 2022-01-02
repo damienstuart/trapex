@@ -111,8 +111,7 @@ func makeTrapLogEntry(sgt *plugin_data.Trap) string {
 	} else {
 		genTrapType = strconv.Itoa(trap.GenericTrap)
 	}
-	// FIXME: how to pass in stats
-	//b.WriteString(fmt.Sprintf("\nTrap: %v", stats.TrapCount))
+	b.WriteString(fmt.Sprintf("\nTrap: %v", sgt.TrapNumber))
 	if sgt.Translated == true {
 		b.WriteString(fmt.Sprintf(" (translated from v%s)", sgt.TrapVer.String()))
 	}

@@ -113,6 +113,8 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 		},
 		SrcIP:   addr.IP,
 		TrapVer: p.Version,
+		Hostname: teConfig.General.Hostname,
+		TrapNumber: stats.TrapCount,
 	}
 
 	// Translate to v1 if needed

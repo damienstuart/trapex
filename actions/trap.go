@@ -18,7 +18,7 @@ import (
 // Trap holds a pointer to the raw trap and other meta-data
 //
 type Trap struct {
-	TrapNumber uint64
+	TrapNumber uint
 	Data       g.SnmpTrap
 	TrapVer    g.SnmpVersion
 	SrcIP      net.IP
@@ -36,8 +36,7 @@ func (trap *Trap) V1Trap2Map() map[string]string {
 	trapMap["TrapDate"] = fmt.Sprintf("%v", ts[:10])
 	trapMap["TrapTimestamp"] = fmt.Sprintf("%v %v", ts[:10], ts[11:19])
 
-	//trapMap[2] = fmt.Sprintf("\"%v\"", teConfig.General.Hostname)
-	trapMap["TrapHost"] = fmt.Sprintf("\"%v\"", "hostname")
+	trapMap["TrapHost"] = fmt.Sprintf("\"%v\"", trap.Hostname)
 
 	//trapMap[3] = fmt.Sprintf("%v", stats.TrapCount)
 	// FIXME: global stats object not visible in plugin space
