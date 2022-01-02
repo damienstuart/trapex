@@ -7,7 +7,13 @@ package main
 
 import (
 	"testing"
+        "github.com/rs/zerolog"
+
 )
+
+func init() {
+        zerolog.SetGlobalLevel(zerolog.WarnLevel)
+}
 
 func TestGeneralSection(t *testing.T) {
 	var testConfig trapexConfig
