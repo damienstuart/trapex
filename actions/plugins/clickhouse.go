@@ -26,7 +26,7 @@ import (
 
 const plugin_name = "Clickhouse"
 
-type trapCsvLogger struct {
+type ClickhouseExport struct {
 	logFile   string
 	fd        *os.File
 	logger    *lumberjack.Logger
@@ -46,9 +46,9 @@ func makeCsvLogger(logfile string) *lumberjack.Logger {
 	return &l
 }
 
-func (a trapCsvLogger) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
-	logger.Info().Str("plugin", plugin_name).Msg("Added CSV log destination")
+func (a ClickhouseExport) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
 	a.trapex_log = logger
+	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Added CSV log destination")
 
 	a.logFile = actionArg
 	fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -59,28 +59,28 @@ func (a trapCsvLogger) Configure(logger zerolog.Logger, actionArg string, plugin
 	a.logHandle = log.New(fd, "", 0)
 	a.logger = makeCsvLogger(a.logFile)
 	a.logHandle.SetOutput(a.logger)
-	logger.Info().Str("logfile", a.logFile).Msg("Added CSV log destination")
+	a.trapex_log.Info().Str("logfile", a.logFile).Msg("Added CSV log destination")
 
 	return nil
 }
 
-func (a trapCsvLogger) ProcessTrap(trap *plugin_interface.Trap) error {
+func (a ClickhouseExport) ProcessTrap(trap *plugin_interface.Trap) error {
 	logCsvTrap(trap, a.logHandle)
 	return nil
 }
 
-func (a trapCsvLogger) SigUsr1() error {
+func (a ClickhouseExport) SigUsr1() error {
 	fmt.Println("SigUsr1")
 	return nil
 }
 
-func (a trapCsvLogger) Close() error {
+func (a ClickhouseExport) Close() error {
 	fmt.Println("Close")
 	a.fd.Close()
 	return nil
 }
 
-func (a trapCsvLogger) SigUsr2() error {
+func (a ClickhouseExport) SigUsr2() error {
 	fmt.Println("SigUsr2")
 	a.logger.Rotate()
 
@@ -88,20 +88,20 @@ func (a trapCsvLogger) SigUsr2() error {
 	return nil
 }
 
-// logCsvTrap takes care of logging the given trap to the given trapCsvLogger
+// logCsvTrap takes care of logging the given trap to the given ClickhouseExport
 // destination.
 //
-func logCsvTrap(sgt *plugin_interface.Trap, l *log.Logger) {
-	l.Printf(makeTrapLogCsvEntry(sgt))
+func logCsvTrap(trap *plugin_interface.Trap, l *log.Logger) {
+	l.Printf(makeTrapLogCsvEntry(trap))
 }
 
 // makeTrapLogEntry creates a log entry string for the given trap data.
 // Note that this particular implementation expects to be dealing with
 // only v1 traps.
 //
-func makeTrapLogCsvEntry(sgt *plugin_interface.Trap) string {
+func makeTrapLogCsvEntry(trap *plugin_interface.Trap) string {
 	var csv [11]string
-	trap := sgt.Data
+	raw_trap := trap.Data
 
 	/* Fields in order:
 	   TrapDate,
@@ -127,11 +127,11 @@ func makeTrapLogCsvEntry(sgt *plugin_interface.Trap) string {
 	//csv[3] = fmt.Sprintf("%v", stats.TrapCount)
 	// FIXME: global stats object not visible in plugin space
 	csv[3] = fmt.Sprintf("%v", 1)
-	csv[4] = fmt.Sprintf("\"%v\"", sgt.SrcIP)
-	csv[5] = fmt.Sprintf("\"%v\"", trap.AgentAddress)
-	csv[6] = fmt.Sprintf("%v", trap.GenericTrap)
-	csv[7] = fmt.Sprintf("%v", trap.SpecificTrap)
-	csv[8] = fmt.Sprintf("\"%v\"", strings.Trim(trap.Enterprise, "."))
+	csv[4] = fmt.Sprintf("\"%v\"", trap.SrcIP)
+	csv[5] = fmt.Sprintf("\"%v\"", raw_trap.AgentAddress)
+	csv[6] = fmt.Sprintf("%v", raw_trap.GenericTrap)
+	csv[7] = fmt.Sprintf("%v", raw_trap.SpecificTrap)
+	csv[8] = fmt.Sprintf("\"%v\"", strings.Trim(raw_trap.Enterprise, "."))
 
 	var vbObj []string
 	var vbVal []string
@@ -139,10 +139,10 @@ func makeTrapLogCsvEntry(sgt *plugin_interface.Trap) string {
 	// For escaping quotes and backslashes and replace newlines with a space
 	replacer := strings.NewReplacer("\"", "\"\"", "'", "''", "\\", "\\\\", "\n", " - ", "%", "%%")
 
-	// Process the Varbinds for this trap.
+	// Process the Varbinds for this raw_trap.
 	// Varbinds are split to separate arrays - one for the ObjectIDs,
 	// and the other for Values
-	for _, v := range trap.Variables {
+	for _, v := range raw_trap.Variables {
 		// Get the OID
 		vbObj = append(vbObj, strings.Trim(v.Name, "."))
 		// Parse the value
@@ -177,4 +177,4 @@ func makeTrapLogCsvEntry(sgt *plugin_interface.Trap) string {
 	return strings.Join(csv[:], ",")
 }
 
-var FilterPlugin trapCsvLogger
+var FilterPlugin ClickhouseExport
