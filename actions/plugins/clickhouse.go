@@ -10,13 +10,10 @@ package main
  */
 
 import (
-	"encoding/hex"
 	"fmt"
-	g "github.com/gosnmp/gosnmp"
 	"log"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/rs/zerolog"
 
@@ -48,7 +45,7 @@ func makeCsvLogger(logfile string) *lumberjack.Logger {
 
 func (a ClickhouseExport) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_interface.PluginsConfig) error {
 	a.trapex_log = logger
-	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Added CSV log destination")
+	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Added exporter")
 
 	a.logFile = actionArg
 	fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -101,74 +98,31 @@ func logCsvTrap(trap *plugin_interface.Trap, l *log.Logger) {
 //
 func makeTrapLogCsvEntry(trap *plugin_interface.Trap) string {
 	var csv [11]string
-	raw_trap := trap.Data
+trapMap := trap.V1Trap2Map()
 
-	/* Fields in order:
-	   TrapDate,
-	   TrapTimestamp,
-	   TrapHost,
-	   TrapNumber,
-	   TrapSourceIP,
-	   TrapAgentAddress,
-	   TrapGenericType,
-	   TrapSpecificType,
-	   TrapEnterpriseOID,
-	   TrapVarBinds.ObjID (array)
-	   TrapVarBinds.Value (array)
-	*/
+	csv[0] = trapMap["TrapDate"]
+	csv[1] = trapMap["TrapTimestamp"]
+	csv[2] = trapMap["TrapHost"]
+	csv[3] = trapMap["TrapNumber"]
+	csv[4] = trapMap["TrapSourceIP"]
+	csv[5] = trapMap["TrapAgentAddress"]
+	csv[6] = trapMap["TrapGenericType"]
+	csv[7] = trapMap["TrapSpecificType"]
+	csv[8] = trapMap["TrapEnterpriseOID"]
 
-	var ts = time.Now().Format(time.RFC3339)
-
-	csv[0] = fmt.Sprintf("%v", ts[:10])
-	csv[1] = fmt.Sprintf("%v %v", ts[:10], ts[11:19])
-	// FIXME: global teConfig object not visible in plugin space
-	//csv[2] = fmt.Sprintf("\"%v\"", teConfig.General.Hostname)
-	csv[2] = fmt.Sprintf("\"%v\"", "hostname")
-	//csv[3] = fmt.Sprintf("%v", stats.TrapCount)
-	// FIXME: global stats object not visible in plugin space
-	csv[3] = fmt.Sprintf("%v", 1)
-	csv[4] = fmt.Sprintf("\"%v\"", trap.SrcIP)
-	csv[5] = fmt.Sprintf("\"%v\"", raw_trap.AgentAddress)
-	csv[6] = fmt.Sprintf("%v", raw_trap.GenericTrap)
-	csv[7] = fmt.Sprintf("%v", raw_trap.SpecificTrap)
-	csv[8] = fmt.Sprintf("\"%v\"", strings.Trim(raw_trap.Enterprise, "."))
-
+	// Varbinds are split to separate arrays - one for the ObjectIDs,
+	// and the other for Values
 	var vbObj []string
 	var vbVal []string
 
-	// For escaping quotes and backslashes and replace newlines with a space
-	replacer := strings.NewReplacer("\"", "\"\"", "'", "''", "\\", "\\\\", "\n", " - ", "%", "%%")
-
-	// Process the Varbinds for this raw_trap.
-	// Varbinds are split to separate arrays - one for the ObjectIDs,
-	// and the other for Values
-	for _, v := range raw_trap.Variables {
-		// Get the OID
-		vbObj = append(vbObj, strings.Trim(v.Name, "."))
-		// Parse the value
-		switch v.Type {
-		case g.OctetString:
-			var nonASCII bool
-			val := v.Value.([]byte)
-			if len(val) > 0 {
-				for i := 0; i < len(val); i++ {
-					if (val[i] < 32 || val[i] > 127) && val[i] != 9 && val[i] != 10 {
-						nonASCII = true
-						break
-					}
-				}
-			}
-			// Strings with non-printable/non-ascii characters will be dumped
-			// as a hex string. Otherwise, just as a plain string.
-			if nonASCII {
-				vbVal = append(vbVal, fmt.Sprintf("%v", replacer.Replace(hex.EncodeToString(val))))
-			} else {
-				vbVal = append(vbVal, replacer.Replace(fmt.Sprintf("%v", string(val))))
-			}
-		default:
-			vbVal = append(vbVal, replacer.Replace(fmt.Sprintf("%v", v.Value)))
-		}
+	for key, value := range trapMap {
+                if strings.HasPrefix(key, "Trap") {
+                  continue
+                }
+		vbObj = append(vbObj, key)
+		vbVal = append(vbVal, value)
 	}
+
 	// Now we create the CS-escaped string representation of our varbind arrays
 	// and add them to the CSV array.
 	csv[9] = fmt.Sprintf("\"['%v']\"", strings.Join(vbObj, "','"))
