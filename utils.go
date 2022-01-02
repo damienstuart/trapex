@@ -8,7 +8,9 @@ package main
 import (
 	"fmt"
 	"net"
+        "encoding/json"
 
+        "github.com/damienstuart/trapex/actions"
 	g "github.com/gosnmp/gosnmp"
 )
 
@@ -44,12 +46,20 @@ func (n *network) contains(ip net.IP) bool {
 
 // panicOnError check an error pointer and panics if it is not nil.
 //
-/*
- */
 func panicOnError(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+// makeTrapLogEntry creates a log entry string for the given trap data.
+// Note that this particulare implementation expects to be dealing with
+// only v1 traps.
+//
+func makeTrapLogEntry(trap *plugin_data.Trap) string {
+        trapMap := trap.V1Trap2Map()
+        jsonBytes, _ := json.Marshal(trapMap)
+return string(jsonBytes[:])
 }
 
 

@@ -51,7 +51,7 @@ type trapexConfig struct {
 
 	V3Params v3Params `yaml:"snmpv3"`
 
-	FilterPluginsConfig plugin_interface.PluginsConfig `yaml:"filter_plugins_config"`
+	FilterPluginsConfig plugin_data.PluginsConfig `yaml:"filter_plugins_config"`
 
 	IpSets_str []map[string][]string `default:"{}" yaml:"ip_sets"`
 	IpSets     map[string]IpSet      `default:"{}"`
