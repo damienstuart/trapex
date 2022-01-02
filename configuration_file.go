@@ -33,6 +33,8 @@ type trapexConfig struct {
 		ListenAddr string `default:"0.0.0.0" yaml:"listen_address"`
 		ListenPort string `default:"162" yaml:"listen_port"`
 
+		gosnmpDebug bool `default:"false" yaml:"gosnmp_debug"`
+
 		IgnoreVersions_str []string        `default:"[]" yaml:"ignore_versions"`
 		IgnoreVersions     []g.SnmpVersion `default:"[]"`
 

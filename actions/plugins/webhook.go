@@ -16,36 +16,36 @@ import (
 	   "bytes"
 	*/
 
-	"github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/actions"
 	"github.com/rs/zerolog"
 )
 
 type webhookForwarder struct {
-	url        string
-	timeout    uint
-	trapex_log zerolog.Logger
+	url       string
+	timeout   uint
+	trapexLog *zerolog.Logger
 }
 
 const plugin_name = "webhook"
 
-func (a webhookForwarder) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
-	a.trapex_log = logger
+func (a *webhookForwarder) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+	a.trapexLog = trapexLog
 
-	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+	a.trapexLog.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 	a.url = actionArg
-	logger.Info().Str("url", a.url).Msg("Added webhook destination")
+	a.trapexLog.Info().Str("url", a.url).Msg("Added webhook destination")
 	return nil
 }
 
 func (a webhookForwarder) ProcessTrap(trap *plugin_data.Trap) error {
-	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Processing HTTP post -- fake")
+	a.trapexLog.Info().Str("plugin", plugin_name).Msg("Processing HTTP post -- fake")
 	trapMap := trap.V1Trap2Map()
 	jsonBytes, err := json.Marshal(trapMap)
 	if err != nil {
 		return err
 	}
 
-	a.trapex_log.Info().Str("plugin", plugin_name).Str("json", string(jsonBytes[:])).Msg("Converted trap to JSON")
+	a.trapexLog.Info().Str("plugin", plugin_name).Str("json", string(jsonBytes[:])).Msg("Converted trap to JSON")
 	/*
 	   body := new(bytes.Buffer)
 	   trap.toJson(&body)

@@ -20,7 +20,7 @@ import (
 
 // Filter action plugin interface
 type FilterPlugin interface {
-	Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error
+	Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error
 	ProcessTrap(trap *plugin_data.Trap) error
 	SigUsr1() error
 	SigUsr2() error
@@ -96,8 +96,8 @@ type filterObj struct {
 type trapexFilter struct {
 	filterItems []filterObj
 	matchAll    bool
-	//action      interface{}
 	action     FilterPlugin
+	actionName string
 	breakAfter bool
 	actionType int
 	actionArg  string
@@ -164,22 +164,24 @@ func (f *trapexFilter) isFilterMatch(sgt *plugin_data.Trap) bool {
 // processAction handles the execution of the action for the
 // trapexFilter instance on the the given trap data.
 //
-func (f *trapexFilter) processAction(sgt *plugin_data.Trap) {
+func (f *trapexFilter) processAction(trap *plugin_data.Trap) {
 	switch f.actionType {
 	case actionBreak:
-		sgt.Dropped = true
+		trap.Dropped = true
 		return
 	case actionNat:
 		if f.actionArg == "$SRC_IP" {
-			sgt.Data.AgentAddress = sgt.SrcIP.String()
+			trap.Data.AgentAddress = trap.SrcIP.String()
 		} else {
-			sgt.Data.AgentAddress = f.actionArg
+			trap.Data.AgentAddress = f.actionArg
 		}
 		return
 	case actionPlugin:
-		f.action.(FilterPlugin).ProcessTrap(sgt)
+                trapexLog.Debug().Str("plugin", f.actionName).Msg("About to process trap")
+		f.action.(FilterPlugin).ProcessTrap(trap)
+                trapexLog.Debug().Str("plugin", f.actionName).Msg("Processed trap")
 	}
 	if f.breakAfter {
-		sgt.Dropped = true
+		trap.Dropped = true
 	}
 }

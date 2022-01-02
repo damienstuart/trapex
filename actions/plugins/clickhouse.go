@@ -15,9 +15,9 @@ import (
 	"os"
 	"strings"
 
+	plugin_data "github.com/damienstuart/trapex/actions"
 	"github.com/rs/zerolog"
 
-	"github.com/damienstuart/trapex/actions"
 	"github.com/natefinch/lumberjack"
 )
 
@@ -26,11 +26,11 @@ const plugin_name = "Clickhouse"
 type ClickhouseExport struct {
 	logFile   string
 	fd        *os.File
-	logger    *lumberjack.Logger
+	logger    lumberjack.Logger
 	logHandle *log.Logger
 	isBroken  bool
 
-	trapex_log zerolog.Logger
+	trapex_log *zerolog.Logger
 }
 
 // makeCsvLogger initializes and returns a lumberjack.Logger (logger with
@@ -43,8 +43,8 @@ func makeCsvLogger(logfile string) *lumberjack.Logger {
 	return &l
 }
 
-func (a ClickhouseExport) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
-	a.trapex_log = logger
+func (a ClickhouseExport) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+	a.trapex_log = trapexLog
 	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Added exporter")
 
 	a.logFile = actionArg
@@ -54,8 +54,10 @@ func (a ClickhouseExport) Configure(logger zerolog.Logger, actionArg string, plu
 	}
 	a.fd = fd
 	a.logHandle = log.New(fd, "", 0)
-	a.logger = makeCsvLogger(a.logFile)
-	a.logHandle.SetOutput(a.logger)
+	a.logger = lumberjack.Logger{
+		Filename: a.logFile,
+	}
+	a.logHandle.SetOutput(&a.logger)
 	a.trapex_log.Info().Str("logfile", a.logFile).Msg("Added CSV log destination")
 
 	return nil

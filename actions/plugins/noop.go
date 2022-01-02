@@ -11,24 +11,24 @@ testing purposes.
 */
 
 import (
-	"github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/actions"
 	"github.com/rs/zerolog"
 )
 
 type noopFilter struct {
-	trapex_log zerolog.Logger
+	trapexLog *zerolog.Logger
 }
 
 const plugin_name = "no op"
 
-func (p noopFilter) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
-	logger.Info().Str("plugin", plugin_name).Str("test1", pluginConfig.Noop.Test1).Str("test2", pluginConfig.Noop.Test2).Msg("Initialization of plugin")
-	p.trapex_log = logger
+func (p noopFilter) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+	trapexLog.Info().Str("plugin", plugin_name).Str("test1", pluginConfig.Noop.Test1).Str("test2", pluginConfig.Noop.Test2).Msg("Initialization of plugin")
+	p.trapexLog = trapexLog
 	return nil
 }
 
 func (p noopFilter) ProcessTrap(trap *plugin_data.Trap) error {
-	//logger.Info().Str("plugin", plugin_name).Msg("Noop processing trap")
+	p.trapexLog.Info().Str("plugin", plugin_name).Msg("Noop processing trap")
 	return nil
 }
 

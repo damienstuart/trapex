@@ -380,11 +380,12 @@ func processFilterLine(f []string, newConfig *trapexConfig, lineNumber int) erro
 		filter.actionArg = actionArg
 	default:
 		filter.actionType = actionPlugin
+		filter.actionName = action
 		filter.action, err = loadFilterPlugin(action)
 		if err != nil {
 			return fmt.Errorf("Unable to load plugin %s at line %v: %s", action, lineNumber, err)
 		}
-		if err = filter.action.Configure(trapexLog, actionArg, &newConfig.FilterPluginsConfig); err != nil {
+		if err = filter.action.Configure(&trapexLog, actionArg, &newConfig.FilterPluginsConfig); err != nil {
 			return fmt.Errorf("Unable to configure plugin %s at line %v: %s", action, lineNumber, err)
 		}
 	}

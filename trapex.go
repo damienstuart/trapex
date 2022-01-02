@@ -58,7 +58,7 @@ func main() {
 	tl.Params.Community = ""
 
 	// Uncomment for debugging gosnmp
-	if teConfig.Logging.Level == "debug" {
+	if teConfig.General.gosnmpDebug  {
 		trapexLog.Info().Msg("gosnmp debug mode enabled")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}

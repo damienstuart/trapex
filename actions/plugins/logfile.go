@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/actions"
 	g "github.com/gosnmp/gosnmp"
 	"github.com/natefinch/lumberjack"
 	"github.com/rs/zerolog"
@@ -43,7 +43,7 @@ type trapLogger struct {
 	logHandle *log.Logger
 	isBroken  bool
 
-	trapex_log zerolog.Logger
+	trapexLog *zerolog.Logger
 }
 
 const plugin_name = "trap logger"
@@ -58,11 +58,11 @@ func makeLogger(logfile string, pluginConfig *plugin_data.PluginsConfig) *lumber
 	return &l
 }
 
-func (a trapLogger) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
-	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
-	a.trapex_log = logger
+func (a *trapLogger) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+	a.trapexLog = trapexLog
+	a.trapexLog.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 
-	logger.Debug().Str("plugin", plugin_name).Int("maxsize", pluginConfig.Logger.LogMaxSize).Int("maxbackups", pluginConfig.Logger.LogMaxBackups).Bool("compress", pluginConfig.Logger.LogCompress).Msg("Showing plugin variables")
+	a.trapexLog.Debug().Str("plugin", plugin_name).Int("maxsize", pluginConfig.Logger.LogMaxSize).Int("maxbackups", pluginConfig.Logger.LogMaxBackups).Bool("compress", pluginConfig.Logger.LogCompress).Msg("Showing plugin variables")
 
 	a.logFile = actionArg
 	fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -72,15 +72,12 @@ func (a trapLogger) Configure(logger zerolog.Logger, actionArg string, pluginCon
 	a.fd = fd
 	a.logHandle = log.New(fd, "", 0)
 	a.logHandle.SetOutput(makeLogger(a.logFile, pluginConfig))
-	logger.Info().Str("logfile", a.logFile).Msg("Added log destination")
+	a.trapexLog.Info().Str("logfile", a.logFile).Msg("Added log destination")
 	return nil
 }
 
 func (a trapLogger) ProcessTrap(trap *plugin_data.Trap) error {
-	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Processing trap")
-	//a.logHandle.Printf(makeTrapLogEntry(trap))
-	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Processed trap")
-
+	a.logHandle.Printf(makeTrapLogEntry(trap))
 	return nil
 }
 

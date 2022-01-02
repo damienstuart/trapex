@@ -10,26 +10,27 @@ This plugin sends SNMP traps to a new destination
 */
 
 import (
-	g "github.com/gosnmp/gosnmp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/actions"
+	g "github.com/gosnmp/gosnmp"
+
 	"github.com/rs/zerolog"
 )
 
 type trapForwarder struct {
 	destination *g.GoSNMP
-	trapex_log  zerolog.Logger
+	trapex_log  *zerolog.Logger
 }
 
 const plugin_name = "trap forwarder"
 
-func (a trapForwarder) Configure(logger zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
-	a.trapex_log = logger
+func (a trapForwarder) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+	a.trapex_log = trapexLog
 
-	logger.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 
 	dest := actionArg
 	s := strings.Split(dest, ":")
@@ -52,17 +53,15 @@ func (a trapForwarder) Configure(logger zerolog.Logger, actionArg string, plugin
 	if err != nil {
 		return (err)
 	}
-	logger.Info().Str("target", s[0]).Str("port", s[1]).Msg("Added trap destination")
+	a.trapex_log.Info().Str("target", s[0]).Str("port", s[1]).Msg("Added trap destination")
 
 	return nil
 }
 
 func (a trapForwarder) ProcessTrap(trap *plugin_data.Trap) error {
+	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Processing trap")
 	_, err := a.destination.SendTrap(trap.Data)
 	return err
-
-	//logger.Info().Str("plugin", plugin_name).Msg("Processing trap")
-	return nil
 }
 
 func (p trapForwarder) SigUsr1() error {
