@@ -12,7 +12,7 @@ import (
 
 func TestPluginInterfacess(t *testing.T) {
 	var err error
-	plugins := []string{"noop", "trap_logger", "trap_forwarder", "clickhouse"}
+	plugins := []string{"noop", "logfile", "forward", "clickhouse"}
 
 	for _, plugin_name := range plugins {
 		fmt.Printf("Verifying plugin interface: %s\n", plugin_name)
