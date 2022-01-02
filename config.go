@@ -253,7 +253,7 @@ func validateSnmpV3Args(newConfig *trapexConfig) error {
 func processIpSets(newConfig *trapexConfig) error {
 	for _, stanza := range newConfig.IpSets_str {
 		for ipsName, ips := range stanza {
-			trapex_logger.Debug().Str("ipset", ipsName).Msg("Loading IpSet")
+			trapex_log.Debug().Str("ipset", ipsName).Msg("Loading IpSet")
 			newConfig.IpSets[ipsName] = make(map[string]bool)
 			for _, ip := range ips {
 				if ipRe.MatchString(ip) {
