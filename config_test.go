@@ -141,9 +141,9 @@ func TestFiltersGood(t *testing.T) {
 	var testConfig trapexConfig
 	loadConfig("tests/config/filters.yml", &testConfig)
 
-	var numfilters = len(testConfig.Filters_str)
+	var numfilters = len(testConfig.Filters)
 	if numfilters != 11 {
-		t.Errorf("filters are missing entries (expected 11): %s", testConfig.Filters_str)
+		t.Errorf("filters are missing entries (expected 11): %d", numfilters)
 	}
 
 	var err error
