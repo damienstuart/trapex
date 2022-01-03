@@ -9,7 +9,7 @@ a future release.
 
 # Overview
 The *trapex* program was created as a replacement for the aging _eHealth
-Trap Exploder_ - which a commercial product, and does not support __SNMPv3__.
+Trap Exploder_ - which is a commercial product, and does not support __SNMPv3__.
 
 *Trapex* has the following features:
 

@@ -155,7 +155,7 @@ func getConfig() error {
 	if err = validateIgnoreVersions(&newConfig); err != nil {
 		return err
 	}
-	if err = validateSnmpV3Args(&newConfig); err != nil {
+	if err = validateSnmpV3Args(&newConfig.V3Params); err != nil {
 		return err
 	}
 	if err = processIpSets(&newConfig); err != nil {
@@ -205,45 +205,45 @@ func validateIgnoreVersions(newConfig *trapexConfig) error {
 	return nil
 }
 
-func validateSnmpV3Args(newConfig *trapexConfig) error {
-	switch strings.ToLower(newConfig.V3Params.MsgFlags_str) {
+func validateSnmpV3Args(params *v3Params) error {
+	switch strings.ToLower(params.MsgFlags_str) {
 	case "noauthnopriv":
-		newConfig.V3Params.MsgFlags = g.NoAuthNoPriv
+		params.MsgFlags = g.NoAuthNoPriv
 	case "authnopriv":
-		newConfig.V3Params.MsgFlags = g.AuthNoPriv
+		params.MsgFlags = g.AuthNoPriv
 	case "authpriv":
-		newConfig.V3Params.MsgFlags = g.AuthPriv
+		params.MsgFlags = g.AuthPriv
 	default:
-		return fmt.Errorf("unsupported or invalid value (%s) for snmpv3:msg_flags", newConfig.V3Params.MsgFlags_str)
+		return fmt.Errorf("unsupported or invalid value (%s) for snmpv3:msg_flags", params.MsgFlags_str)
 	}
 
-	switch strings.ToLower(newConfig.V3Params.AuthProto_str) {
+	switch strings.ToLower(params.AuthProto_str) {
 	// AES is *NOT* supported
 	case "noauth":
-		newConfig.V3Params.AuthProto = g.NoAuth
+		params.AuthProto = g.NoAuth
 	case "sha":
-		newConfig.V3Params.AuthProto = g.SHA
+		params.AuthProto = g.SHA
 	case "md5":
-		newConfig.V3Params.AuthProto = g.MD5
+		params.AuthProto = g.MD5
 	default:
-		return fmt.Errorf("invalid value for snmpv3:auth_protocol: %s", newConfig.V3Params.AuthProto_str)
+		return fmt.Errorf("invalid value for snmpv3:auth_protocol: %s", params.AuthProto_str)
 	}
 
-	switch strings.ToLower(newConfig.V3Params.PrivacyProto_str) {
+	switch strings.ToLower(params.PrivacyProto_str) {
 	case "nopriv":
-		newConfig.V3Params.PrivacyProto = g.NoPriv
+		params.PrivacyProto = g.NoPriv
 	case "aes":
-		newConfig.V3Params.PrivacyProto = g.AES
+		params.PrivacyProto = g.AES
 	case "des":
-		newConfig.V3Params.PrivacyProto = g.DES
+		params.PrivacyProto = g.DES
 	default:
-		return fmt.Errorf("invalid value for snmpv3:privacy_protocol: %s", newConfig.V3Params.PrivacyProto_str)
+		return fmt.Errorf("invalid value for snmpv3:privacy_protocol: %s", params.PrivacyProto_str)
 	}
 
-	if (newConfig.V3Params.MsgFlags&g.AuthPriv) == 1 && newConfig.V3Params.AuthProto < 2 {
+	if (params.MsgFlags&g.AuthPriv) == 1 && params.AuthProto < 2 {
 		return fmt.Errorf("v3 config error: no auth protocol set when snmpv3:msg_flags specifies an Auth mode")
 	}
-	if newConfig.V3Params.MsgFlags == g.AuthPriv && newConfig.V3Params.PrivacyProto < 2 {
+	if params.MsgFlags == g.AuthPriv && params.PrivacyProto < 2 {
 		return fmt.Errorf("v3 config error: no privacy protocol mode set when snmpv3:msg_flags specifies an AuthPriv mode")
 	}
 
