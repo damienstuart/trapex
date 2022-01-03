@@ -46,25 +46,61 @@ type trapLogger struct {
 	trapexLog *zerolog.Logger
 }
 
-const plugin_name = "trap logger"
+const pluginName = "trap logger"
 
 func makeLogger(logfile string, actionArgs map[string]string) *lumberjack.Logger {
-	l := lumberjack.Logger{
-		Filename: logfile,
-		//MaxSize:    actionArgs["size_mb"],
-		//MaxBackups: actionArgs["backups_max"],
-		//Compress:   actionArgs["compress_after_rotate"],
+	var ok bool
+
+	l := lumberjack.Logger{Filename: logfile}
+	var value string
+	value, ok = actionArgs["size_mb"]
+	if ok {
+		converted, err := strconv.Atoi(value)
+		if err != nil {
+			l.MaxSize = converted
+		}
+	}
+	value, ok = actionArgs["backups_max"]
+	if ok {
+		converted, err := strconv.Atoi(value)
+		if err != nil {
+			l.MaxBackups = converted
+		}
+	}
+	value, ok = actionArgs["compress_after_rotate"]
+	if ok {
+		converted, err := strconv.ParseBool(value)
+		if err != nil {
+			l.Compress = converted
+		}
 	}
 	return &l
 }
 
+func validateArguments(actionArgs map[string]string) error {
+	validArgs := map[string]bool{"filename": true, "size_mb": true, "backups_max": true, "compress_after_rotate": true}
+
+	for key, _ := range actionArgs {
+		if _, ok := validArgs[key]; !ok {
+			return fmt.Errorf("Unrecognized option to %s plugin: %s", pluginName, key)
+		}
+	}
+	return nil
+}
+
 func (a *trapLogger) Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error {
+	var ok bool
 	a.trapexLog = trapexLog
-	a.trapexLog.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+	a.trapexLog.Info().Str("plugin", pluginName).Msg("Initialization of plugin")
 
-	a.trapexLog.Debug().Str("plugin", plugin_name).Msg("Showing plugin variables")
+	if err := validateArguments(actionArgs); err != nil {
+		return err
+	}
 
-	a.logFile = actionArgs["filename"]
+	a.logFile, ok = actionArgs["filename"]
+	if !ok {
+		return fmt.Errorf("Missing the required 'filename' argument to the logfile action")
+	}
 	fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err

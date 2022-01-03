@@ -21,7 +21,7 @@ import (
 	"github.com/natefinch/lumberjack"
 )
 
-const plugin_name = "Clickhouse"
+const pluginName = "Clickhouse"
 
 type ClickhouseExport struct {
 	logFile   string
@@ -43,9 +43,23 @@ func makeCsvLogger(logfile string) *lumberjack.Logger {
 	return &l
 }
 
+func validateArguments(actionArgs map[string]string) error {
+	validArgs := map[string]bool{"filename": true, "size_mb": true, "backups_max": true, "compress_after_rotate": true}
+
+	for key, _ := range actionArgs {
+		if _, ok := validArgs[key]; !ok {
+			return fmt.Errorf("Unrecognized option to %s plugin: %s", pluginName, key)
+		}
+	}
+	return nil
+}
+
 func (a *ClickhouseExport) Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error {
+	if err := validateArguments(actionArgs); err != nil {
+		return err
+	}
+
 	a.trapex_log = trapexLog
-	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Added exporter")
 
 	a.logFile = actionArgs["filename"]
 	fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -58,7 +72,7 @@ func (a *ClickhouseExport) Configure(trapexLog *zerolog.Logger, actionArgs map[s
 		Filename: a.logFile,
 	}
 	a.logHandle.SetOutput(&a.logger)
-	a.trapex_log.Info().Str("logfile", a.logFile).Msg("Added CSV log destination")
+	a.trapex_log.Info().Str("logfile", a.logFile).Msg("Added Clickhouse CSV log destination")
 
 	return nil
 }
@@ -83,7 +97,7 @@ func (a ClickhouseExport) SigUsr2() error {
 	fmt.Println("SigUsr2")
 	a.logger.Rotate()
 
-	a.trapex_log.Info().Str("logfile", a.logFile).Msg("Rotated CSV file")
+	a.trapex_log.Info().Str("logfile", a.logFile).Msg("Rotated Clickhouse CSV file")
 	return nil
 }
 

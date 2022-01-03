@@ -11,6 +11,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+
 	/*
 	   "net/http"
 	   "bytes"
@@ -26,26 +28,40 @@ type webhookForwarder struct {
 	trapexLog *zerolog.Logger
 }
 
-const plugin_name = "webhook"
+const pluginName = "webhook"
+
+func validateArguments(actionArgs map[string]string) error {
+	validArgs := map[string]bool{"url": true, "timeout": true}
+
+	for key, _ := range actionArgs {
+		if _, ok := validArgs[key]; !ok {
+			return fmt.Errorf("Unrecognized option to %s plugin: %s", pluginName, key)
+		}
+	}
+	return nil
+}
 
 func (a *webhookForwarder) Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error {
 	a.trapexLog = trapexLog
 
-	a.trapexLog.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+	a.trapexLog.Info().Str("plugin", pluginName).Msg("Initialization of plugin")
+	if err := validateArguments(actionArgs); err != nil {
+		return err
+	}
 	a.url = actionArgs["url"]
 	a.trapexLog.Info().Str("url", a.url).Msg("Added webhook destination")
 	return nil
 }
 
 func (a webhookForwarder) ProcessTrap(trap *plugin_data.Trap) error {
-	a.trapexLog.Info().Str("plugin", plugin_name).Msg("Processing HTTP post -- fake")
+	a.trapexLog.Info().Str("plugin", pluginName).Msg("Processing HTTP post -- fake")
 	trapMap := trap.V1Trap2Map()
 	jsonBytes, err := json.Marshal(trapMap)
 	if err != nil {
 		return err
 	}
 
-	a.trapexLog.Info().Str("plugin", plugin_name).Str("json", string(jsonBytes[:])).Msg("Converted trap to JSON")
+	a.trapexLog.Info().Str("plugin", pluginName).Str("json", string(jsonBytes[:])).Msg("Converted trap to JSON")
 	/*
 	   body := new(bytes.Buffer)
 	   trap.toJson(&body)

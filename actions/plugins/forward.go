@@ -10,6 +10,7 @@ This plugin sends SNMP traps to a new destination
 */
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -24,14 +25,29 @@ type trapForwarder struct {
 	trapex_log  *zerolog.Logger
 }
 
-const plugin_name = "trap forwarder"
+const pluginName = "trap forwarder"
+
+func validateArguments(actionArgs map[string]string) error {
+	validArgs := map[string]bool{"traphost": true, "port": true}
+
+	for key, _ := range actionArgs {
+		if _, ok := validArgs[key]; !ok {
+			return fmt.Errorf("Unrecognized option to %s plugin: %s", pluginName, key)
+		}
+	}
+	return nil
+}
 
 func (a *trapForwarder) Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error {
 	a.trapex_log = trapexLog
 
-	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
+	a.trapex_log.Info().Str("plugin", pluginName).Msg("Initialization of plugin")
 
-	hostname := actionArgs["hostname"]
+	if err := validateArguments(actionArgs); err != nil {
+		return err
+	}
+
+	hostname := actionArgs["traphost"]
 	port_str := actionArgs["port"]
 	port, err := strconv.Atoi(port_str)
 	if err != nil {
@@ -58,7 +74,7 @@ func (a *trapForwarder) Configure(trapexLog *zerolog.Logger, actionArgs map[stri
 }
 
 func (a trapForwarder) ProcessTrap(trap *plugin_data.Trap) error {
-	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Processing trap")
+	a.trapex_log.Info().Str("plugin", pluginName).Msg("Processing trap")
 	_, err := a.destination.SendTrap(trap.Data)
 	return err
 }
