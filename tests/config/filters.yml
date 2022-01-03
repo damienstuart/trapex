@@ -6,24 +6,16 @@ filters:
     action: break
   - agent_address: 10.66.48.0/20
     action: nat
-    action_args:
-      - key: nat_ip
-        value: 10.66.48.1
+    action_arg: 10.66.48.1
   - agent_address: 0.0.0.0
     action: nat
-    action_args:
-      - key: nat_ip
-        value: $SRC_IP
+    action_arg: $SRC_IP
   - agent_address: 10.1.8.217
     action: nat
-    action_args:
-      - key: nat_ip
-        value: 10.13.37.58
+    action_arg: 10.13.37.58
   - agent_address: 10.1.8.216
     action: nat
-    action_args:
-      - key: nat_ip
-        value: 10.13.37.57
+    action_arg: 10.13.37.57
   - action: forward
     action_args:
       - key: traphost
