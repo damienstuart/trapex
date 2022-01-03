@@ -28,11 +28,11 @@ type webhookForwarder struct {
 
 const plugin_name = "webhook"
 
-func (a *webhookForwarder) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+func (a *webhookForwarder) Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error {
 	a.trapexLog = trapexLog
 
 	a.trapexLog.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
-	a.url = actionArg
+	a.url = actionArgs["url"]
 	a.trapexLog.Info().Str("url", a.url).Msg("Added webhook destination")
 	return nil
 }

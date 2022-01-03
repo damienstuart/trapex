@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/creasty/defaults"
-	plugin_data "github.com/damienstuart/trapex/actions"
 	g "github.com/gosnmp/gosnmp"
 	"gopkg.in/yaml.v2"
 )
@@ -263,7 +262,7 @@ func processFilters(newConfig *trapexConfig) error {
 		if err = addFilterObjs(&filterData, newConfig.IpSets, lineNumber); err != nil {
 			return err
 		}
-		if err = setAction(&filterData, &newConfig.FilterPluginsConfig, lineNumber); err != nil {
+		if err = setAction(&filterData, lineNumber); err != nil {
 			return err
 		}
 	}
@@ -304,8 +303,9 @@ func addFilterObjs(filter *trapexFilter, ipSets map[string]IpSet, lineNumber int
 	return nil
 }
 
-func setAction(filter *trapexFilter, FilterPluginConfigs *plugin_data.PluginsConfig, lineNumber int) error {
+func setAction(filter *trapexFilter, lineNumber int) error {
 	var err error
+
 	switch filter.ActionName {
 	case "break", "drop":
 		filter.actionType = actionBreak
@@ -320,11 +320,22 @@ func setAction(filter *trapexFilter, FilterPluginConfigs *plugin_data.PluginsCon
 		if err != nil {
 			return fmt.Errorf("Unable to load plugin %s at line %v: %s", filter.ActionName, lineNumber, err)
 		}
-		if err = filter.plugin.Configure(&trapexLog, filter.ActionArg, FilterPluginConfigs); err != nil {
+		pluginDataMapping := args2map(filter.ActionArgs)
+		if err = filter.plugin.Configure(&trapexLog, pluginDataMapping); err != nil {
 			return fmt.Errorf("Unable to configure plugin %s at line %v: %s", filter.ActionName, lineNumber, err)
 		}
 	}
 	return nil
+}
+
+func args2map(data []ActionArgType) map[string]string {
+	var pluginDataMapping map[string]string
+
+	pluginDataMapping = make(map[string]string)
+	for _, pair := range data {
+		pluginDataMapping[pair.Key] = pair.Value
+	}
+	return pluginDataMapping
 }
 
 // addSnmpFilterObj adds a filter if necessary

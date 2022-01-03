@@ -11,7 +11,6 @@ This plugin sends SNMP traps to a new destination
 
 import (
 	"strconv"
-	"strings"
 	"time"
 
 	plugin_data "github.com/damienstuart/trapex/actions"
@@ -27,19 +26,19 @@ type trapForwarder struct {
 
 const plugin_name = "trap forwarder"
 
-func (a *trapForwarder) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+func (a *trapForwarder) Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error {
 	a.trapex_log = trapexLog
 
 	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 
-	dest := actionArg
-	s := strings.Split(dest, ":")
-	port, err := strconv.Atoi(s[1])
+	hostname := actionArgs["hostname"]
+	port_str := actionArgs["port"]
+	port, err := strconv.Atoi(port_str)
 	if err != nil {
-		panic("Invalid destination port: " + s[1])
+		panic("Invalid destination port: " + port_str)
 	}
 	a.destination = &g.GoSNMP{
-		Target:             s[0],
+		Target:             hostname,
 		Port:               uint16(port),
 		Transport:          "udp",
 		Community:          "",
@@ -53,7 +52,7 @@ func (a *trapForwarder) Configure(trapexLog *zerolog.Logger, actionArg string, p
 	if err != nil {
 		return err
 	}
-	a.trapex_log.Info().Str("target", s[0]).Str("port", s[1]).Msg("Added trap destination")
+	a.trapex_log.Info().Str("target", hostname).Str("port", port_str).Msg("Added trap destination")
 
 	return nil
 }

@@ -48,30 +48,30 @@ type trapLogger struct {
 
 const plugin_name = "trap logger"
 
-func makeLogger(logfile string, pluginConfig *plugin_data.PluginsConfig) *lumberjack.Logger {
+func makeLogger(logfile string, actionArgs map[string]string) *lumberjack.Logger {
 	l := lumberjack.Logger{
-		Filename:   logfile,
-		MaxSize:    pluginConfig.Logger.LogMaxSize,
-		MaxBackups: pluginConfig.Logger.LogMaxBackups,
-		Compress:   pluginConfig.Logger.LogCompress,
+		Filename: logfile,
+		//MaxSize:    actionArgs["size_mb"],
+		//MaxBackups: actionArgs["backups_max"],
+		//Compress:   actionArgs["compress_after_rotate"],
 	}
 	return &l
 }
 
-func (a *trapLogger) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+func (a *trapLogger) Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error {
 	a.trapexLog = trapexLog
 	a.trapexLog.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
 
-	a.trapexLog.Debug().Str("plugin", plugin_name).Int("maxsize", pluginConfig.Logger.LogMaxSize).Int("maxbackups", pluginConfig.Logger.LogMaxBackups).Bool("compress", pluginConfig.Logger.LogCompress).Msg("Showing plugin variables")
+	a.trapexLog.Debug().Str("plugin", plugin_name).Msg("Showing plugin variables")
 
-	a.logFile = actionArg
+	a.logFile = actionArgs["filename"]
 	fd, err := os.OpenFile(a.logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 	a.fd = fd
 	a.logHandle = log.New(fd, "", 0)
-	a.logHandle.SetOutput(makeLogger(a.logFile, pluginConfig))
+	a.logHandle.SetOutput(makeLogger(a.logFile, actionArgs))
 	a.trapexLog.Info().Str("logfile", a.logFile).Msg("Added log destination")
 	return nil
 }

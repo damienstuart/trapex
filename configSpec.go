@@ -6,8 +6,6 @@
 package main
 
 import (
-	plugin_data "github.com/damienstuart/trapex/actions"
-
 	g "github.com/gosnmp/gosnmp"
 )
 
@@ -35,8 +33,15 @@ type filterObj struct {
 	filterValue interface{} // string, *regex.Regexp, *network, int
 }
 
+// Get in a set of action arg pairs, convert to a map to pass into plugins
+type ActionArgType struct {
+	Key   string `default:"" yaml:"key"`
+	Value string `default:"" yaml:"value"`
+}
+
 // trapexFilter holds the filter data and action for a specfic
 // filter line from the config file.
+// Question: do dynamically created structures not get SetDefault()? That would be crappy
 type trapexFilter struct {
 	// SnmpVersions - an empty array will indicate ALL versions
 	SnmpVersions []string `default:"[]" yaml:"snmp_versions"`
@@ -45,11 +50,12 @@ type trapexFilter struct {
 	// GenericType can have values from 0 - 6: -1 indicates all types
 	GenericType int `default:"-1" yaml:"snmp_generic_type"`
 	// SpecificType can have values from 0 - n: -1 indicates all types
-	SpecificType  int    `default:"-1" yaml:"snmp_specific_type"`
-	EnterpriseOid string `default:"*" yaml:"enterprise_oid"`
-	ActionName    string `default:"" yaml:"action"`
-	ActionArg     string `default:"" yaml:"action_arg"`
-	BreakAfter    bool   `default:"false" yaml:"break_fter"`
+	SpecificType  int             `default:"-1" yaml:"snmp_specific_type"`
+	EnterpriseOid string          `default:"*" yaml:"enterprise_oid"`
+	ActionName    string          `default:"" yaml:"action"`
+	ActionArg     string          `default:"" yaml:"action_arg"`
+	BreakAfter    bool            `default:"false" yaml:"break_fter"`
+	ActionArgs    []ActionArgType `default:"[]" yaml:"action_args"`
 
 	matchAll    bool
 	filterItems []filterObj
@@ -85,11 +91,8 @@ type trapexConfig struct {
 
 	V3Params v3Params `yaml:"snmpv3"`
 
-	FilterPluginsConfig plugin_data.PluginsConfig `yaml:"filter_plugins_config"`
-
 	IpSets_str []map[string][]string `default:"{}" yaml:"ip_sets"`
 	IpSets     map[string]IpSet      `default:"{}"`
 
-	//Filters_str []string `default:"[]" yaml:"Filters"`
 	Filters []trapexFilter `default:"[]" yaml:"filters"`
 }
