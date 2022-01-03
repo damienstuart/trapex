@@ -1,4 +1,7 @@
 filters:
   - action: logfile
-    action_arg: /bad/trapex/log/cold_start.log"
+    action_args:
+      - key: filename
+        value: /bad/trapex/log/cold_start.log"
+
 
