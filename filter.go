@@ -13,9 +13,8 @@ import (
 	"regexp"
 	"strings"
 
+	plugin_data "github.com/damienstuart/trapex/actions"
 	"github.com/rs/zerolog"
-
-	"github.com/damienstuart/trapex/actions"
 )
 
 // Filter action plugin interface
@@ -80,28 +79,6 @@ const (
 	actionNat
 	actionPlugin
 )
-
-// filterObj represents one of the filterable items in a filter line from
-// the config file (i.e. Src IP, AgentAddress, GenericType, SpecificType,
-// and Enterprise OID).
-//
-type filterObj struct {
-	filterItem  int
-	filterType  int
-	filterValue interface{} // string, *regex.Regexp, *network, int
-}
-
-// trapexFilter holds the filter data and action for a specfic
-// filter line from the config file.
-type trapexFilter struct {
-	filterItems []filterObj
-	matchAll    bool
-	action      FilterPlugin
-	actionName  string
-	breakAfter  bool
-	actionType  int
-	actionArg   string
-}
 
 // isFilterMatch checks trap data against a trapexFilter and returns a boolean
 // to indicate whether or not the trap data matches the filter criteria.
@@ -170,18 +147,18 @@ func (f *trapexFilter) processAction(trap *plugin_data.Trap) {
 		trap.Dropped = true
 		return
 	case actionNat:
-		if f.actionArg == "$SRC_IP" {
+		if f.ActionArg == "$SRC_IP" {
 			trap.Data.AgentAddress = trap.SrcIP.String()
 		} else {
-			trap.Data.AgentAddress = f.actionArg
+			trap.Data.AgentAddress = f.ActionArg
 		}
 		return
 	case actionPlugin:
-		trapexLog.Debug().Str("plugin", f.actionName).Msg("About to process trap")
-		f.action.(FilterPlugin).ProcessTrap(trap)
-		trapexLog.Debug().Str("plugin", f.actionName).Msg("Processed trap")
+		trapexLog.Debug().Str("plugin", f.ActionName).Msg("About to process trap")
+		f.plugin.(FilterPlugin).ProcessTrap(trap)
+		trapexLog.Debug().Str("plugin", f.ActionName).Msg("Processed trap")
 	}
-	if f.breakAfter {
+	if f.BreakAfter {
 		trap.Dropped = true
 	}
 }

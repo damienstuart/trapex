@@ -6,8 +6,9 @@
 package main
 
 import (
-	"github.com/rs/zerolog"
 	"testing"
+
+	"github.com/rs/zerolog"
 )
 
 func init() {
@@ -149,7 +150,7 @@ func TestFiltersGood(t *testing.T) {
 	if err = processFilters(&testConfig); err != nil {
 		t.Errorf("%s", err)
 	}
-	numfilters = len(testConfig.filters)
+	numfilters = len(testConfig.Filters)
 	if numfilters != 11 {
 		t.Errorf("processed filters are missing entries (expected 11): %d", numfilters)
 	}

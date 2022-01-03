@@ -12,10 +12,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/creasty/defaults"
+	plugin_data "github.com/damienstuart/trapex/actions"
 	g "github.com/gosnmp/gosnmp"
 	"gopkg.in/yaml.v2"
 )
@@ -28,19 +28,8 @@ Notes on YAML configuration processing:
  * Default values are being applied with the creasty/defaults module
  * Non-basic types and classes can't be instantiated directly (eg g.SHA)
      * Configuration data structures have two sets of variables: text and usable
-     * Per convention, the text versions start with uppercase, the usable ones start lowercase
- * Filter lines are very problematic for YAML
-     * some characters (I'm looking at you ':' -- also regex) cause YAML to barf
-     * using a more YAML-like structure will eat up huge chunks of configuration lines
-        eg
-         * * * * * ^1\.3\.6\.1\.4.1\.546\.1\.1 break
+     * Per convention, the text versions have a suffix of _str
 
-         vs
-
-         - snmpversions: *
-           source_ip: *
-           agent_address: *
-           ...
    ===========================================================
 */
 
@@ -269,136 +258,171 @@ func processIpSets(newConfig *trapexConfig) error {
 }
 
 func processFilters(newConfig *trapexConfig) error {
-
-	for lineNumber, filter_line := range newConfig.Filters_str {
-		trapexLog.Debug().Str("filter", filter_line).Int("line_number", lineNumber).Msg("Examining filter")
-		if err := processFilterLine(strings.Fields(filter_line), newConfig, lineNumber); err != nil {
+	var err error
+	for lineNumber, filterData := range newConfig.Filters {
+		if err = addFilterObjs(&filterData, newConfig.IpSets, lineNumber); err != nil {
+			return err
+		}
+		if err = setAction(&filterData, &newConfig.FilterPluginsConfig, lineNumber); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// processFilterLine parses a "filter" line and sets
+// addFilterObjs parses a "filter" line and sets
 // the appropriate values in a corresponding trapexFilter struct.
 //
-func processFilterLine(f []string, newConfig *trapexConfig, lineNumber int) error {
+func addFilterObjs(filter *trapexFilter, ipSets map[string]IpSet, lineNumber int) error {
 	var err error
-	if len(f) < 7 {
-		return fmt.Errorf("Not enough fields in filter line(%v): %s", lineNumber, "filter "+strings.Join(f, " "))
+
+	// If we find something that is specifies a condition, then reset
+	filter.matchAll = true
+
+	if err = addSnmpFilterObj(filter, lineNumber); err != nil {
+		return err
 	}
 
-	// Process the filter criteria
-	//
-	filter := trapexFilter{}
-	if strings.HasPrefix(strings.Join(f, " "), "* * * * * *") {
-		filter.matchAll = true
-	} else {
-		fObj := filterObj{}
-		// Construct the filter criteria
-		for i, fi := range f[:6] {
-			if fi == "*" {
-				continue
-			}
-			fObj.filterItem = i
-			if i == 0 {
-				switch strings.ToLower(fi) {
-				case "v1", "1":
-					fObj.filterValue = g.Version1
-				case "v2c", "2c", "2":
-					fObj.filterValue = g.Version2c
-				case "v3", "3":
-					fObj.filterValue = g.Version3
-				default:
-					return fmt.Errorf("Unsupported or invalid SNMP version (%s) on line %v for filter: %s", fi, lineNumber, f)
-				}
-				fObj.filterType = parseTypeInt // Just because we should set this to something.
-			} else if i == 1 || i == 2 { // Either of the first 2 is an IP address type
-				if strings.HasPrefix(fi, "ipset:") { // If starts with a "ipset:"" it's an IP set
-					fObj.filterType = parseTypeIPSet
-					if _, ok := newConfig.IpSets[fi[6:]]; ok {
-						fObj.filterValue = fi[6:]
-					} else {
-						return fmt.Errorf("Invalid ipset name specified on line %v: %s: %s", lineNumber, fi, f)
-					}
-				} else if strings.HasPrefix(fi, "/") { // If starts with a "/", it's a regex
-					fObj.filterType = parseTypeRegex
-					fObj.filterValue, err = regexp.Compile(fi[1:])
-					if err != nil {
-						return fmt.Errorf("unable to compile regexp for IP on line %v: %s: %s\n%s", lineNumber, fi, err, f)
-					}
-				} else if strings.Contains(fi, "/") {
-					fObj.filterType = parseTypeCIDR
-					fObj.filterValue, err = newNetwork(fi)
-					if err != nil {
-						return fmt.Errorf("invalid IP/CIDR at line %v: %s, %s", lineNumber, fi, f)
-					}
-				} else {
-					fObj.filterType = parseTypeString
-					fObj.filterValue = fi
-				}
-			} else if i > 2 && i < 5 { // Generic and Specific type
-				val, e := strconv.Atoi(fi)
-				if e != nil {
-					return fmt.Errorf("invalid integer value at line %v: %s: %s", lineNumber, fi, e)
-				}
-				fObj.filterType = parseTypeInt
-				fObj.filterValue = val
-			} else { // The enterprise OID
-				fObj.filterType = parseTypeRegex
-				fObj.filterValue, err = regexp.Compile(fi)
-				if err != nil {
-					return fmt.Errorf("unable to compile regexp at line %v for OID: %s: %s", lineNumber, fi, err)
-				}
-			}
-			filter.filterItems = append(filter.filterItems, fObj)
-		}
+	if err = addIpFilterObj(filter, "source_ip", filter.SourceIp, ipSets, lineNumber); err != nil {
+		return err
 	}
-	// Process the filter action
-	//
-	var actionArg string
-	if len(f) > 8 && f[8] == "break" {
-		filter.breakAfter = true
-	} else {
-		filter.breakAfter = false
+	if err = addIpFilterObj(filter, "agent_address", filter.AgentAddress, ipSets, lineNumber); err != nil {
+		return err
 	}
 
-	var action = f[6]
-
-	if len(f) > 7 {
-		actionArg = f[7]
+	if err = addTrapTypeFilterObj(filter, "generic", filter.GenericType, lineNumber); err != nil {
+		return err
+	}
+	if err = addTrapTypeFilterObj(filter, "specific", filter.SpecificType, lineNumber); err != nil {
+		return err
 	}
 
-	switch action {
-	case "break", "drop":
-		filter.actionType = actionBreak
-	case "nat":
-		filter.actionType = actionNat
-		if actionArg == "" {
-			return fmt.Errorf("missing nat argument at line %v", lineNumber)
-		}
-		filter.actionArg = actionArg
-	default:
-		filter.actionType = actionPlugin
-		filter.actionName = action
-		filter.action, err = loadFilterPlugin(action)
-		if err != nil {
-			return fmt.Errorf("Unable to load plugin %s at line %v: %s", action, lineNumber, err)
-		}
-		if err = filter.action.Configure(&trapexLog, actionArg, &newConfig.FilterPluginsConfig); err != nil {
-			return fmt.Errorf("Unable to configure plugin %s at line %v: %s", action, lineNumber, err)
-		}
+	if err = addOidFilterObj(filter, filter.EnterpriseOid, lineNumber); err != nil {
+		return err
 	}
-
-	newConfig.filters = append(newConfig.filters, filter)
 
 	return nil
 }
 
+func setAction(filter *trapexFilter, FilterPluginConfigs *plugin_data.PluginsConfig, lineNumber int) error {
+	var err error
+	switch filter.ActionName {
+	case "break", "drop":
+		filter.actionType = actionBreak
+	case "nat":
+		filter.actionType = actionNat
+		if filter.ActionArg == "" {
+			return fmt.Errorf("missing nat argument at line %v", lineNumber)
+		}
+	default:
+		filter.actionType = actionPlugin
+		filter.plugin, err = loadFilterPlugin(filter.ActionName)
+		if err != nil {
+			return fmt.Errorf("Unable to load plugin %s at line %v: %s", filter.ActionName, lineNumber, err)
+		}
+		if err = filter.plugin.Configure(&trapexLog, filter.ActionArg, FilterPluginConfigs); err != nil {
+			return fmt.Errorf("Unable to configure plugin %s at line %v: %s", filter.ActionName, lineNumber, err)
+		}
+	}
+	return nil
+}
+
+// addSnmpFilterObj adds a filter if necessary
+// An empty arry of filters is interpreted to mean "All versions should match"
+func addSnmpFilterObj(filter *trapexFilter, lineNumber int) error {
+	for _, version := range filter.SnmpVersions {
+		fObj := filterObj{}
+		switch strings.ToLower(version) {
+		case "v1", "1":
+			fObj.filterValue = g.Version1
+		case "v2c", "2c", "2":
+			fObj.filterValue = g.Version2c
+		case "v3", "3":
+			fObj.filterValue = g.Version3
+		default:
+			return fmt.Errorf("Unsupported or invalid SNMP version (%s) on line %v", version, lineNumber)
+		}
+		fObj.filterType = parseTypeInt
+		filter.matchAll = false
+		filter.filterItems = append(filter.filterItems, fObj)
+	}
+	return nil
+}
+
+// addIpFilterObj returns a filter object for IP addresses, IP sets, CIDR
+// If starts with a "ipset:"" it's an IP set
+// If starts with a "/", it's a regex
+func addIpFilterObj(filter *trapexFilter, source string, networkEntry string, ipSets map[string]IpSet, lineNumber int) error {
+	var err error
+
+	if networkEntry == "" {
+		return nil
+	}
+	filter.matchAll = false
+
+	fObj := filterObj{}
+	if strings.HasPrefix(networkEntry, "ipset:") {
+		fObj.filterType = parseTypeIPSet
+		ipSetName := networkEntry[6:]
+		if _, ok := ipSets[ipSetName]; ok {
+			fObj.filterValue = ipSetName
+		} else {
+			return fmt.Errorf("Invalid IP set name specified on for %s on line %v: %s", source, lineNumber, networkEntry)
+		}
+	} else if strings.HasPrefix(networkEntry, "/") {
+		fObj.filterType = parseTypeRegex
+		fObj.filterValue, err = regexp.Compile(networkEntry[1:])
+		if err != nil {
+			return fmt.Errorf("Unable to compile regular expressions for IP for %s on line %v: %s: %s", source, lineNumber, networkEntry, err)
+		}
+	} else if strings.Contains(networkEntry, "/") {
+		fObj.filterType = parseTypeCIDR
+		fObj.filterValue, err = newNetwork(networkEntry)
+		if err != nil {
+			return fmt.Errorf("Invalid IP/CIDR for %s at line %v: %s", source, lineNumber, networkEntry)
+		}
+	} else {
+		fObj.filterType = parseTypeString
+		fObj.filterValue = networkEntry
+	}
+	filter.filterItems = append(filter.filterItems, fObj)
+	return nil
+}
+
+func addTrapTypeFilterObj(filter *trapexFilter, source string, trapTypeEntry int, lineNumber int) error {
+	filter.matchAll = false
+
+	// -1 means to match everything
+	if trapTypeEntry == -1 {
+		return nil
+	}
+	filter.matchAll = false
+	fObj := filterObj{filterType: parseTypeInt, filterValue: trapTypeEntry}
+	filter.filterItems = append(filter.filterItems, fObj)
+	return nil
+}
+
+func addOidFilterObj(filter *trapexFilter, oid string, lineNumber int) error {
+	var err error
+	filter.matchAll = false
+
+	if oid == "" {
+		return nil
+	}
+	filter.matchAll = false
+	fObj := filterObj{filterType: parseTypeRegex}
+	fObj.filterValue, err = regexp.Compile(oid)
+	if err != nil {
+		return fmt.Errorf("unable to compile regexp at line %v for OID: %s: %s", lineNumber, oid, err)
+	}
+	filter.filterItems = append(filter.filterItems, fObj)
+	return nil
+}
+
 func closeTrapexHandles() {
-	for _, f := range teConfig.filters {
+	for _, f := range teConfig.Filters {
 		if f.actionType == actionPlugin {
-			f.action.(FilterPlugin).Close()
+			f.plugin.(FilterPlugin).Close()
 		}
 	}
 }

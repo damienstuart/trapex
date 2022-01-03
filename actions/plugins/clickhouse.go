@@ -43,7 +43,7 @@ func makeCsvLogger(logfile string) *lumberjack.Logger {
 	return &l
 }
 
-func (a ClickhouseExport) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+func (a *ClickhouseExport) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
 	a.trapex_log = trapexLog
 	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Added exporter")
 

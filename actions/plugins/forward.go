@@ -27,7 +27,7 @@ type trapForwarder struct {
 
 const plugin_name = "trap forwarder"
 
-func (a trapForwarder) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+func (a *trapForwarder) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
 	a.trapex_log = trapexLog
 
 	a.trapex_log.Info().Str("plugin", plugin_name).Msg("Initialization of plugin")
@@ -51,7 +51,7 @@ func (a trapForwarder) Configure(trapexLog *zerolog.Logger, actionArg string, pl
 	}
 	err = a.destination.Connect()
 	if err != nil {
-		return (err)
+		return err
 	}
 	a.trapex_log.Info().Str("target", s[0]).Str("port", s[1]).Msg("Added trap destination")
 

@@ -31,7 +31,6 @@ func handleSIGUSR1(sigCh chan os.Signal) {
 	for {
 		select {
 		case <-sigCh:
-			//trapexLog.Info().Msg("Got SIGUSR1 to dump stats")
 			// Compute uptime
 			stats.UptimeInt = time.Now().Unix() - stats.StartTime.Unix()
 			trapexLog.Info().
@@ -56,16 +55,16 @@ func handleSIGUSR1(sigCh chan os.Signal) {
 	}
 }
 
-// Use SIGUSR2 to force a rotation of CSV log files.
+// Use SIGUSR2 to force a rotation of log files.
 //
 func handleSIGUSR2(sigCh chan os.Signal) {
 	for {
 		select {
 		case <-sigCh:
 			trapexLog.Info().Msg("Got SIGUSR2")
-			for _, f := range teConfig.filters {
+			for _, f := range teConfig.Filters {
 				if f.actionType == actionPlugin {
-					f.action.(FilterPlugin).SigUsr2()
+					f.plugin.(FilterPlugin).SigUsr2()
 				}
 			}
 		}

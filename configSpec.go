@@ -6,7 +6,7 @@
 package main
 
 import (
-	"github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/actions"
 
 	g "github.com/gosnmp/gosnmp"
 )
@@ -25,6 +25,38 @@ type v3Params struct {
 
 type IpSet map[string]bool
 
+// filterObj represents one of the filterable items in a filter line from
+// the config file (i.e. Src IP, AgentAddress, GenericType, SpecificType,
+// and Enterprise OID).
+//
+type filterObj struct {
+	filterItem  int
+	filterType  int
+	filterValue interface{} // string, *regex.Regexp, *network, int
+}
+
+// trapexFilter holds the filter data and action for a specfic
+// filter line from the config file.
+type trapexFilter struct {
+	// SnmpVersions - an empty array will indicate ALL versions
+	SnmpVersions []string `default:"[]" yaml:"snmp_versions"`
+	SourceIp     string   `default:"*" yaml:"source_ip"`
+	AgentAddress string   `default:"*" yaml:"agent_address"`
+	// GenericType can have values from 0 - 6: -1 indicates all types
+	GenericType int `default:"-1" yaml:"snmp_generic_type"`
+	// SpecificType can have values from 0 - n: -1 indicates all types
+	SpecificType  int    `default:"-1" yaml:"snmp_specific_type"`
+	EnterpriseOid string `default:"*" yaml:"enterprise_oid"`
+	ActionName    string `default:"" yaml:"action"`
+	ActionArg     string `default:"" yaml:"action_arg"`
+	BreakAfter    bool   `default:"false" yaml:"break_fter"`
+
+	matchAll    bool
+	filterItems []filterObj
+	plugin      FilterPlugin
+	actionType  int
+}
+
 type trapexConfig struct {
 	teConfigured bool
 
@@ -33,7 +65,7 @@ type trapexConfig struct {
 		ListenAddr string `default:"0.0.0.0" yaml:"listen_address"`
 		ListenPort string `default:"162" yaml:"listen_port"`
 
-		gosnmpDebug bool `default:"false" yaml:"gosnmp_debug"`
+		GoSnmpDebug bool `default:"false" yaml:"gosnmp_debug"`
 
 		IgnoreVersions_str []string        `default:"[]" yaml:"ignore_versions"`
 		IgnoreVersions     []g.SnmpVersion `default:"[]"`
@@ -58,6 +90,6 @@ type trapexConfig struct {
 	IpSets_str []map[string][]string `default:"{}" yaml:"ip_sets"`
 	IpSets     map[string]IpSet      `default:"{}"`
 
-	Filters_str []string `default:"[]" yaml:"filters"`
-	filters     []trapexFilter
+	//Filters_str []string `default:"[]" yaml:"Filters"`
+	Filters []trapexFilter `default:"[]" yaml:"filters"`
 }

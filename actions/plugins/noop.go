@@ -19,9 +19,9 @@ type noopFilter struct {
 	trapexLog *zerolog.Logger
 }
 
-const plugin_name = "no op"
+const plugin_name = "noop"
 
-func (p noopFilter) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
+func (p *noopFilter) Configure(trapexLog *zerolog.Logger, actionArg string, pluginConfig *plugin_data.PluginsConfig) error {
 	trapexLog.Info().Str("plugin", plugin_name).Str("test1", pluginConfig.Noop.Test1).Str("test2", pluginConfig.Noop.Test2).Msg("Initialization of plugin")
 	p.trapexLog = trapexLog
 	return nil

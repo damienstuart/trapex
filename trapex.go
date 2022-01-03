@@ -18,7 +18,7 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/actions"
 )
 
 var trapRateTracker = newTrapRateTracker()
@@ -58,7 +58,7 @@ func main() {
 	tl.Params.Community = ""
 
 	// Uncomment for debugging gosnmp
-	if teConfig.General.gosnmpDebug {
+	if teConfig.General.GoSnmpDebug {
 		trapexLog.Info().Msg("gosnmp debug mode enabled")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}
@@ -140,7 +140,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 // against the filter list and processes the trap accordingly.
 //
 func processTrap(sgt *plugin_data.Trap) {
-	for _, f := range teConfig.filters {
+	for _, f := range teConfig.Filters {
 		// If this trap is tagged to drop, then continue.
 		if sgt.Dropped {
 			continue
@@ -156,7 +156,7 @@ func processTrap(sgt *plugin_data.Trap) {
 				continue
 			}
 			f.processAction(sgt)
-			if f.breakAfter {
+			if f.BreakAfter {
 				sgt.Dropped = true
 				stats.DroppedTraps++
 				trapsDropped.Inc()
@@ -172,7 +172,7 @@ func processTrap(sgt *plugin_data.Trap) {
 					continue
 				}
 				f.processAction(sgt)
-				if f.breakAfter {
+				if f.BreakAfter {
 					sgt.Dropped = true
 					stats.DroppedTraps++
 					trapsDropped.Inc()
