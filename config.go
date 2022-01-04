@@ -86,7 +86,7 @@ type trapexConfig struct {
 
 	V3Params v3Params `yaml:"snmpv3"`
 
-	IpSets []map[string][]string `default:"{}" yaml:"ipsets"`
+	IpSets []map[string][]string `default:"{}" yaml:"ip_sets"`
 	ipSets map[string]ipSet      `default:"{}"`
 
 	RawFilters []string `default:"[]" yaml:"filters"`

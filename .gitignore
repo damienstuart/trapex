@@ -22,3 +22,6 @@ log
 # Unit test output
 tests/tmp/*.csv
 tests/tmp/*.log
+
+# Misc dev env files
+.vscode

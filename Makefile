@@ -5,7 +5,7 @@ image = alpine:3.15
 docker_tag_trapex = damienstuart/trapex
 container_trapex = trapex
 configuration_path_trapex = /Users/kellskearney/go/src/trapex/tools
-docker_tag_clickhouse = damientstuart/clickhouse
+docker_tag_clickhouse = damienstuart/clickhouse
 container_clickhouse = clickhouse
 #configuration_path_clickhouse = /Users/kellskearney/go/src/trapex/tools
 
@@ -24,6 +24,7 @@ rpm: build
 
 clean:
 	rm -rf ~/rpmbuild/BUILD/${TARGET} ~/rpmbuild/BUILD/${BUILDARCH}/*
+	go clean
 
 install:
 	cd ~/rpmbuild/RPMS/${BUILDARCH} && sudo yum install -y `ls -1rt | tail -1`

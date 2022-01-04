@@ -1,4 +1,4 @@
-ipsets:
+ip_sets:
   - out_of_range:
     - 256.1.3.256
     - 10.1.3.256
