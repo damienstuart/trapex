@@ -281,17 +281,17 @@ func addFilterObjs(filter *trapexFilter, ipSets map[string]IpSet, lineNumber int
 		return err
 	}
 
-	if err = addIpFilterObj(filter, srcIP, filter.SourceIp, ipSets, lineNumber); err != nil {
+	if err = addIpFilterObj(filter, filterBySrcIP, filter.SourceIp, ipSets, lineNumber); err != nil {
 		return err
 	}
-	if err = addIpFilterObj(filter, agentAddr, filter.AgentAddress, ipSets, lineNumber); err != nil {
+	if err = addIpFilterObj(filter, filterByAgentAddr, filter.AgentAddress, ipSets, lineNumber); err != nil {
 		return err
 	}
 
-	if err = addTrapTypeFilterObj(filter, genericType, filter.GenericType, lineNumber); err != nil {
+	if err = addTrapTypeFilterObj(filter, filterByGenericType, filter.GenericType, lineNumber); err != nil {
 		return err
 	}
-	if err = addTrapTypeFilterObj(filter, specificType, filter.SpecificType, lineNumber); err != nil {
+	if err = addTrapTypeFilterObj(filter, filterBySpecificType, filter.SpecificType, lineNumber); err != nil {
 		return err
 	}
 
@@ -347,7 +347,7 @@ func args2map(data []ActionArgType) map[string]string {
 // An empty arry of filters is interpreted to mean "All versions should match"
 func addSnmpFilterObj(filter *trapexFilter, lineNumber int) error {
 	for _, candidate := range filter.SnmpVersions {
-		fObj := filterObj{filterItem: version}
+		fObj := filterObj{filterItem: filterByVersion}
 		switch strings.ToLower(candidate) {
 		case "v1", "1":
 			fObj.filterValue = g.Version1
@@ -426,7 +426,7 @@ func addOidFilterObj(filter *trapexFilter, oid string, lineNumber int) error {
 		return nil
 	}
 	filter.matchAll = false
-	fObj := filterObj{filterItem: enterprise, filterType: parseTypeRegex}
+	fObj := filterObj{filterItem: filterByOid, filterType: parseTypeRegex}
 	fObj.filterValue, err = regexp.Compile(oid)
 	if err != nil {
 		return fmt.Errorf("unable to compile regexp at line %v for OID: %s: %s", lineNumber, oid, err)

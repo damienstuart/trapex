@@ -65,12 +65,12 @@ const (
 
 // Filter object items
 const (
-	version int = iota
-	srcIP
-	agentAddr
-	genericType
-	specificType
-	enterprise
+	filterByVersion int = iota
+	filterBySrcIP
+	filterByAgentAddr
+	filterByGenericType
+	filterBySpecificType
+	filterByOid
 )
 
 // Supported action types
@@ -89,11 +89,11 @@ func (f *trapexFilter) isFilterMatch(sgt *plugin_data.Trap) bool {
 	for _, fo := range f.filterItems {
 		fval := fo.filterValue
 		switch fo.filterItem {
-		case version:
+		case filterByVersion:
 			if fval != sgt.TrapVer {
 				return false
 			}
-		case srcIP:
+		case filterBySrcIP:
 			if fo.filterType == parseTypeString && fval.(string) != sgt.SrcIP.String() {
 				return false
 			} else if fo.filterType == parseTypeCIDR && !fval.(*network).contains(sgt.SrcIP) {
@@ -106,7 +106,7 @@ func (f *trapexFilter) isFilterMatch(sgt *plugin_data.Trap) bool {
 					return false
 				}
 			}
-		case agentAddr:
+		case filterByAgentAddr:
 			if fo.filterType == parseTypeString && fval.(string) != trap.AgentAddress {
 				return false
 			} else if fo.filterType == parseTypeCIDR && !fval.(*network).contains(net.ParseIP(trap.AgentAddress)) {
@@ -119,17 +119,17 @@ func (f *trapexFilter) isFilterMatch(sgt *plugin_data.Trap) bool {
 					return false
 				}
 			}
-		case enterprise:
+		case filterByOid:
 			if fo.filterType == parseTypeRegex && !fval.(*regexp.Regexp).MatchString(strings.TrimLeft(trap.Enterprise, ".")) {
 				return false
 			} else if fo.filterType == parseTypeString && fval.(string) != strings.TrimLeft(trap.Enterprise, ".") {
 				return false
 			}
-		case genericType:
+		case filterByGenericType:
 			if fo.filterType == parseTypeInt && fval.(int) != trap.GenericTrap {
 				return false
 			}
-		case specificType:
+		case filterBySpecificType:
 			if fo.filterType == parseTypeInt && fval.(int) != trap.SpecificTrap {
 				return false
 			}
