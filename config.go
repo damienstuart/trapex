@@ -60,7 +60,7 @@ Usage: trapex [-h] [-c <config_file>] [-b <bind_ip>] [-p <listen_port>]
 
 func processCommandLine() {
 	flag.Usage = showUsage
-	c := flag.String("c", "/etc/trapex.conf", "")
+	c := flag.String("c", "/opt/trapex/etc/trapex.yml", "")
 	b := flag.String("b", "", "")
 	p := flag.String("p", "", "")
 	d := flag.Bool("d", false, "")
