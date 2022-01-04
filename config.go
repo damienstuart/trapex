@@ -312,7 +312,13 @@ func setAction(filter *trapexFilter, lineNumber int) error {
 	case "nat":
 		filter.actionType = actionNat
 		if filter.ActionArg == "" {
-			return fmt.Errorf("missing nat argument at line %v", lineNumber)
+			pluginDataMapping := args2map(filter.ActionArgs)
+			natIp, ok := pluginDataMapping["natIp"]
+			if ok {
+				filter.ActionArg = natIp
+			} else {
+				return fmt.Errorf("Missing NAT argument at line %v", lineNumber)
+			}
 		}
 	default:
 		filter.actionType = actionPlugin

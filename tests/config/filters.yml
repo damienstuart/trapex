@@ -33,7 +33,7 @@ filters:
     action_args:
       - key: filename
         value: tests/tmp/snmpv3.log
-    breakAfter: true
+    break_after: true
   - action: logfile
     action_args:
       - key: filename

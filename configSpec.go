@@ -6,6 +6,7 @@
 package main
 
 import (
+	"github.com/creasty/defaults"
 	g "github.com/gosnmp/gosnmp"
 )
 
@@ -41,26 +42,36 @@ type ActionArgType struct {
 
 // trapexFilter holds the filter data and action for a specfic
 // filter line from the config file.
-// Question: do dynamically created structures not get SetDefault()? That would be crappy
 type trapexFilter struct {
 	// SnmpVersions - an empty array will indicate ALL versions
 	SnmpVersions []string `default:"[]" yaml:"snmp_versions"`
-	SourceIp     string   `default:"*" yaml:"source_ip"`
-	AgentAddress string   `default:"*" yaml:"agent_address"`
+	SourceIp     string   `default:"" yaml:"source_ip"`
+	AgentAddress string   `default:"" yaml:"agent_address"`
 	// GenericType can have values from 0 - 6: -1 indicates all types
 	GenericType int `default:"-1" yaml:"snmp_generic_type"`
 	// SpecificType can have values from 0 - n: -1 indicates all types
 	SpecificType  int             `default:"-1" yaml:"snmp_specific_type"`
-	EnterpriseOid string          `default:"*" yaml:"enterprise_oid"`
+	EnterpriseOid string          `default:"" yaml:"enterprise_oid"`
 	ActionName    string          `default:"" yaml:"action"`
 	ActionArg     string          `default:"" yaml:"action_arg"`
-	BreakAfter    bool            `default:"false" yaml:"break_fter"`
+	BreakAfter    bool            `default:"false" yaml:"break_after"`
 	ActionArgs    []ActionArgType `default:"[]" yaml:"action_args"`
 
 	matchAll    bool
 	filterItems []filterObj
 	plugin      FilterPlugin
 	actionType  int
+}
+
+// UnmarshalYAML is what enables the setter to work for the trapexFilter
+func (s *trapexFilter) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	defaults.Set(s)
+
+	type plain trapexFilter
+	if err := unmarshal((*plain)(s)); err != nil {
+		return err
+	}
+	return nil
 }
 
 type trapexConfig struct {
