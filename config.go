@@ -28,7 +28,6 @@ Notes on YAML configuration processing:
  * Non-basic types and classes can't be instantiated directly (eg g.SHA)
      * Configuration data structures have two sets of variables: text and usable
      * Per convention, the text versions have a suffix of _str
-
    ===========================================================
 */
 
