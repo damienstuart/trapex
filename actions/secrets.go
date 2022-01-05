@@ -7,18 +7,38 @@ package plugin_data
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 )
 
 func SetSecret(cipherPhrase *string) error {
-	data := strings.SplitN(*cipherPhrase, ":", 2)
-	if data == nil { // Just plain text, nothing to do
+	splits := strings.SplitN(*cipherPhrase, ":", 2)
+	if splits == nil { // Just plain text, nothing to do
 		return nil
 	}
-	switch data[0] {
-	case "kube_file": // Look up secret according to file path eg Kubernetes secrets
+	var fetchMethod, fetchArg string
+	var err error
+
+	fetchMethod = splits[0]
+	fetchArg = splits[1]
+
+	switch fetchMethod {
+	case "file": // Look up secret according to file path eg Kubernetes secrets
+		*cipherPhrase, err = fetchFromFile(fetchArg)
+	case "env":
+		*cipherPhrase = os.Getenv(fetchArg)
 	default:
 		return fmt.Errorf("Unable to decode secret for auth password: %s", *cipherPhrase)
 	}
-	return nil
+
+	return err
+}
+
+func fetchFromFile(filename string) (string, error) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", fmt.Errorf("Unable to read secret from file %s: %s", filename, err)
+	}
+	return string(data), nil
 }
