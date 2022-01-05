@@ -21,6 +21,7 @@ deps:
 
 test: build
 	go test
+	cd actions && go test
 
 fmt:
 	gofmt -w *.go

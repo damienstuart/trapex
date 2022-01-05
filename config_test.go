@@ -142,17 +142,13 @@ func TestFiltersGood(t *testing.T) {
 	loadConfig("tests/config/filters.yml", &testConfig)
 
 	var numfilters = len(testConfig.Filters)
-	if numfilters != 11 {
-		t.Errorf("filters are missing entries (expected 11): %d", numfilters)
+	if numfilters != 8 {
+		t.Errorf("filters are missing entries (expected 8): %d", numfilters)
 	}
 
 	var err error
 	if err = processFilters(&testConfig); err != nil {
 		t.Errorf("%s", err)
-	}
-	numfilters = len(testConfig.Filters)
-	if numfilters != 11 {
-		t.Errorf("processed filters are missing entries (expected 11): %d", numfilters)
 	}
 }
 
