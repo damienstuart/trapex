@@ -14,7 +14,7 @@ import (
 
 func GetSecret(cipherPhrase string) (string, error) {
 	splits := strings.SplitN(cipherPhrase, ":", 2)
-	if splits == nil { // Just plain text, nothing to do
+	if splits == nil || len(splits) != 2 { // Just plain text, nothing to do
 		return cipherPhrase, nil
 	}
 	var err error
