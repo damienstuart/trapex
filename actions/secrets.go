@@ -11,7 +11,7 @@ import (
 )
 */
 
-func GetSecret(cipherPhrase *string) error {
+func SetSecret(cipherPhrase *string) error {
 	return nil
 	//		return fmt.Errorf("Unable to decode secret for auth password: %s" params.AuthPassword)
 

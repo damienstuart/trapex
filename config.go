@@ -217,7 +217,7 @@ func validateSnmpV3Args(params *v3Params) error {
 		return fmt.Errorf("invalid value for snmpv3:auth_protocol: %s", params.AuthProto_str)
 	}
 
-	if err := plugin_data.GetSecret(&params.AuthPassword); err != nil {
+	if err := plugin_data.SetSecret(&params.AuthPassword); err != nil {
 		return fmt.Errorf("Unable to decode secret for auth password: %s", params.AuthPassword)
 	}
 
@@ -232,7 +232,7 @@ func validateSnmpV3Args(params *v3Params) error {
 		return fmt.Errorf("invalid value for snmpv3:privacy_protocol: %s", params.PrivacyProto_str)
 	}
 
-	if err := plugin_data.GetSecret(&params.PrivacyPassword); err != nil {
+	if err := plugin_data.SetSecret(&params.PrivacyPassword); err != nil {
 		return fmt.Errorf("Unable to decode secret for privacy password: %s", params.PrivacyPassword)
 	}
 
@@ -349,7 +349,7 @@ func args2map(data []ActionArgType) map[string]string {
 	for _, pair := range data {
 		if strings.Contains(pair.Key, "secret") ||
 			strings.Contains(pair.Key, "password") {
-			if err := plugin_data.GetSecret(&pair.Value); err != nil {
+			if err := plugin_data.SetSecret(&pair.Value); err != nil {
 				trapexLog.Warn().Err(err).Str("secret", pair.Key).Str("cipher_text", pair.Value).Msg("Unable to decode secret")
 			}
 		}
