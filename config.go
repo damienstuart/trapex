@@ -217,9 +217,13 @@ func validateSnmpV3Args(params *v3Params) error {
 		return fmt.Errorf("invalid value for snmpv3:auth_protocol: %s", params.AuthProto_str)
 	}
 
-	if err := plugin_data.SetSecret(&params.AuthPassword); err != nil {
+	var err error
+	var plaintext string
+	plaintext, err = plugin_data.GetSecret(params.AuthPassword)
+	if err != nil {
 		return fmt.Errorf("Unable to decode secret for auth password: %s", params.AuthPassword)
 	}
+	params.AuthPassword = plaintext
 
 	switch strings.ToLower(params.PrivacyProto_str) {
 	case "nopriv":
@@ -232,9 +236,11 @@ func validateSnmpV3Args(params *v3Params) error {
 		return fmt.Errorf("invalid value for snmpv3:privacy_protocol: %s", params.PrivacyProto_str)
 	}
 
-	if err := plugin_data.SetSecret(&params.PrivacyPassword); err != nil {
+	plaintext, err = plugin_data.GetSecret(params.PrivacyPassword)
+	if err != nil {
 		return fmt.Errorf("Unable to decode secret for privacy password: %s", params.PrivacyPassword)
 	}
+	params.PrivacyPassword = plaintext
 
 	if (params.MsgFlags&g.AuthPriv) == 1 && params.AuthProto < 2 {
 		return fmt.Errorf("v3 config error: no auth protocol set when snmpv3:msg_flags specifies an Auth mode")
@@ -349,8 +355,11 @@ func args2map(data []ActionArgType) map[string]string {
 	for _, pair := range data {
 		if strings.Contains(pair.Key, "secret") ||
 			strings.Contains(pair.Key, "password") {
-			if err := plugin_data.SetSecret(&pair.Value); err != nil {
+			plaintext, err := plugin_data.GetSecret(pair.Value)
+			if err != nil {
 				trapexLog.Warn().Err(err).Str("secret", pair.Key).Str("cipher_text", pair.Value).Msg("Unable to decode secret")
+			} else {
+				pair.Value = plaintext
 			}
 		}
 		pluginDataMapping[pair.Key] = pair.Value
@@ -398,19 +407,19 @@ func addIpFilterObj(filter *trapexFilter, source int, networkEntry string, ipSet
 		if _, ok := ipSets[ipSetName]; ok {
 			fObj.filterValue = ipSetName
 		} else {
-			return fmt.Errorf("Invalid IP set name specified on for %s on line %v: %s", source, lineNumber, networkEntry)
+			return fmt.Errorf("Invalid IP set name specified on for %v on line %v: %s", source, lineNumber, networkEntry)
 		}
 	} else if strings.HasPrefix(networkEntry, "/") {
 		fObj.filterType = parseTypeRegex
 		fObj.filterValue, err = regexp.Compile(networkEntry[1:])
 		if err != nil {
-			return fmt.Errorf("Unable to compile regular expressions for IP for %s on line %v: %s: %s", source, lineNumber, networkEntry, err)
+			return fmt.Errorf("Unable to compile regular expressions for IP for %v on line %v: %s: %s", source, lineNumber, networkEntry, err)
 		}
 	} else if strings.Contains(networkEntry, "/") {
 		fObj.filterType = parseTypeCIDR
 		fObj.filterValue, err = newNetwork(networkEntry)
 		if err != nil {
-			return fmt.Errorf("Invalid IP/CIDR for %s at line %v: %s", source, lineNumber, networkEntry)
+			return fmt.Errorf("Invalid IP/CIDR for %v at line %v: %s", source, lineNumber, networkEntry)
 		}
 	} else {
 		fObj.filterType = parseTypeString

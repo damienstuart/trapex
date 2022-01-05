@@ -12,27 +12,27 @@ import (
 	"strings"
 )
 
-func SetSecret(cipherPhrase *string) error {
-	splits := strings.SplitN(*cipherPhrase, ":", 2)
+func GetSecret(cipherPhrase string) (string, error) {
+	splits := strings.SplitN(cipherPhrase, ":", 2)
 	if splits == nil { // Just plain text, nothing to do
-		return nil
+		return cipherPhrase, nil
 	}
-	var fetchMethod, fetchArg string
 	var err error
+	var plaintext string
 
-	fetchMethod = splits[0]
-	fetchArg = splits[1]
+	fetchMethod := splits[0]
+	fetchArg := splits[1]
 
 	switch fetchMethod {
-	case "file": // Look up secret according to file path eg Kubernetes secrets
-		*cipherPhrase, err = fetchFromFile(fetchArg)
+	case "filename": // Look up secret according to file path eg Kubernetes secrets
+		plaintext, err = fetchFromFile(fetchArg)
 	case "env":
-		*cipherPhrase = os.Getenv(fetchArg)
+		plaintext = os.Getenv(fetchArg)
 	default:
-		return fmt.Errorf("Unable to decode secret for auth password: %s", *cipherPhrase)
+		return "", fmt.Errorf("Unable to decode secret for %s password: %s", fetchMethod, fetchArg)
 	}
 
-	return err
+	return plaintext, err
 }
 
 func fetchFromFile(filename string) (string, error) {
@@ -40,5 +40,5 @@ func fetchFromFile(filename string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Unable to read secret from file %s: %s", filename, err)
 	}
-	return string(data), nil
+	return strings.TrimSuffix(string(data), "\n"), nil
 }
