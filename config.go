@@ -14,6 +14,8 @@ import (
 	"regexp"
 	"strings"
 
+	plugin_data "github.com/damienstuart/trapex/actions"
+
 	"github.com/creasty/defaults"
 	g "github.com/gosnmp/gosnmp"
 	"gopkg.in/yaml.v2"
@@ -126,11 +128,11 @@ func getConfig() error {
 	var operation string
 	// If this is a reconfig close any current handles
 	if teConfig != nil && teConfig.teConfigured {
-		operation = "Reloading "
+		operation = "Reloading"
 	} else {
-		operation = "Loading "
+		operation = "Loading"
 	}
-	trapexLog.Info().Str("version", myVersion).Str("configuration_file", teCmdLine.configFile).Msg(operation + "configuration for trapex")
+	trapexLog.Info().Str("version", myVersion).Str("configuration_file", teCmdLine.configFile).Msg(operation + " configuration for trapex")
 
 	var newConfig trapexConfig
 	err := loadConfig(teCmdLine.configFile, &newConfig)
@@ -205,7 +207,6 @@ func validateSnmpV3Args(params *v3Params) error {
 	}
 
 	switch strings.ToLower(params.AuthProto_str) {
-	// AES is *NOT* supported
 	case "noauth":
 		params.AuthProto = g.NoAuth
 	case "sha":
@@ -214,6 +215,10 @@ func validateSnmpV3Args(params *v3Params) error {
 		params.AuthProto = g.MD5
 	default:
 		return fmt.Errorf("invalid value for snmpv3:auth_protocol: %s", params.AuthProto_str)
+	}
+
+	if err := plugin_data.GetSecret(&params.AuthPassword); err != nil {
+		return fmt.Errorf("Unable to decode secret for auth password: %s", params.AuthPassword)
 	}
 
 	switch strings.ToLower(params.PrivacyProto_str) {
@@ -225,6 +230,10 @@ func validateSnmpV3Args(params *v3Params) error {
 		params.PrivacyProto = g.DES
 	default:
 		return fmt.Errorf("invalid value for snmpv3:privacy_protocol: %s", params.PrivacyProto_str)
+	}
+
+	if err := plugin_data.GetSecret(&params.PrivacyPassword); err != nil {
+		return fmt.Errorf("Unable to decode secret for privacy password: %s", params.PrivacyPassword)
 	}
 
 	if (params.MsgFlags&g.AuthPriv) == 1 && params.AuthProto < 2 {
@@ -338,6 +347,12 @@ func args2map(data []ActionArgType) map[string]string {
 
 	pluginDataMapping = make(map[string]string)
 	for _, pair := range data {
+		if strings.Contains(pair.Key, "secret") ||
+			strings.Contains(pair.Key, "password") {
+			if err := plugin_data.GetSecret(&pair.Value); err != nil {
+				trapexLog.Warn().Err(err).Str("secret", pair.Key).Str("cipher_text", pair.Value).Msg("Unable to decode secret")
+			}
+		}
 		pluginDataMapping[pair.Key] = pair.Value
 	}
 	return pluginDataMapping
