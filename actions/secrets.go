@@ -5,14 +5,20 @@
 //
 package plugin_data
 
-/*
 import (
-"fmt"
+	"fmt"
+	"strings"
 )
-*/
 
 func SetSecret(cipherPhrase *string) error {
+	data := strings.SplitN(*cipherPhrase, ":", 2)
+	if data == nil { // Just plain text, nothing to do
+		return nil
+	}
+	switch data[0] {
+	case "kube_file": // Look up secret according to file path eg Kubernetes secrets
+	default:
+		return fmt.Errorf("Unable to decode secret for auth password: %s", *cipherPhrase)
+	}
 	return nil
-	//		return fmt.Errorf("Unable to decode secret for auth password: %s" params.AuthPassword)
-
 }
