@@ -32,18 +32,12 @@ func validateArguments(snmpVersion g.SnmpVersion, actionArgs map[string]string) 
 	validArgs := map[string]bool{"traphost": true, "port": true, "snmp_version": true, "community": true}
 	validV3Args := map[string]bool{"engine_id": true, "auth_password": true, "auth_protocol": true, "privacy_protocol": true, "privacy_password": true}
 
-	if snmpVersion == g.Version3 {
-		for key, _ := range actionArgs {
-			if _, ok := validArgs[key]; !ok {
+	for key, _ := range actionArgs {
+		if _, ok := validArgs[key]; !ok {
+			if snmpVersion == g.Version3 {
 				if _, ok := validV3Args[key]; !ok {
 					return fmt.Errorf("Unrecognized option to %s plugin: %s", pluginName, key)
 				}
-			}
-		}
-	} else {
-		for key, _ := range actionArgs {
-			if _, ok := validArgs[key]; !ok {
-				return fmt.Errorf("Unrecognized option to %s plugin: %s", pluginName, key)
 			}
 		}
 	}
