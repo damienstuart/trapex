@@ -16,7 +16,7 @@ func TestPluginInterfacess(t *testing.T) {
 
 	for _, plugin_name := range plugins {
 		fmt.Printf("Verifying plugin interface: %s\n", plugin_name)
-		_, err = loadFilterPlugin(plugin_name)
+		_, err = loadFilterPlugin("actions/plugins/%s.so", plugin_name)
 
 		if err != nil {
 			t.Errorf("Unable to load plugin %s", plugin_name)
