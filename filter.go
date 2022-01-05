@@ -26,8 +26,8 @@ type FilterPlugin interface {
 	Close() error
 }
 
-func loadFilterPlugin(plugin_name string) (FilterPlugin, error) {
-	var plugin_filename = "actions/plugins/" + plugin_name + ".so"
+func loadFilterPlugin(pluginPathExpr string, plugin_name string) (FilterPlugin, error) {
+	plugin_filename := fmt.Sprintf(pluginPathExpr, plugin_name)
 
 	plug, err := plugin.Open(plugin_filename)
 	if err != nil {

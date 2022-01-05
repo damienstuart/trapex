@@ -276,7 +276,7 @@ func processFilters(newConfig *trapexConfig) error {
 		if err = addFilterObjs(&filterData, newConfig.IpSets, lineNumber); err != nil {
 			return err
 		}
-		if err = setAction(&filterData, lineNumber); err != nil {
+		if err = setAction(&filterData, newConfig.General.PluginPathExpr, lineNumber); err != nil {
 			return err
 		}
 	}
@@ -317,7 +317,7 @@ func addFilterObjs(filter *trapexFilter, ipSets map[string]IpSet, lineNumber int
 	return nil
 }
 
-func setAction(filter *trapexFilter, lineNumber int) error {
+func setAction(filter *trapexFilter, pluginPathExpr string, lineNumber int) error {
 	var err error
 
 	switch filter.ActionName {
@@ -336,7 +336,7 @@ func setAction(filter *trapexFilter, lineNumber int) error {
 		}
 	default:
 		filter.actionType = actionPlugin
-		filter.plugin, err = loadFilterPlugin(filter.ActionName)
+		filter.plugin, err = loadFilterPlugin(pluginPathExpr, filter.ActionName)
 		if err != nil {
 			return fmt.Errorf("Unable to load plugin %s at line %v: %s", filter.ActionName, lineNumber, err)
 		}
