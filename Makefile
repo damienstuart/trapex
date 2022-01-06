@@ -14,7 +14,7 @@ build: plugins
 	go build
 
 plugins:
-	cd actions && ./build_plugins.sh
+	cd txPlugins && ./build_plugins.sh
 
 deps:
 	go get ./...

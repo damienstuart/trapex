@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	plugin_data "github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/txPlugins"
 	g "github.com/gosnmp/gosnmp"
 
 	"github.com/rs/zerolog"
@@ -47,14 +47,14 @@ func validateArguments(snmpVersion g.SnmpVersion, actionArgs map[string]string) 
 
 func getVersion(snmpVersion string) (g.SnmpVersion, error) {
 	switch strings.ToLower(snmpVersion) {
-	case "v1", "1":
+	case "v1", "1", "":
 		return g.Version1, nil
 	case "v2c", "2c", "2":
 		return g.Version2c, nil
 	case "v3", "3":
 		return g.Version3, nil
 	default:
-		return g.Version1, fmt.Errorf("unsupported or invalid value (%s) for version", snmpVersion)
+		return g.Version1, fmt.Errorf("Unsupported or invalid value (%s) for SNMP version", snmpVersion)
 	}
 }
 

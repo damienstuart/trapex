@@ -15,7 +15,7 @@ import (
 	"os"
 	"strings"
 
-	plugin_data "github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/txPlugins"
 	"github.com/rs/zerolog"
 
 	"github.com/natefinch/lumberjack"

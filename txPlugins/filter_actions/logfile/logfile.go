@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	plugin_data "github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/txPlugins"
 	g "github.com/gosnmp/gosnmp"
 	"github.com/natefinch/lumberjack"
 	"github.com/rs/zerolog"

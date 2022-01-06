@@ -18,7 +18,7 @@ import (
 
 	"github.com/rs/zerolog"
 
-	plugin_data "github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/txPlugins"
 )
 
 var trapRateTracker = newTrapRateTracker()

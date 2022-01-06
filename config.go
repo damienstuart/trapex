@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"strings"
 
-	plugin_data "github.com/damienstuart/trapex/actions"
+	plugin_data "github.com/damienstuart/trapex/txPlugins"
 
 	"github.com/creasty/defaults"
 	g "github.com/gosnmp/gosnmp"
