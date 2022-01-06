@@ -31,7 +31,7 @@ type prometheusStats struct {
 	trapsFromV3  prometheus.Counter
 }
 
-func (p *prometheusStats) statsConfigure(trapexLog *zerolog.Logger, args map[string]string) error {
+func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]string) error {
 	p.trapex_log = trapexLog
 	listenIP := args["listen_ip"]
 	listenPort := args["listen_port"]
@@ -89,7 +89,7 @@ func (p prometheusStats) Inc(metric int) {
 
 }
 
-// exposeMetrics
+// ExposeMetrics
 // Allow Prometheus to gather current performance metrics via /metrics URL
 func (p prometheusStats) ExposeMetrics() {
 	server := http.NewServeMux()
