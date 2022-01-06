@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rs/zerolog"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -43,6 +45,14 @@ type teStats struct {
 	TranslatedFromV3  uint
 	TrapsPerSecond    trapRates
 }
+
+// Statistics plugin interface
+type StatsPlugin interface {
+        Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error
+        Inc(metric int)
+        ExposeMetrics()
+}
+
 
 var stats teStats
 
