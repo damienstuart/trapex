@@ -152,10 +152,10 @@ func translateToV1(t *pluginMeta.Trap) error {
 	// Update the translate stats
 	if t.TrapVer == g.Version2c {
 		stats.TranslatedFromV2c++
-		trapsFromV2c.Inc()
+		//trapsFromV2c.Inc()
 	} else if t.TrapVer == g.Version3 {
 		stats.TranslatedFromV3++
-		trapsFromV3.Inc()
+		//trapsFromV3.Inc()
 	}
 
 	return nil

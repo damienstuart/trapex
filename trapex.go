@@ -88,18 +88,18 @@ func main() {
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	// Count every trap received
 	stats.TrapCount++
-	trapsCount.Inc()
+	//trapsCount.Inc()
 
 	// First thing to do is check for ignored versions
 	if isIgnoredVersion(p.Version) {
 		stats.IgnoredTraps++
-		trapsIgnored.Inc()
+		//trapsIgnored.Inc()
 		return
 	}
 
 	// Also keep track of traps we handle
 	stats.HandledTraps++
-	trapsHandled.Inc()
+	//trapsHandled.Inc()
 
 	// Make the trap
 	trap := pluginMeta.Trap{
@@ -152,14 +152,13 @@ func processTrap(sgt *pluginMeta.Trap) {
 			if f.actionType == actionBreak {
 				sgt.Dropped = true
 				stats.DroppedTraps++
-				trapsDropped.Inc()
+				//stats.(StatsPlugin).Inc(pluginMeta.MetricDropped)
 				continue
 			}
 			f.processAction(sgt)
 			if f.BreakAfter {
 				sgt.Dropped = true
 				stats.DroppedTraps++
-				trapsDropped.Inc()
 				continue
 			}
 		} else {
@@ -168,14 +167,12 @@ func processTrap(sgt *pluginMeta.Trap) {
 				if f.actionType == actionBreak {
 					sgt.Dropped = true
 					stats.DroppedTraps++
-					trapsDropped.Inc()
 					continue
 				}
 				f.processAction(sgt)
 				if f.BreakAfter {
 					sgt.Dropped = true
 					stats.DroppedTraps++
-					trapsDropped.Inc()
 					continue
 				}
 			}
