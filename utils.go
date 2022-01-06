@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"net"
 
-	plugin_data "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 	g "github.com/gosnmp/gosnmp"
 )
 
@@ -55,8 +55,8 @@ func panicOnError(e error) {
 // Note that this particulare implementation expects to be dealing with
 // only v1 traps.
 //
-func makeTrapLogEntry(trap *plugin_data.Trap) string {
-	trapMap := trap.V1Trap2Map()
+func makeTrapLogEntry(trap *pluginMeta.Trap) string {
+	trapMap := trap.Trap2Map()
 	jsonBytes, _ := json.Marshal(trapMap)
 	return string(jsonBytes[:])
 }

@@ -15,7 +15,7 @@ import (
 	"os"
 	"strings"
 
-	plugin_data "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 	"github.com/rs/zerolog"
 
 	"github.com/natefinch/lumberjack"
@@ -77,7 +77,7 @@ func (a *ClickhouseExport) Configure(trapexLog *zerolog.Logger, actionArgs map[s
 	return nil
 }
 
-func (a ClickhouseExport) ProcessTrap(trap *plugin_data.Trap) error {
+func (a ClickhouseExport) ProcessTrap(trap *pluginMeta.Trap) error {
 	logCsvTrap(trap, a.logHandle)
 	return nil
 }
@@ -104,7 +104,7 @@ func (a ClickhouseExport) SigUsr2() error {
 // logCsvTrap takes care of logging the given trap to the given ClickhouseExport
 // destination.
 //
-func logCsvTrap(trap *plugin_data.Trap, l *log.Logger) {
+func logCsvTrap(trap *pluginMeta.Trap, l *log.Logger) {
 	l.Printf(makeTrapLogCsvEntry(trap))
 }
 
@@ -112,9 +112,9 @@ func logCsvTrap(trap *plugin_data.Trap, l *log.Logger) {
 // Note that this particular implementation expects to be dealing with
 // only v1 traps.
 //
-func makeTrapLogCsvEntry(trap *plugin_data.Trap) string {
+func makeTrapLogCsvEntry(trap *pluginMeta.Trap) string {
 	var csv [11]string
-	trapMap := trap.V1Trap2Map()
+	trapMap := trap.Trap2Map()
 
 	csv[0] = trapMap["TrapDate"]
 	csv[1] = trapMap["TrapTimestamp"]

@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	plugin_data "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 	g "github.com/gosnmp/gosnmp"
 
 	"github.com/rs/zerolog"
@@ -160,7 +160,7 @@ func setSnmpV3Args(destination *g.GoSNMP, params map[string]string) error {
 	return nil
 }
 
-func (a trapForwarder) ProcessTrap(trap *plugin_data.Trap) error {
+func (a trapForwarder) ProcessTrap(trap *pluginMeta.Trap) error {
 	a.trapex_log.Info().Str("plugin", pluginName).Msg("Processing trap")
 	_, err := a.destination.SendTrap(trap.Data)
 	return err

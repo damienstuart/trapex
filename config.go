@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"strings"
 
-	plugin_data "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 
 	"github.com/creasty/defaults"
 	g "github.com/gosnmp/gosnmp"
@@ -219,7 +219,7 @@ func validateSnmpV3Args(params *v3Params) error {
 
 	var err error
 	var plaintext string
-	plaintext, err = plugin_data.GetSecret(params.AuthPassword)
+	plaintext, err = pluginMeta.GetSecret(params.AuthPassword)
 	if err != nil {
 		return fmt.Errorf("Unable to decode secret for auth password: %s", params.AuthPassword)
 	}
@@ -236,7 +236,7 @@ func validateSnmpV3Args(params *v3Params) error {
 		return fmt.Errorf("invalid value for snmpv3:privacy_protocol: %s", params.PrivacyProto_str)
 	}
 
-	plaintext, err = plugin_data.GetSecret(params.PrivacyPassword)
+	plaintext, err = pluginMeta.GetSecret(params.PrivacyPassword)
 	if err != nil {
 		return fmt.Errorf("Unable to decode secret for privacy password: %s", params.PrivacyPassword)
 	}
@@ -355,7 +355,7 @@ func args2map(data []ActionArgType) map[string]string {
 	for _, pair := range data {
 		if strings.Contains(pair.Key, "secret") ||
 			strings.Contains(pair.Key, "password") {
-			plaintext, err := plugin_data.GetSecret(pair.Value)
+			plaintext, err := pluginMeta.GetSecret(pair.Value)
 			if err != nil {
 				trapexLog.Warn().Err(err).Str("secret", pair.Key).Str("cipher_text", pair.Value).Msg("Unable to decode secret")
 			} else {

@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	plugin_data "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 	g "github.com/gosnmp/gosnmp"
 	"github.com/natefinch/lumberjack"
 	"github.com/rs/zerolog"
@@ -112,7 +112,7 @@ func (a *trapLogger) Configure(trapexLog *zerolog.Logger, actionArgs map[string]
 	return nil
 }
 
-func (a trapLogger) ProcessTrap(trap *plugin_data.Trap) error {
+func (a trapLogger) ProcessTrap(trap *pluginMeta.Trap) error {
 	a.logHandle.Printf(makeTrapLogEntry(trap))
 	return nil
 }
@@ -134,7 +134,7 @@ func (a trapLogger) Close() error {
 // Note that this particulare implementation expects to be dealing with
 // only v1 traps.
 //
-func makeTrapLogEntry(sgt *plugin_data.Trap) string {
+func makeTrapLogEntry(sgt *pluginMeta.Trap) string {
 	var b strings.Builder
 	var genTrapType string
 	trap := sgt.Data

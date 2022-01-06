@@ -3,7 +3,7 @@
 // Use of this source code is governed by the MIT License that can be found
 // in the LICENSE file.
 //
-package plugin_data
+package pluginMeta
 
 import (
 	"fmt"

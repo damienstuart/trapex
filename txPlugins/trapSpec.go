@@ -3,7 +3,7 @@
 // Use of this source code is governed by the MIT License that can be found
 // in the LICENSE file.
 //
-package plugin_data
+package pluginMeta
 
 import (
 	"encoding/hex"
@@ -27,7 +27,7 @@ type Trap struct {
 	Hostname   string
 }
 
-func (trap *Trap) V1Trap2Map() map[string]string {
+func (trap *Trap) Trap2Map() map[string]string {
 	trapMap := make(map[string]string)
 	raw_trap := trap.Data
 

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	plugin_data "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 	g "github.com/gosnmp/gosnmp"
 )
 
@@ -25,7 +25,7 @@ const (
 
 // translateToV1 converts a trap from v2c/v3 to v1 per RFC-3584
 //
-func translateToV1(t *plugin_data.Trap) error {
+func translateToV1(t *pluginMeta.Trap) error {
 	// If this is already a v1 trap, there is nothing to do.
 	if t.TrapVer == g.Version1 {
 		return nil

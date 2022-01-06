@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 	plugin_data "github.com/damienstuart/trapex/txPlugins"
 	"github.com/rs/zerolog"
 )
@@ -20,7 +21,7 @@ import (
 // Filter action plugin interface
 type FilterPlugin interface {
 	Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error
-	ProcessTrap(trap *plugin_data.Trap) error
+	ProcessTrap(trap *pluginMeta.Trap) error
 	SigUsr1() error
 	SigUsr2() error
 	Close() error

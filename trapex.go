@@ -18,7 +18,7 @@ import (
 
 	"github.com/rs/zerolog"
 
-	plugin_data "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 )
 
 var trapRateTracker = newTrapRateTracker()
@@ -102,7 +102,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	trapsHandled.Inc()
 
 	// Make the trap
-	trap := plugin_data.Trap{
+	trap := pluginMeta.Trap{
 		Data: g.SnmpTrap{
 			Variables:    p.Variables,
 			Enterprise:   p.Enterprise,
@@ -139,7 +139,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 // processTrap is the entry point to code that checks the incoming trap
 // against the filter list and processes the trap accordingly.
 //
-func processTrap(sgt *plugin_data.Trap) {
+func processTrap(sgt *pluginMeta.Trap) {
 	for _, f := range teConfig.Filters {
 		// If this trap is tagged to drop, then continue.
 		if sgt.Dropped {

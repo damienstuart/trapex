@@ -21,7 +21,7 @@ deps:
 
 test: build
 	go test
-	cd actions && go test
+	cd txPlugins && go test
 
 fmt:
 	gofmt -w *.go
@@ -37,7 +37,7 @@ clean: clean_plugins
 	go clean
 
 clean_plugins:
-	cd actions/plugins && go clean
+	find txPlugins -name \*.so -delete
 
 install:
 	cd ~/rpmbuild/RPMS/${BUILDARCH} && sudo yum install -y `ls -1rt | tail -1`

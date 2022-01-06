@@ -18,7 +18,7 @@ import (
 	   "bytes"
 	*/
 
-	plugin_data "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 	"github.com/rs/zerolog"
 )
 
@@ -53,9 +53,9 @@ func (a *webhookForwarder) Configure(trapexLog *zerolog.Logger, actionArgs map[s
 	return nil
 }
 
-func (a webhookForwarder) ProcessTrap(trap *plugin_data.Trap) error {
+func (a webhookForwarder) ProcessTrap(trap *pluginMeta.Trap) error {
 	a.trapexLog.Info().Str("plugin", pluginName).Msg("Processing HTTP post -- fake")
-	trapMap := trap.V1Trap2Map()
+	trapMap := trap.Trap2Map()
 	jsonBytes, err := json.Marshal(trapMap)
 	if err != nil {
 		return err

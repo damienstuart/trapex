@@ -11,7 +11,7 @@ testing purposes.
 */
 
 import (
-	plugin_data "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 	"github.com/rs/zerolog"
 )
 
@@ -27,7 +27,7 @@ func (p *noopFilter) Configure(trapexLog *zerolog.Logger, actionArgs map[string]
 	return nil
 }
 
-func (p noopFilter) ProcessTrap(trap *plugin_data.Trap) error {
+func (p noopFilter) ProcessTrap(trap *pluginMeta.Trap) error {
 	p.trapexLog.Info().Str("plugin", plugin_name).Msg("Noop processing trap")
 	return nil
 }
