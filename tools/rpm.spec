@@ -49,7 +49,7 @@ done
 %dir /opt/%{name}/log
 %dir /opt/%{name}/plugins
 /opt/%{name}/bin/trapex
-/opt/%{name}/etc/trapex.yml
+%config(noreplace) /opt/%{name}/etc/trapex.yml
 /opt/%{name}/README.md
 /opt/%{name}/plugins/*.so
 
