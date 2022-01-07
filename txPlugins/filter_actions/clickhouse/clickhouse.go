@@ -147,4 +147,4 @@ func makeTrapLogCsvEntry(trap *pluginMeta.Trap) string {
 	return strings.Join(csv[:], ",")
 }
 
-var FilterPlugin ClickhouseExport
+var ActionPlugin ClickhouseExport

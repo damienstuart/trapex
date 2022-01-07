@@ -462,7 +462,7 @@ func addOidFilterObj(filter *trapexFilter, oid string, lineNumber int) error {
 func closeTrapexHandles() {
 	for _, f := range teConfig.Filters {
 		if f.actionType == actionPlugin {
-			f.plugin.(FilterPlugin).Close()
+			f.plugin.(ActionPlugin).Close()
 		}
 	}
 }

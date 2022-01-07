@@ -180,4 +180,4 @@ func (a trapForwarder) Close() error {
 }
 
 // Exported symbol which supports filter.go's FilterAction type
-var FilterPlugin trapForwarder
+var ActionPlugin trapForwarder

@@ -19,7 +19,7 @@ import (
 )
 
 // Filter action plugin interface
-type FilterPlugin interface {
+type ActionPlugin interface {
 	Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error
 	ProcessTrap(trap *pluginMeta.Trap) error
 	SigUsr1() error
@@ -27,7 +27,7 @@ type FilterPlugin interface {
 	Close() error
 }
 
-func loadFilterPlugin(pluginPathExpr string, plugin_name string) (FilterPlugin, error) {
+func loadFilterPlugin(pluginPathExpr string, plugin_name string) (ActionPlugin, error) {
 	plugin_filename := fmt.Sprintf(pluginPathExpr, plugin_name)
 
 	plug, err := plugin.Open(plugin_filename)
@@ -41,9 +41,9 @@ func loadFilterPlugin(pluginPathExpr string, plugin_name string) (FilterPlugin, 
 		return nil, err
 	}
 
-	var initializer FilterPlugin
+	var initializer ActionPlugin
 	// Instantiate the class from the plugin
-	initializer, ok := symAction.(FilterPlugin)
+	initializer, ok := symAction.(ActionPlugin)
 	if !ok {
 		symbolType := fmt.Sprintf("%T", symAction)
 		trapexLog.Error().Str("filter_plugin", plugin_name).Str("data type", symbolType).Msg("Unable to load plugin")
@@ -156,7 +156,7 @@ func (f *trapexFilter) processAction(trap *plugin_data.Trap) {
 		return
 	case actionPlugin:
 		trapexLog.Debug().Str("plugin", f.ActionName).Msg("About to process trap")
-		f.plugin.(FilterPlugin).ProcessTrap(trap)
+		f.plugin.(ActionPlugin).ProcessTrap(trap)
 		trapexLog.Debug().Str("plugin", f.ActionName).Msg("Processed trap")
 	}
 	if f.BreakAfter {

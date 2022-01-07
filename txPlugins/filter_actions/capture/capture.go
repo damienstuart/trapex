@@ -112,4 +112,4 @@ func (a trapCapture) Close() error {
 }
 
 // Exported symbol which supports filter.go's FilterAction type
-var FilterPlugin trapCapture
+var ActionPlugin trapCapture

@@ -59,7 +59,7 @@ type trapexFilter struct {
 
 	matchAll    bool
 	filterItems []filterObj
-	plugin      FilterPlugin
+	plugin      ActionPlugin
 	actionType  int
 }
 

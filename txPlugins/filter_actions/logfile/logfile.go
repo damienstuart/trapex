@@ -188,4 +188,4 @@ func makeTrapLogEntry(sgt *pluginMeta.Trap) string {
 }
 
 // Exported symbol which supports filter.go's FilterAction type
-var FilterPlugin trapLogger
+var ActionPlugin trapLogger

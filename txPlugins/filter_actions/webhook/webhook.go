@@ -97,4 +97,4 @@ func (a webhookForwarder) Close() error {
 }
 
 // Exported symbol which supports filter.go's FilterAction type
-var FilterPlugin webhookForwarder
+var ActionPlugin webhookForwarder
