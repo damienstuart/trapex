@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
+	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 
 	"github.com/creasty/defaults"
 	g "github.com/gosnmp/gosnmp"
@@ -336,7 +337,7 @@ func setAction(filter *trapexFilter, pluginPathExpr string, lineNumber int) erro
 		}
 	default:
 		filter.actionType = actionPlugin
-		filter.plugin, err = loadFilterPlugin(pluginPathExpr, filter.ActionName)
+		filter.plugin, err = pluginLoader.LoadActionPlugin(pluginPathExpr, filter.ActionName)
 		if err != nil {
 			return fmt.Errorf("Unable to load plugin %s at line %v: %s", filter.ActionName, lineNumber, err)
 		}
@@ -462,7 +463,7 @@ func addOidFilterObj(filter *trapexFilter, oid string, lineNumber int) error {
 func closeTrapexHandles() {
 	for _, f := range teConfig.Filters {
 		if f.actionType == actionPlugin {
-			f.plugin.(ActionPlugin).Close()
+			f.plugin.(pluginLoader.ActionPlugin).Close()
 		}
 	}
 }

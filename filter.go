@@ -6,52 +6,13 @@
 package main
 
 import (
-	"errors"
-	"fmt"
 	"net"
-	"plugin"
 	"regexp"
 	"strings"
 
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
-	plugin_data "github.com/damienstuart/trapex/txPlugins"
-	"github.com/rs/zerolog"
+	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 )
-
-// Filter action plugin interface
-type ActionPlugin interface {
-	Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error
-	ProcessTrap(trap *pluginMeta.Trap) error
-	SigUsr1() error
-	SigUsr2() error
-	Close() error
-}
-
-func loadFilterPlugin(pluginPathExpr string, plugin_name string) (ActionPlugin, error) {
-	plugin_filename := fmt.Sprintf(pluginPathExpr, plugin_name)
-
-	plug, err := plugin.Open(plugin_filename)
-	if err != nil {
-		return nil, err
-	}
-
-	// Load the class from the plugin
-	symAction, err := plug.Lookup("FilterPlugin")
-	if err != nil {
-		return nil, err
-	}
-
-	var initializer ActionPlugin
-	// Instantiate the class from the plugin
-	initializer, ok := symAction.(ActionPlugin)
-	if !ok {
-		symbolType := fmt.Sprintf("%T", symAction)
-		trapexLog.Error().Str("filter_plugin", plugin_name).Str("data type", symbolType).Msg("Unable to load plugin")
-		return nil, errors.New("Unexpected type from plugin")
-	}
-
-	return initializer, nil
-}
 
 // Filter types
 const (
@@ -84,7 +45,7 @@ const (
 // isFilterMatch checks trap data against a trapexFilter and returns a boolean
 // to indicate whether or not the trap data matches the filter criteria.
 //
-func (f *trapexFilter) isFilterMatch(sgt *plugin_data.Trap) bool {
+func (f *trapexFilter) isFilterMatch(sgt *pluginMeta.Trap) bool {
 	// Assume true - until one of the filter items does not match
 	trap := &(sgt.Data)
 	for _, fo := range f.filterItems {
@@ -142,7 +103,7 @@ func (f *trapexFilter) isFilterMatch(sgt *plugin_data.Trap) bool {
 // processAction handles the execution of the action for the
 // trapexFilter instance on the the given trap data.
 //
-func (f *trapexFilter) processAction(trap *plugin_data.Trap) {
+func (f *trapexFilter) processAction(trap *pluginMeta.Trap) {
 	switch f.actionType {
 	case actionBreak:
 		trap.Dropped = true
@@ -156,7 +117,7 @@ func (f *trapexFilter) processAction(trap *plugin_data.Trap) {
 		return
 	case actionPlugin:
 		trapexLog.Debug().Str("plugin", f.ActionName).Msg("About to process trap")
-		f.plugin.(ActionPlugin).ProcessTrap(trap)
+		f.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
 		trapexLog.Debug().Str("plugin", f.ActionName).Msg("Processed trap")
 	}
 	if f.BreakAfter {

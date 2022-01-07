@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 )
 
 // On SIGHUP we reload the configuration.
@@ -64,7 +66,7 @@ func handleSIGUSR2(sigCh chan os.Signal) {
 			trapexLog.Info().Msg("Got SIGUSR2")
 			for _, f := range teConfig.Filters {
 				if f.actionType == actionPlugin {
-					f.plugin.(ActionPlugin).SigUsr2()
+					f.plugin.(pluginLoader.ActionPlugin).SigUsr2()
 				}
 			}
 		}

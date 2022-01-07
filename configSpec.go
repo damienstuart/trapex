@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/creasty/defaults"
+	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 	g "github.com/gosnmp/gosnmp"
 )
 
@@ -59,7 +60,7 @@ type trapexFilter struct {
 
 	matchAll    bool
 	filterItems []filterObj
-	plugin      ActionPlugin
+	plugin      pluginLoader.ActionPlugin
 	actionType  int
 }
 
