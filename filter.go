@@ -119,7 +119,10 @@ func (f *trapexFilter) processAction(trap *pluginMeta.Trap) {
 		}
 		return
 	case actionPlugin:
-		f.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
+		err := f.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
+		if err != nil {
+			trapexLog.Err(err).Str("plugin", f.ActionName).Msg("Issue in processing trap by plugin")
+		}
 	default:
 		trapexLog.Warn().Int("action_type", f.actionType).Msg("Unkown action type given to processAction")
 	}

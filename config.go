@@ -450,7 +450,7 @@ func addOidFilterObj(filter *trapexFilter, oid string, lineNumber int) error {
 	fObj := filterObj{filterItem: filterByOid, filterType: parseTypeRegex}
 	fObj.filterValue, err = regexp.Compile(oid)
 	if err != nil {
-		return fmt.Errorf("unable to compile regexp at line %v for OID: %s: %s", lineNumber, oid, err)
+		return fmt.Errorf("Unable to compile regular expression at line %v for OID: %s: %s", lineNumber, oid, err)
 	}
 	filter.matchers = append(filter.matchers, fObj)
 	return nil

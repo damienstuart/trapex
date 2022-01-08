@@ -56,12 +56,15 @@ func (a *trapCapture) Configure(trapexLog *zerolog.Logger, actionArgs map[string
 	}
 
 	a.fileFormat = actionArgs["format"]
+	if a.fileFormat == "" {
+		a.fileFormat = "gob"
+	}
 	a.trapex_log.Info().Str("file_expr", a.fileExpr).Str("dir", a.dir).Msg("Added capture destination")
 
 	return nil
 }
 
-func (a trapCapture) ProcessTrap(trap *pluginMeta.Trap) error {
+func (a *trapCapture) ProcessTrap(trap *pluginMeta.Trap) error {
 	a.trapex_log.Info().Str("plugin", pluginName).Msg("Processing trap")
 	var filename string
 	var err error
@@ -69,7 +72,7 @@ func (a trapCapture) ProcessTrap(trap *pluginMeta.Trap) error {
 	filename, err = makeCaptureFilename(a.dir, a.fileExpr, a.fileFormat, a.counter, trap)
 	if err == nil {
 		switch a.fileFormat {
-		case "gob":
+		case "gob", "":
 			err = saveCaptureGob(filename, trap)
 		default:
 			return fmt.Errorf("Unknown file format '%s'", a.fileFormat)
