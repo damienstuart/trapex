@@ -1,8 +1,28 @@
 #!/bin/bash
 
-echo "Building plugins:"
-for plugin in `ls -1 actions | grep -v .so`; do
-    echo " - Filter action plugin: $plugin"
-    (cd actions/$plugin && go build -buildmode=plugin -o ../$plugin.so $plugin.go)
+# Each plugin, by Golang 'plugin' library convention lives 
+# in its own "package main" file.
+# Practically speaking, this means that each plugin module code has to live
+# in its own directory, or Golang tools get confused about which 'main'
+# they need to be in.
+#
+# Each plugin type is separated out with its own directory structure,
+# so we need to execute 'go build' in each directory.
+
+# ---  functions  --------------------------------
+
+function build_plugins() {
+    ptype=$1
+    echo "Building $ptype plugins:"
+    for plugin in `ls -1 $ptype | grep -v .so`; do
+        echo " - $ptype plugin: $plugin"
+        (cd $ptype/$plugin && go build -buildmode=plugin -o ../$plugin.so $plugin.go)
+    done
+}
+
+# ---  main  --------------------------------
+
+for plugin_type in "actions" ; do
+    build_plugins $plugin_type
 done
 
