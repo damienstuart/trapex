@@ -46,9 +46,12 @@ const (
 // to indicate whether or not the trap data matches the filter criteria.
 //
 func (f *trapexFilter) isFilterMatch(sgt *pluginMeta.Trap) bool {
+	if len(f.matchers) == 0 {
+		return true
+	}
 	// Assume true - until one of the filter items does not match
 	trap := &(sgt.Data)
-	for _, fo := range f.filterItems {
+	for _, fo := range f.matchers {
 		fval := fo.filterValue
 		switch fo.filterItem {
 		case filterByVersion:
@@ -116,9 +119,9 @@ func (f *trapexFilter) processAction(trap *pluginMeta.Trap) {
 		}
 		return
 	case actionPlugin:
-		trapexLog.Debug().Str("plugin", f.ActionName).Msg("About to process trap")
 		f.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
-		trapexLog.Debug().Str("plugin", f.ActionName).Msg("Processed trap")
+	default:
+		trapexLog.Warn().Int("action_type", f.actionType).Msg("Unkown action type given to processAction")
 	}
 	if f.BreakAfter {
 		trap.Dropped = true

@@ -148,10 +148,10 @@ func getConfig() error {
 	if err = validateSnmpV3Args(&newConfig.V3Params); err != nil {
 		return err
 	}
-	if err = processIpSets(&newConfig); err != nil {
+	if err = addIpSets(&newConfig); err != nil {
 		return err
 	}
-	if err = processFilters(&newConfig); err != nil {
+	if err = addFilters(&newConfig); err != nil {
 		return err
 	}
 
@@ -253,7 +253,7 @@ func validateSnmpV3Args(params *v3Params) error {
 	return nil
 }
 
-func processIpSets(newConfig *trapexConfig) error {
+func addIpSets(newConfig *trapexConfig) error {
 	for _, stanza := range newConfig.IpSets_str {
 		for ipsName, ips := range stanza {
 			trapexLog.Debug().Str("ipset", ipsName).Msg("Loading IpSet")
@@ -271,16 +271,17 @@ func processIpSets(newConfig *trapexConfig) error {
 	return nil
 }
 
-func processFilters(newConfig *trapexConfig) error {
+func addFilters(newConfig *trapexConfig) error {
 	var err error
-	for lineNumber, filterData := range newConfig.Filters {
-		if err = addFilterObjs(&filterData, newConfig.IpSets, lineNumber); err != nil {
+	for i, _ := range newConfig.Filters {
+		if err = addFilterObjs(&newConfig.Filters[i], newConfig.IpSets, i); err != nil {
 			return err
 		}
-		if err = setAction(&filterData, newConfig.General.PluginPathExpr, lineNumber); err != nil {
+		if err = setAction(&newConfig.Filters[i], newConfig.General.PluginPathExpr, i); err != nil {
 			return err
 		}
 	}
+	trapexLog.Info().Int("num_filters", len(newConfig.Filters)).Msg("Configured filter conditions")
 	return nil
 }
 
@@ -292,7 +293,6 @@ func addFilterObjs(filter *trapexFilter, ipSets map[string]IpSet, lineNumber int
 
 	// If we find something that is specifies a condition, then reset
 	filter.matchAll = true
-
 	if err = addSnmpFilterObj(filter, lineNumber); err != nil {
 		return err
 	}
@@ -314,8 +314,7 @@ func addFilterObjs(filter *trapexFilter, ipSets map[string]IpSet, lineNumber int
 	if err = addOidFilterObj(filter, filter.EnterpriseOid, lineNumber); err != nil {
 		return err
 	}
-
-	return nil
+	return err
 }
 
 func setAction(filter *trapexFilter, pluginPathExpr string, lineNumber int) error {
@@ -385,7 +384,7 @@ func addSnmpFilterObj(filter *trapexFilter, lineNumber int) error {
 		}
 		fObj.filterType = parseTypeInt
 		filter.matchAll = false
-		filter.filterItems = append(filter.filterItems, fObj)
+		filter.matchers = append(filter.matchers, fObj)
 	}
 	return nil
 }
@@ -426,26 +425,23 @@ func addIpFilterObj(filter *trapexFilter, source int, networkEntry string, ipSet
 		fObj.filterType = parseTypeString
 		fObj.filterValue = networkEntry
 	}
-	filter.filterItems = append(filter.filterItems, fObj)
+	filter.matchers = append(filter.matchers, fObj)
 	return nil
 }
 
 func addTrapTypeFilterObj(filter *trapexFilter, source int, trapTypeEntry int, lineNumber int) error {
-	filter.matchAll = false
-
 	// -1 means to match everything
 	if trapTypeEntry == -1 {
 		return nil
 	}
 	filter.matchAll = false
 	fObj := filterObj{filterItem: source, filterType: parseTypeInt, filterValue: trapTypeEntry}
-	filter.filterItems = append(filter.filterItems, fObj)
+	filter.matchers = append(filter.matchers, fObj)
 	return nil
 }
 
 func addOidFilterObj(filter *trapexFilter, oid string, lineNumber int) error {
 	var err error
-	filter.matchAll = false
 
 	if oid == "" {
 		return nil
@@ -456,7 +452,7 @@ func addOidFilterObj(filter *trapexFilter, oid string, lineNumber int) error {
 	if err != nil {
 		return fmt.Errorf("unable to compile regexp at line %v for OID: %s: %s", lineNumber, oid, err)
 	}
-	filter.filterItems = append(filter.filterItems, fObj)
+	filter.matchers = append(filter.matchers, fObj)
 	return nil
 }
 

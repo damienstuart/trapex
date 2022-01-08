@@ -122,7 +122,7 @@ func TestIpSetsGood(t *testing.T) {
 	}
 
 	var err error
-	if err = processIpSets(&testConfig); err != nil {
+	if err = addIpSets(&testConfig); err != nil {
 		t.Errorf("%s", err)
 	}
 }
@@ -132,7 +132,7 @@ func TestIpSetsBadIps(t *testing.T) {
 	loadConfig("tests/config/ipsets_bad_ips.yml", &testConfig)
 
 	var err error
-	if err = processIpSets(&testConfig); err == nil {
+	if err = addIpSets(&testConfig); err == nil {
 		t.Errorf("Unable to detect bad IP entries in IpSets")
 	}
 }
@@ -147,7 +147,7 @@ func TestFiltersGood(t *testing.T) {
 	}
 
 	var err error
-	if err = processFilters(&testConfig); err != nil {
+	if err = addFilters(&testConfig); err != nil {
 		t.Errorf("%s", err)
 	}
 }
@@ -157,7 +157,7 @@ func TestFiltersMissingLogDir(t *testing.T) {
 	loadConfig("tests/config/filters_bad_logfile.yml", &testConfig)
 
 	var err error
-	if err = processFilters(&testConfig); err == nil {
+	if err = addFilters(&testConfig); err == nil {
 		t.Errorf("Should have found a bad log directory")
 	}
 }

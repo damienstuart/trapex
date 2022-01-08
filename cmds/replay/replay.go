@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+        "encoding/gob"
 
         pluginMeta "github.com/damienstuart/trapex/txPlugins"
 
@@ -26,14 +27,27 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	processCommandLine()
 /*
+	processCommandLine()
 	if err := getConfig(); err != nil {
 		replayLog.Fatal().Err(err).Msg("Unable to load configuration")
 		os.Exit(1)
 	}
 */
 
+filename := "captured-0.gob"
+ trap, err := loadCaptureGob(filename)
+ if err != nil {
+		replayLog.Fatal().Err(err).Str("format", "gob").Msg("Unable to load capture file")
+		os.Exit(1)
+ }
+
+var destination DestinationType
+  destination.Name = "hello world"
+  destination.Plugin = "noop"
+  destination.ReplayArgs = make([]ReplayArgType, 0)
+
+			destination.processAction(trap)
 /*
 	startTime := time.Now()
 	endTime := time.Now()
@@ -46,8 +60,22 @@ func main() {
 // replayTrap is the entry point to code that checks the incoming trap
 // against the filter list and processes the trap accordingly.
 //
-func replayTrap(sgt *pluginMeta.Trap) {
+func replayTrap(trap pluginMeta.Trap) {
 	for _, action := range teConfig.Destinations {
-			action.processAction(sgt)
+			action.processAction(trap)
 	}
 }
+
+func loadCaptureGob(filename string) (pluginMeta.Trap, error) {
+  var  trap pluginMeta.Trap
+        fd, err := os.Open(filename)
+        if err != nil {
+                return trap, err
+        }
+        defer fd.Close()
+
+        decoder := gob.NewDecoder(fd)
+        err = decoder.Decode(&trap)
+        return trap, err
+}
+

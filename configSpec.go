@@ -58,10 +58,11 @@ type trapexFilter struct {
 	BreakAfter    bool            `default:"false" yaml:"break_after"`
 	ActionArgs    []ActionArgType `default:"[]" yaml:"action_args"`
 
-	matchAll    bool
-	filterItems []filterObj
-	plugin      pluginLoader.ActionPlugin
-	actionType  int
+	// Compiled definition of above
+	matchAll   bool
+	matchers   []filterObj
+	actionType int
+	plugin     pluginLoader.ActionPlugin
 }
 
 // UnmarshalYAML is what enables the setter to work for the trapexFilter

@@ -10,8 +10,10 @@ container_clickhouse = clickhouse
 #configuration_path_clickhouse = /Users/kellskearney/go/src/trapex/tools
 
 
-build: plugins
+build:
 	go build
+
+build_all: plugins build
 
 plugins:
 	cd txPlugins && ./build_plugins.sh

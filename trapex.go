@@ -141,42 +141,24 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 // processTrap is the entry point to code that checks the incoming trap
 // against the filter list and processes the trap accordingly.
 //
-func processTrap(sgt *pluginMeta.Trap) {
-	for _, f := range teConfig.Filters {
-		// If this trap is tagged to drop, then continue.
-		if sgt.Dropped {
+func processTrap(trap *pluginMeta.Trap) {
+	for _, filterDef := range teConfig.Filters {
+		if trap.Dropped {
 			continue
 		}
-		// If matchAll is true, just process the action.
-		if f.matchAll == true {
-			// We don't expect to see this here (set a wide open filter for
-			// drop).... (but...)
-			if f.actionType == actionBreak {
-				sgt.Dropped = true
+
+		if filterDef.matchAll || filterDef.isFilterMatch(trap) {
+			if filterDef.actionType == actionBreak {
+				trap.Dropped = true
 				stats.DroppedTraps++
 				//stats.(StatsPlugin).Inc(pluginMeta.MetricDropped)
 				continue
 			}
-			f.processAction(sgt)
-			if f.BreakAfter {
-				sgt.Dropped = true
+			filterDef.processAction(trap)
+			if filterDef.BreakAfter {
+				trap.Dropped = true
 				stats.DroppedTraps++
 				continue
-			}
-		} else {
-			// Determine if this trap matches this filter
-			if f.isFilterMatch(sgt) {
-				if f.actionType == actionBreak {
-					sgt.Dropped = true
-					stats.DroppedTraps++
-					continue
-				}
-				f.processAction(sgt)
-				if f.BreakAfter {
-					sgt.Dropped = true
-					stats.DroppedTraps++
-					continue
-				}
 			}
 		}
 	}
