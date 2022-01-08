@@ -47,7 +47,9 @@ done
 %dir /opt/%{name}/bin
 %dir /opt/%{name}/etc
 %dir /opt/%{name}/log
+%dir /opt/%{name}/clickhouse/exported
 %dir /opt/%{name}/plugins
+%dir /opt/%{name}/captured
 /opt/%{name}/bin/trapex
 %config(noreplace) /opt/%{name}/etc/trapex.yml
 /opt/%{name}/README.md
