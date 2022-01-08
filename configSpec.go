@@ -48,10 +48,12 @@ type trapexFilter struct {
 	SnmpVersions []string `default:"[]" yaml:"snmp_versions"`
 	SourceIp     string   `default:"" yaml:"source_ip"`
 	AgentAddress string   `default:"" yaml:"agent_address"`
+
 	// GenericType can have values from 0 - 6: -1 indicates all types
 	GenericType int `default:"-1" yaml:"snmp_generic_type"`
 	// SpecificType can have values from 0 - n: -1 indicates all types
-	SpecificType  int             `default:"-1" yaml:"snmp_specific_type"`
+	SpecificType int `default:"-1" yaml:"snmp_specific_type"`
+
 	EnterpriseOid string          `default:"" yaml:"enterprise_oid"`
 	ActionName    string          `default:"" yaml:"action"`
 	ActionArg     string          `default:"" yaml:"action_arg"`
