@@ -45,4 +45,4 @@ func (p noopFilter) SigUsr2() error {
 }
 
 // Exported symbol which supports filter.go's FilterAction type
-var FilterPlugin noopFilter
+var ActionPlugin noopFilter

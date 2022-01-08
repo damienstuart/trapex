@@ -85,7 +85,7 @@ type trapexConfig struct {
 
 		GoSnmpDebug bool `default:"false" yaml:"gosnmp_debug"`
 
-		PluginPathExpr string `default:"txPlugins/filter_actions/%s.so" yaml:"plugin_path"`
+		PluginPathExpr string `default:"txPlugins/actions/%s.so" yaml:"plugin_path"`
 
 		IgnoreVersions_str []string        `default:"[]" yaml:"ignore_versions"`
 		IgnoreVersions     []g.SnmpVersion `default:"[]"`

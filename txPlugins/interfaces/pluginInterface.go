@@ -32,7 +32,7 @@ func LoadActionPlugin(pluginPathExpr string, plugin_name string) (ActionPlugin, 
 	}
 
 	// Load the class from the plugin
-	symAction, err := plug.Lookup("FilterPlugin")
+	symAction, err := plug.Lookup("ActionPlugin")
 	if err != nil {
 		return nil, err
 	}

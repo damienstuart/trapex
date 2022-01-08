@@ -42,10 +42,12 @@ func main() {
 	}
 
 	initSigHandlers()
-	go exposeMetrics()
-	var exporter = fmt.Sprintf("http://%s:%s/%s\n",
-		teConfig.General.PrometheusIp, teConfig.General.PrometheusPort, teConfig.General.PrometheusEndpoint)
-	trapexLog.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
+	/*
+		go exposeMetrics()
+		var exporter = fmt.Sprintf("http://%s:%s/%s\n",
+			teConfig.General.PrometheusIp, teConfig.General.PrometheusPort, teConfig.General.PrometheusEndpoint)
+		trapexLog.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
+	*/
 
 	stats.StartTime = time.Now()
 
