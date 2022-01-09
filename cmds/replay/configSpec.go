@@ -15,21 +15,18 @@ type ReplayArgType struct {
 }
 
 type DestinationType struct {
-   Name string
-   Plugin string
-ReplayArgs []ReplayArgType `default:"[]" yaml:"replay_args"`
-   plugin pluginLoader.ActionPlugin
+	Name       string
+	Plugin     string
+	ReplayArgs []ReplayArgType `default:"[]" yaml:"replay_args"`
+	plugin     pluginLoader.ActionPlugin
 }
-   
 
 type replayConfig struct {
-
 	General struct {
-		Hostname   string `yaml:"hostname"`
+		Hostname       string `yaml:"hostname"`
 		PluginPathExpr string `default:"txPlugins/filter_actions/%s.so" yaml:"plugin_path"`
-		LogLevel         string `default:"debug" yaml:"log_level"`
+		LogLevel       string `default:"debug" yaml:"log_level"`
 	}
 
 	Destinations []DestinationType `default:"{}" yaml:"destinations"`
 }
-

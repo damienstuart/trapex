@@ -6,13 +6,13 @@
 package main
 
 import (
+	"encoding/gob"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
-        "encoding/gob"
 
-        pluginMeta "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 
 	"github.com/rs/zerolog"
@@ -33,42 +33,42 @@ func main() {
 		replayLog.Fatal().Err(err).Msg("Unable to load configuration")
 		os.Exit(1)
 	}
-var trap pluginMeta.Trap
-var err error
+	var trap pluginMeta.Trap
+	var err error
 
-if teCmdLine.isFile {
- trap, err = loadCaptureGob(teCmdLine.filenames)
- if err != nil {
-		replayLog.Fatal().Err(err).Str("format", "gob").Str("filename", teCmdLine.filenames).Msg("Unable to load capture file")
-		os.Exit(1)
- }
-replayTrap(trap)
-}
+	if teCmdLine.isFile {
+		trap, err = loadCaptureGob(teCmdLine.filenames)
+		if err != nil {
+			replayLog.Fatal().Err(err).Str("format", "gob").Str("filename", teCmdLine.filenames).Msg("Unable to load capture file")
+			os.Exit(1)
+		}
+		replayTrap(trap)
+	}
 
-/*
-var destination DestinationType
-  destination.Name = "hello world"
-  destination.Plugin = "noop"
-  destination.ReplayArgs = make([]ReplayArgType, 0)
+	/*
+	   var destination DestinationType
+	     destination.Name = "hello world"
+	     destination.Plugin = "noop"
+	     destination.ReplayArgs = make([]ReplayArgType, 0)
 
-  destination.plugin, err = pluginLoader.LoadActionPlugin("/Users/kellskearney/go/src/trapex/txPlugins/actions/%s.so", "logfile")
-  if err != nil {
-replayLog.Error().Err(err).Str("plugin", "logfile").Msg("Unable to load plugin")
-}
+	     destination.plugin, err = pluginLoader.LoadActionPlugin("/Users/kellskearney/go/src/trapex/txPlugins/actions/%s.so", "logfile")
+	     if err != nil {
+	   replayLog.Error().Err(err).Str("plugin", "logfile").Msg("Unable to load plugin")
+	   }
 
-actionArgs := map[string]string{"filename": "/Users/kellskearney/go/src/trapex/cmds/replay/replayed.log"}
+	   actionArgs := map[string]string{"filename": "/Users/kellskearney/go/src/trapex/cmds/replay/replayed.log"}
 
-destination.plugin.(pluginLoader.ActionPlugin).Configure(&replayLog, actionArgs)
+	   destination.plugin.(pluginLoader.ActionPlugin).Configure(&replayLog, actionArgs)
 
-			destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
-*/
-/*
-	startTime := time.Now()
-	endTime := time.Now()
-        duration := endTime - startTime
-		replayLog.Info().Int("replay_duration", duration).Msg("Replayed trap in %v seconds")
+	   			destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
+	*/
+	/*
+	   	startTime := time.Now()
+	   	endTime := time.Now()
+	           duration := endTime - startTime
+	   		replayLog.Info().Int("replay_duration", duration).Msg("Replayed trap in %v seconds")
 
-*/
+	*/
 }
 
 // replayTrap is the entry point to code that checks the incoming trap
@@ -76,20 +76,19 @@ destination.plugin.(pluginLoader.ActionPlugin).Configure(&replayLog, actionArgs)
 //
 func replayTrap(trap pluginMeta.Trap) {
 	for _, destination := range teConfig.Destinations {
-			destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
+		destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
 	}
 }
 
 func loadCaptureGob(filename string) (pluginMeta.Trap, error) {
-  var  trap pluginMeta.Trap
-        fd, err := os.Open(filename)
-        if err != nil {
-                return trap, err
-        }
-        defer fd.Close()
+	var trap pluginMeta.Trap
+	fd, err := os.Open(filename)
+	if err != nil {
+		return trap, err
+	}
+	defer fd.Close()
 
-        decoder := gob.NewDecoder(fd)
-        err = decoder.Decode(&trap)
-        return trap, err
+	decoder := gob.NewDecoder(fd)
+	err = decoder.Decode(&trap)
+	return trap, err
 }
-

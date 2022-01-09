@@ -45,11 +45,10 @@ type teStats struct {
 
 // Statistics plugin interface
 type StatsPlugin interface {
-        Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error
-        Inc(metric int)
-        ExposeMetrics()
+	Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error
+	Inc(metric int)
+	ExposeMetrics()
 }
-
 
 var stats teStats
 

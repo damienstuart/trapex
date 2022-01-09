@@ -148,16 +148,16 @@ func TranslateToV1(t *Trap) error {
 
 	t.Translated = true
 
-/*
-	// Update the translate stats
-	if t.SnmpVersion == g.Version2c {
-		stats.TranslatedFromV2c++
-		//trapsFromV2c.Inc()
-	} else if t.SnmpVersion == g.Version3 {
-		stats.TranslatedFromV3++
-		//trapsFromV3.Inc()
-	}
-*/
+	/*
+		// Update the translate stats
+		if t.SnmpVersion == g.Version2c {
+			stats.TranslatedFromV2c++
+			//trapsFromV2c.Inc()
+		} else if t.SnmpVersion == g.Version3 {
+			stats.TranslatedFromV3++
+			//trapsFromV3.Inc()
+		}
+	*/
 
 	return nil
 }
