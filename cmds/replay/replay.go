@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+  "io/ioutil"
 	"path/filepath"
 
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
@@ -33,35 +34,24 @@ func main() {
 		replayLog.Fatal().Err(err).Msg("Unable to load configuration")
 		os.Exit(1)
 	}
-	var trap pluginMeta.Trap
-	var err error
+        var count int
 
 	if teCmdLine.isFile {
-		trap, err = loadCaptureGob(teCmdLine.filenames)
-		if err != nil {
-			replayLog.Fatal().Err(err).Str("format", "gob").Str("filename", teCmdLine.filenames).Msg("Unable to load capture file")
-			os.Exit(1)
-		}
-		replayTrap(trap)
-	}
+		replayTrap(teCmdLine.filenames)
+	} else {
+    files, err := ioutil.ReadDir(teCmdLine.filenames)
+    if err != nil {
+        replayLog.Fatal().Err(err).Str("dir", teCmdLine.filenames).Msg("Unable to process capture file directory")
+    }
+ 
+for _, fd := range files {
+count++
+		replayTrap(fd.Name())
 
-	/*
-	   var destination DestinationType
-	     destination.Name = "hello world"
-	     destination.Plugin = "noop"
-	     destination.ReplayArgs = make([]ReplayArgType, 0)
+        }
+}
 
-	     destination.plugin, err = pluginLoader.LoadActionPlugin("/Users/kellskearney/go/src/trapex/txPlugins/actions/%s.so", "logfile")
-	     if err != nil {
-	   replayLog.Error().Err(err).Str("plugin", "logfile").Msg("Unable to load plugin")
-	   }
-
-	   actionArgs := map[string]string{"filename": "/Users/kellskearney/go/src/trapex/cmds/replay/replayed.log"}
-
-	   destination.plugin.(pluginLoader.ActionPlugin).Configure(&replayLog, actionArgs)
-
-	   			destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
-	*/
+	   		replayLog.Info().Int("replayed_traps", count).Msg("Replayed traps")
 	/*
 	   	startTime := time.Now()
 	   	endTime := time.Now()
@@ -71,10 +61,15 @@ func main() {
 	*/
 }
 
-// replayTrap is the entry point to code that checks the incoming trap
-// against the filter list and processes the trap accordingly.
+// replayTrap reads a file from disk and processes the trap accordingly.
 //
-func replayTrap(trap pluginMeta.Trap) {
+func replayTrap(filename string) {
+                trap, err := loadCaptureGob(filename)
+                if err != nil {
+                        replayLog.Fatal().Err(err).Str("format", "gob").Str("filename", filename).Msg("Unable to load capture file")
+                        os.Exit(1)
+                }
+
 	for _, destination := range teConfig.Destinations {
 		destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
 	}
