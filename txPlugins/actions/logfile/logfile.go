@@ -145,9 +145,7 @@ func makeTrapLogEntry(sgt *pluginMeta.Trap) string {
 		genTrapType = strconv.Itoa(trap.GenericTrap)
 	}
 	b.WriteString(fmt.Sprintf("\nTrap: %v", sgt.TrapNumber))
-	if sgt.Translated == true {
-		b.WriteString(fmt.Sprintf(" (translated from v%s)", sgt.TrapVer.String()))
-	}
+	b.WriteString(fmt.Sprintf("\nSNMP Version%s", sgt.SnmpVersion.String()))
 	b.WriteString(fmt.Sprintf("\n\t%s\n", time.Now().Format(time.ANSIC)))
 	b.WriteString(fmt.Sprintf("\tSrc IP: %s\n", sgt.SrcIP))
 	b.WriteString(fmt.Sprintf("\tAgent: %s\n", trap.AgentAddress))

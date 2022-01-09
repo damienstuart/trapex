@@ -113,20 +113,10 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 			SpecificTrap: p.SpecificTrap,
 			Timestamp:    p.Timestamp,
 		},
-		SrcIP:      addr.IP,
-		TrapVer:    p.Version,
-		Hostname:   teConfig.General.Hostname,
-		TrapNumber: stats.TrapCount,
-	}
-
-	// Translate to v1 if needed
-	if p.Version > g.Version1 {
-		err := translateToV1(&trap)
-		if err != nil {
-			var info string
-			info = makeTrapLogEntry(&trap)
-			trapexLog.Warn().Err(err).Str("trap", info).Msg("Error translating to v1")
-		}
+		SrcIP:       addr.IP,
+		SnmpVersion: p.Version,
+		Hostname:    teConfig.General.Hostname,
+		TrapNumber:  stats.TrapCount,
 	}
 
 	if teConfig.Logging.Level == "debug" {

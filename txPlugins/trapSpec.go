@@ -18,13 +18,13 @@ import (
 // Trap holds a pointer to the raw trap and other meta-data
 //
 type Trap struct {
-	TrapNumber uint
-	Data       g.SnmpTrap
-	TrapVer    g.SnmpVersion
-	SrcIP      net.IP
-	Translated bool
-	Dropped    bool
-	Hostname   string
+	TrapNumber  uint
+	Data        g.SnmpTrap
+	SnmpVersion g.SnmpVersion
+	SrcIP       net.IP
+	Translated  bool
+	Dropped     bool
+	Hostname    string
 }
 
 func (trap *Trap) Trap2Map() map[string]string {

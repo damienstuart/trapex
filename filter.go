@@ -55,7 +55,7 @@ func (f *trapexFilter) isFilterMatch(sgt *pluginMeta.Trap) bool {
 		fval := fo.filterValue
 		switch fo.filterItem {
 		case filterByVersion:
-			if fval != sgt.TrapVer {
+			if fval != sgt.SnmpVersion {
 				return false
 			}
 		case filterBySrcIP:

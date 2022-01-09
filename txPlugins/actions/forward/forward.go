@@ -161,6 +161,14 @@ func setSnmpV3Args(destination *g.GoSNMP, params map[string]string) error {
 }
 
 func (a trapForwarder) ProcessTrap(trap *pluginMeta.Trap) error {
+	// Translate to v1 if needed
+	if trap.SnmpVersion > g.Version1 {
+		err := pluginMeta.TranslateToV1(trap)
+		if err != nil {
+			return err
+		}
+	}
+
 	a.trapex_log.Info().Str("plugin", pluginName).Msg("Processing trap")
 	_, err := a.destination.SendTrap(trap.Data)
 	return err
