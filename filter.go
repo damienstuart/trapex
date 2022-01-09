@@ -106,20 +106,20 @@ func (f *trapexFilter) isFilterMatch(sgt *pluginMeta.Trap) bool {
 // processAction handles the execution of the action for the
 // trapexFilter instance on the the given trap data.
 //
-func (f *trapexFilter) processAction(trap *pluginMeta.Trap) {
+func (f *trapexFilter) processAction(trap *pluginMeta.Trap) error {
+	var err error
+
 	switch f.actionType {
 	case actionBreak:
 		trap.Dropped = true
-		return
 	case actionNat:
 		if f.ActionArg == "$SRC_IP" {
 			trap.Data.AgentAddress = trap.SrcIP.String()
 		} else {
 			trap.Data.AgentAddress = f.ActionArg
 		}
-		return
 	case actionPlugin:
-		err := f.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
+		err = f.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
 		if err != nil {
 			trapexLog.Err(err).Str("plugin", f.ActionName).Msg("Issue in processing trap by plugin")
 		}
@@ -129,4 +129,5 @@ func (f *trapexFilter) processAction(trap *pluginMeta.Trap) {
 	if f.BreakAfter {
 		trap.Dropped = true
 	}
+	return err
 }

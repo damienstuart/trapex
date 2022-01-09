@@ -144,7 +144,14 @@ func processTrap(trap *pluginMeta.Trap) {
 				//stats.(StatsPlugin).Inc(pluginMeta.MetricDropped)
 				continue
 			}
-			filterDef.processAction(trap)
+
+			err := filterDef.processAction(trap)
+			if err != nil {
+				for _, pluginErrorFilters := range teConfig.PluginErrorActions {
+					pluginErrorFilters.processAction(trap)
+				}
+			}
+
 			if filterDef.BreakAfter {
 				trap.Dropped = true
 				stats.DroppedTraps++

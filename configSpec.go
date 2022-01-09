@@ -112,4 +112,7 @@ type trapexConfig struct {
 	IpSets     map[string]IpSet      `default:"{}"`
 
 	Filters []trapexFilter `default:"[]" yaml:"filters"`
+
+	// Bad things happen to good plugins. How do you want to handle exceptions?
+	PluginErrorActions []trapexFilter `default:"[]" yaml:"plugin_error_actions"`
 }

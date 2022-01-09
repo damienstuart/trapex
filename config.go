@@ -155,6 +155,11 @@ func getConfig() error {
 		return err
 	}
 
+	// Obviously, the user really shouldn't use the same plugins, but....
+	if err = addPluginErrorActions(&newConfig); err != nil {
+		return err
+	}
+
 	// If this is a reconfigure, close the old handles here
 	if teConfig != nil && teConfig.teConfigured {
 		closeTrapexHandles()
@@ -282,6 +287,20 @@ func addFilters(newConfig *trapexConfig) error {
 		}
 	}
 	trapexLog.Info().Int("num_filters", len(newConfig.Filters)).Msg("Configured filter conditions")
+	return nil
+}
+
+func addPluginErrorActions(newConfig *trapexConfig) error {
+	var err error
+	for i, _ := range newConfig.PluginErrorActions {
+		if err = addFilterObjs(&newConfig.PluginErrorActions[i], newConfig.IpSets, i); err != nil {
+			return err
+		}
+		if err = setAction(&newConfig.PluginErrorActions[i], newConfig.General.PluginPathExpr, i); err != nil {
+			return err
+		}
+	}
+	trapexLog.Info().Int("num_filters", len(newConfig.PluginErrorActions)).Msg("Configured plugin error conditions")
 	return nil
 }
 
