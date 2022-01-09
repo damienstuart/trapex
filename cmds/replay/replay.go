@@ -28,21 +28,24 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-/*
 	processCommandLine()
 	if err := getConfig(); err != nil {
 		replayLog.Fatal().Err(err).Msg("Unable to load configuration")
 		os.Exit(1)
 	}
-*/
+var trap pluginMeta.Trap
+var err error
 
-filename := "captured-0.gob"
- trap, err := loadCaptureGob(filename)
+if teCmdLine.isFile {
+ trap, err = loadCaptureGob(teCmdLine.filenames)
  if err != nil {
-		replayLog.Fatal().Err(err).Str("format", "gob").Msg("Unable to load capture file")
+		replayLog.Fatal().Err(err).Str("format", "gob").Str("filename", teCmdLine.filenames).Msg("Unable to load capture file")
 		os.Exit(1)
  }
+replayTrap(trap)
+}
 
+/*
 var destination DestinationType
   destination.Name = "hello world"
   destination.Plugin = "noop"
@@ -58,6 +61,7 @@ actionArgs := map[string]string{"filename": "/Users/kellskearney/go/src/trapex/c
 destination.plugin.(pluginLoader.ActionPlugin).Configure(&replayLog, actionArgs)
 
 			destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
+*/
 /*
 	startTime := time.Now()
 	endTime := time.Now()
@@ -70,13 +74,11 @@ destination.plugin.(pluginLoader.ActionPlugin).Configure(&replayLog, actionArgs)
 // replayTrap is the entry point to code that checks the incoming trap
 // against the filter list and processes the trap accordingly.
 //
-/*
 func replayTrap(trap pluginMeta.Trap) {
-	for _, action := range teConfig.Destinations {
-			action.processAction(trap)
+	for _, destination := range teConfig.Destinations {
+			destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
 	}
 }
-*/
 
 func loadCaptureGob(filename string) (pluginMeta.Trap, error) {
   var  trap pluginMeta.Trap

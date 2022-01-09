@@ -23,7 +23,8 @@ import (
 
 type replayCommandLine struct {
 	configFile string
-	debugMode  bool
+	filenames  string
+        isFile bool
 }
 
 // Global vars
@@ -33,10 +34,16 @@ var teCmdLine replayCommandLine
 
 func showUsage() {
 	usageText := `
-Usage: replay [-h] [-c <config_file>] [-d] [-v]
+Usage:
+  replay -h
+  replay -v
+  replay [-c <config_file>] -f filename
+  replay [-c <config_file>] -f directory
+
+Usage:
   -h  - Show this help message and exit.
   -c  - Override the location of the replay configuration file.
-  -d  - Enable debug mode (note: produces very verbose runtime output).
+  -f  - The file or directory of files to replay
   -v  - Print the version of replay and exit.
 `
 	fmt.Println(usageText)
@@ -47,7 +54,7 @@ var myVersion string = "1.0"
 func processCommandLine() {
 	flag.Usage = showUsage
 	c := flag.String("c", "/opt/trapex/etc/replay.yml", "")
-	d := flag.Bool("d", false, "")
+	f := flag.String("f", "", "")
 	showVersion := flag.Bool("v", false, "")
 
 	flag.Parse()
@@ -58,7 +65,28 @@ func processCommandLine() {
 	}
 
 	teCmdLine.configFile = *c
-	teCmdLine.debugMode = *d
+
+	teCmdLine.filenames = *f
+        if *f == "" {
+		fmt.Printf("Must provide a filename to the -f switch\n")
+		os.Exit(0)
+        }
+	teCmdLine.isFile = isFile(*f)
+}
+
+func isFile(path string) bool {
+    fd, err := os.Stat(path)
+    if err != nil {
+        fmt.Printf("The argument '%s' is not valid: %s\n", path, err)
+        os.Exit(1)
+    }
+
+    result := true
+    mode := fd.Mode()
+    if mode.IsDir() {
+        result = false
+    }
+    return result
 }
 
 // loadConfig
@@ -80,9 +108,6 @@ func loadConfig(config_file string, newConfig *replayConfig) error {
 }
 
 func applyCliOverrides(newConfig *replayConfig) {
-	if teCmdLine.debugMode {
-		newConfig.General.LogLevel = "debug"
-	}
 	if newConfig.General.Hostname == "" {
 		myName, err := os.Hostname()
 		if err != nil {
@@ -103,10 +128,26 @@ func getConfig() error {
 	}
 	applyCliOverrides(&newConfig)
 
+        if err = addDestinations(&newConfig); err != nil {
+          return err
+        }
+
 	teConfig = &newConfig
 
 	return nil
 }
+
+func addDestinations(newConfig *replayConfig) error {
+        var err error
+        for i, _ := range newConfig.Destinations {
+                if err = setAction(&newConfig.Destinations[i], newConfig.General.PluginPathExpr, i); err != nil {
+                        return err
+                }
+        }
+        replayLog.Info().Int("num_destinations", len(newConfig.Destinations)).Msg("Configured destinations")
+        return nil
+}
+
 
 func replayToAllDestinations(newConfig *replayConfig) error {
 	var err error
@@ -151,4 +192,19 @@ func args2map(data []ReplayArgType) map[string]string {
 	}
 	return pluginDataMapping
 }
+
+func setAction(destination *DestinationType, pluginPathExpr string, lineNumber int) error {
+        var err error
+
+                destination.plugin, err = pluginLoader.LoadActionPlugin(pluginPathExpr, destination.Plugin)
+                if err != nil {
+                        return fmt.Errorf("Unable to load %s plugin %s at line %v: %s", destination.Name, destination.Plugin, lineNumber, err)
+                }
+                pluginDataMapping := args2map(destination.ReplayArgs)
+                if err = destination.plugin.Configure(&replayLog, pluginDataMapping); err != nil {
+                        return fmt.Errorf("Unable to configure %s plugin %s at line %v: %s", destination.Name, destination.Plugin,  lineNumber, err)
+                }
+        return nil
+}
+
 

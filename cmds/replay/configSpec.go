@@ -26,13 +26,10 @@ type replayConfig struct {
 
 	General struct {
 		Hostname   string `yaml:"hostname"`
-
-		GoSnmpDebug bool `default:"false" yaml:"gosnmp_debug"`
-
 		PluginPathExpr string `default:"txPlugins/filter_actions/%s.so" yaml:"plugin_path"`
 		LogLevel         string `default:"debug" yaml:"log_level"`
 	}
 
-	Destinations map[string]DestinationType `default:"{}" yaml:"destinations"`
+	Destinations []DestinationType `default:"{}" yaml:"destinations"`
 }
 
