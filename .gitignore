@@ -20,6 +20,9 @@ log
 # Ignore vi swap files
 *.swp
 
+# Capture files
+*.gob
+
 # Unit test output
 tests/tmp/*.csv
 tests/tmp/*.log

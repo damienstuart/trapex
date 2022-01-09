@@ -13,6 +13,7 @@ import (
         "encoding/gob"
 
         pluginMeta "github.com/damienstuart/trapex/txPlugins"
+	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 
 	"github.com/rs/zerolog"
 )
@@ -47,7 +48,16 @@ var destination DestinationType
   destination.Plugin = "noop"
   destination.ReplayArgs = make([]ReplayArgType, 0)
 
-			destination.processAction(trap)
+  destination.plugin, err = pluginLoader.LoadActionPlugin("/Users/kellskearney/go/src/trapex/txPlugins/actions/%s.so", "logfile")
+  if err != nil {
+replayLog.Error().Err(err).Str("plugin", "logfile").Msg("Unable to load plugin")
+}
+
+actionArgs := map[string]string{"filename": "/Users/kellskearney/go/src/trapex/cmds/replay/replayed.log"}
+
+destination.plugin.(pluginLoader.ActionPlugin).Configure(&replayLog, actionArgs)
+
+			destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
 /*
 	startTime := time.Now()
 	endTime := time.Now()
@@ -60,11 +70,13 @@ var destination DestinationType
 // replayTrap is the entry point to code that checks the incoming trap
 // against the filter list and processes the trap accordingly.
 //
+/*
 func replayTrap(trap pluginMeta.Trap) {
 	for _, action := range teConfig.Destinations {
 			action.processAction(trap)
 	}
 }
+*/
 
 func loadCaptureGob(filename string) (pluginMeta.Trap, error) {
   var  trap pluginMeta.Trap

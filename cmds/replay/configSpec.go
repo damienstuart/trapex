@@ -5,6 +5,9 @@
 //
 package main
 
+import (
+	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
+)
 
 type ReplayArgType struct {
 	Key   string `default:"" yaml:"key"`
@@ -15,6 +18,7 @@ type DestinationType struct {
    Name string
    Plugin string
 ReplayArgs []ReplayArgType `default:"[]" yaml:"replay_args"`
+   plugin pluginLoader.ActionPlugin
 }
    
 
