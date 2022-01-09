@@ -148,7 +148,7 @@ func processTrap(trap *pluginMeta.Trap) {
 			err := filterDef.processAction(trap)
 			if err != nil {
 				for _, pluginErrorFilters := range teConfig.PluginErrorActions {
-					pluginErrorFilters.processAction(trap)
+					go pluginErrorFilters.processAction(trap)
 				}
 			}
 
