@@ -9,8 +9,8 @@ import (
 	"encoding/gob"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
-  "io/ioutil"
 	"path/filepath"
 
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
@@ -34,24 +34,24 @@ func main() {
 		replayLog.Fatal().Err(err).Msg("Unable to load configuration")
 		os.Exit(1)
 	}
-        var count int
+	var count int
 
 	if teCmdLine.isFile {
 		replayTrap(teCmdLine.filenames)
 	} else {
-    files, err := ioutil.ReadDir(teCmdLine.filenames)
-    if err != nil {
-        replayLog.Fatal().Err(err).Str("dir", teCmdLine.filenames).Msg("Unable to process capture file directory")
-    }
- 
-for _, fd := range files {
-count++
-		replayTrap(fd.Name())
+		files, err := ioutil.ReadDir(teCmdLine.filenames)
+		if err != nil {
+			replayLog.Fatal().Err(err).Str("dir", teCmdLine.filenames).Msg("Unable to process capture file directory")
+		}
 
-        }
-}
+		for _, fd := range files {
+			count++
+			replayTrap(fd.Name())
 
-	   		replayLog.Info().Int("replayed_traps", count).Msg("Replayed traps")
+		}
+	}
+
+	replayLog.Info().Int("replayed_traps", count).Msg("Replayed traps")
 	/*
 	   	startTime := time.Now()
 	   	endTime := time.Now()
@@ -64,11 +64,11 @@ count++
 // replayTrap reads a file from disk and processes the trap accordingly.
 //
 func replayTrap(filename string) {
-                trap, err := loadCaptureGob(filename)
-                if err != nil {
-                        replayLog.Fatal().Err(err).Str("format", "gob").Str("filename", filename).Msg("Unable to load capture file")
-                        os.Exit(1)
-                }
+	trap, err := loadCaptureGob(filename)
+	if err != nil {
+		replayLog.Fatal().Err(err).Str("format", "gob").Str("filename", filename).Msg("Unable to load capture file")
+		os.Exit(1)
+	}
 
 	for _, destination := range teConfig.Destinations {
 		destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
