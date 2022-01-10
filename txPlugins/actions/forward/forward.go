@@ -61,9 +61,9 @@ func getVersion(snmpVersion string) (g.SnmpVersion, error) {
 func (a *trapForwarder) Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error {
 	a.trapex_log = trapexLog
 
-        if err := validateArguments(actionArgs); err != nil {
-return err
-}
+	if err := validateArguments(actionArgs); err != nil {
+		return err
+	}
 
 	a.trapex_log.Info().Str("plugin", pluginName).Msg("Initialization of plugin")
 
