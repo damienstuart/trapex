@@ -46,7 +46,10 @@ func main() {
 
 		for _, fd := range files {
 			count++
-			replayTrap(fd.Name())
+filename := fd.Name()
+if strings.HasSuffix(".gob", filename) {
+			replayTrap(filename)
+}
 
 		}
 	}
