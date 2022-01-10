@@ -66,6 +66,8 @@ func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]s
 	exporter := fmt.Sprintf("http://%s/%s", p.listenAddress, p.endpoint)
 	p.trapex_log.Info().Str("endpoint", exporter).Msg("Prometheus metrics exporter")
 
+        go exposeMetrics(p.endpoint, p.listenAddress) {
+
 	return nil
 }
 
@@ -89,12 +91,12 @@ func (p prometheusStats) Inc(metric int) {
 
 }
 
-// ExposeMetrics
+// exposeMetrics
 // Allow Prometheus to gather current performance metrics via /metrics URL
-func (p prometheusStats) ExposeMetrics() {
+func exposeMetrics(endpoint string, listenAddress string) {
 	server := http.NewServeMux()
-	server.Handle(p.endpoint, promhttp.Handler())
-	http.ListenAndServe(p.listenAddress, server)
+	server.Handle(endpoint, promhttp.Handler())
+	http.ListenAndServe(listenAddress, server)
 }
 
 var StatsPlugin prometheusStats
