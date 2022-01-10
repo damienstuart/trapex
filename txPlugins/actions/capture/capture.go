@@ -47,6 +47,10 @@ func (a *trapCapture) Configure(trapexLog *zerolog.Logger, actionArgs map[string
 
 	a.trapex_log.Info().Str("plugin", pluginName).Msg("Initialization of plugin")
 
+        if err := validateArguments(actionArgs); err != nil {
+return err
+}
+
 	a.dir = actionArgs["dir"]
 
 	// If we don't get a file_expr, use a hard-coded name
