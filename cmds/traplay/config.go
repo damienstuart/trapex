@@ -20,7 +20,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type replayCommandLine struct {
+type CommandLine struct {
 	configFile string
 	filenames  string
 	isFile     bool
@@ -29,7 +29,7 @@ type replayCommandLine struct {
 // Global vars
 //
 var teConfig *replayConfig
-var teCmdLine replayCommandLine
+var teCmdLine CommandLine
 
 func showUsage() {
 	usageText := `
@@ -41,9 +41,9 @@ Usage:
 
 Usage:
   -h  - Show this help message and exit.
-  -c  - Override the location of the replay configuration file.
+  -c  - Override the location of the traplay configuration file.
   -f  - The file or directory of files to replay
-  -v  - Print the version of replay and exit.
+  -v  - Print the version of traplay and exit.
 `
 	fmt.Println(usageText)
 }
