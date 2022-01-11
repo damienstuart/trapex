@@ -15,26 +15,26 @@ type ReplayArgType struct {
 }
 
 type GeneratorType struct {
-		PluginName       string `default:"replay" yaml:"plugin"`
-		PluginPathExpr string `default:"txPlugins/generators/%s.so" yaml:"plugin_path"`
-		Stream       bool `default:"false" yaml:"stream"`
-		Count       int `default:"0" yaml:"count"`
-	Args []ReplayArgType `default:"[]" yaml:"args"`
-	plugin     pluginLoader.GeneratorPlugin
+	PluginName     string          `default:"replay" yaml:"plugin"`
+	PluginPathExpr string          `default:"txPlugins/generators/%s.so" yaml:"plugin_path"`
+	Stream         bool            `default:"false" yaml:"stream"`
+	Count          int             `default:"0" yaml:"count"`
+	Args           []ReplayArgType `default:"[]" yaml:"args"`
+	plugin         pluginLoader.GeneratorPlugin
 }
 
 type DestinationType struct {
-	Name       string
-		PluginPathExpr string `default:"txPlugins/actions/%s.so" yaml:"plugin_path"`
-	PluginName     string `yaml:"plugin"`
-	ReplayArgs []ReplayArgType `default:"[]" yaml:"replay_args"`
-	plugin     pluginLoader.ActionPlugin
+	Name           string
+	PluginPathExpr string          `default:"txPlugins/actions/%s.so" yaml:"plugin_path"`
+	PluginName     string          `yaml:"plugin"`
+	ReplayArgs     []ReplayArgType `default:"[]" yaml:"replay_args"`
+	plugin         pluginLoader.ActionPlugin
 }
 
 type replayConfig struct {
 	General struct {
-		Hostname       string `yaml:"hostname"`
-		LogLevel       string `default:"debug" yaml:"log_level"`
+		Hostname string `yaml:"hostname"`
+		LogLevel string `default:"debug" yaml:"log_level"`
 	}
 
 	Generator GeneratorType `default:"{}" yaml:"generator"`

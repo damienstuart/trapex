@@ -41,15 +41,15 @@ Usage:
   -c  - Override the location of the trapbench configuration file.
   -v  - Print the version of trapbench and exit.
 `
-/*
-    -n requests     Number of requests to perform
-    -c concurrency  Number of multiple requests to make at a time
-    -t timelimit    Seconds to max. to spend on benchmarking
-                    This implies -n 50000
-    -B address      Address to bind to when making outgoing connections
-    -v verbosity    How much troubleshooting info to print
-    -g filename     Output collected data to gnuplot format file.
-*/
+	/*
+	   -n requests     Number of requests to perform
+	   -c concurrency  Number of multiple requests to make at a time
+	   -t timelimit    Seconds to max. to spend on benchmarking
+	                   This implies -n 50000
+	   -B address      Address to bind to when making outgoing connections
+	   -v verbosity    How much troubleshooting info to print
+	   -g filename     Output collected data to gnuplot format file.
+	*/
 
 	fmt.Println(usageText)
 }
@@ -125,12 +125,12 @@ func getConfig() error {
 	}
 	applyCliOverrides(&newConfig)
 
-                if err = setGenerator(&newConfig.Generator, newConfig.Generator.PluginPathExpr); err != nil {
-                        return err
-                }
-                if err = setAction(&newConfig.Destination, newConfig.Destination.PluginPathExpr); err != nil {
-                        return err
-                }
+	if err = setGenerator(&newConfig.Generator, newConfig.Generator.PluginPathExpr); err != nil {
+		return err
+	}
+	if err = setAction(&newConfig.Destination, newConfig.Destination.PluginPathExpr); err != nil {
+		return err
+	}
 
 	teConfig = &newConfig
 
@@ -157,19 +157,18 @@ func args2map(data []ReplayArgType) map[string]string {
 }
 
 func setGenerator(generator *GeneratorType, pluginPathExpr string) error {
-        var err error
+	var err error
 
-        generator.plugin, err = pluginLoader.LoadGeneratorPlugin(pluginPathExpr, generator.PluginName)
-        if err != nil {
-                return fmt.Errorf("Unable to load generator plugin %s: %s", generator.PluginName, err)
-        }
-        pluginDataMapping := args2map(generator.Args)
-        if err = generator.plugin.Configure(&replayLog, pluginDataMapping); err != nil {
-                return fmt.Errorf("Unable to configure generator plugin %s: %s", generator.PluginName, err)
-        }
-        return nil
+	generator.plugin, err = pluginLoader.LoadGeneratorPlugin(pluginPathExpr, generator.PluginName)
+	if err != nil {
+		return fmt.Errorf("Unable to load generator plugin %s: %s", generator.PluginName, err)
+	}
+	pluginDataMapping := args2map(generator.Args)
+	if err = generator.plugin.Configure(&replayLog, pluginDataMapping); err != nil {
+		return fmt.Errorf("Unable to configure generator plugin %s: %s", generator.PluginName, err)
+	}
+	return nil
 }
-
 
 func setAction(destination *DestinationType, pluginPathExpr string) error {
 	var err error

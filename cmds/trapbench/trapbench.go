@@ -33,15 +33,15 @@ func main() {
 	}
 	var count int
 
-if teConfig.Generator.Stream {
-for { // infinte loop
-genAndActionTrap() 
-}
-} else {
-for i:= 0; i < teConfig.Generator.Count ; i++ {
-genAndActionTrap() 
-}
-}
+	if teConfig.Generator.Stream {
+		for { // infinte loop
+			genAndActionTrap()
+		}
+	} else {
+		for i := 0; i < teConfig.Generator.Count; i++ {
+			genAndActionTrap()
+		}
+	}
 
 	replayLog.Info().Int("replayed_traps", count).Msg("Replayed traps")
 	/*
@@ -54,13 +54,12 @@ genAndActionTrap()
 }
 
 func genAndActionTrap() {
-    trap, err := teConfig.Generator.plugin.(pluginLoader.GeneratorPlugin).GenerateTrap()
-    if err != nil {
+	trap, err := teConfig.Generator.plugin.(pluginLoader.GeneratorPlugin).GenerateTrap()
+	if err != nil {
 		replayLog.Fatal().Err(err).Msg("Unable to generate trap")
-    }
-    err = teConfig.Destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
-    if err != nil {
+	}
+	err = teConfig.Destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
+	if err != nil {
 		replayLog.Fatal().Err(err).Msg("Unable to forward trap")
-    }
+	}
 }
-
