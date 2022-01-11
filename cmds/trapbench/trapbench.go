@@ -6,13 +6,11 @@
 package main
 
 import (
-	"encoding/gob"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 
 	"github.com/rs/zerolog"
@@ -35,6 +33,13 @@ func main() {
 	}
 	var count int
 
+for i:= 0; i < count ; i++ {
+    trap, err := teConfig.Generator.plugin.(pluginLoader.GeneratorPlugin).GenerateTrap()
+    if err != nil {
+		replayLog.Fatal().Err(err).Msg("Unable to load capture file")
+    }
+    err = teConfig.Destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
+}
 /*
 		for _, fd := range files {
 			count++
@@ -53,27 +58,3 @@ func main() {
 	*/
 }
 
-// replayTrap reads a file from disk and processes the trap accordingly.
-//
-func replayTrap(filename string) {
-	trap, err := loadCaptureGob(filename)
-	if err != nil {
-		replayLog.Fatal().Err(err).Str("format", "gob").Str("filename", filename).Msg("Unable to load capture file")
-		os.Exit(1)
-	}
-
-teConfig.Destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(&trap)
-}
-
-func loadCaptureGob(filename string) (pluginMeta.Trap, error) {
-	var trap pluginMeta.Trap
-	fd, err := os.Open(filename)
-	if err != nil {
-		return trap, err
-	}
-	defer fd.Close()
-
-	decoder := gob.NewDecoder(fd)
-	err = decoder.Decode(&trap)
-	return trap, err
-}

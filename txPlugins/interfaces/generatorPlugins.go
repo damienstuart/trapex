@@ -14,17 +14,14 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// Filter action plugin interface
-type ActionPlugin interface {
+type GeneratorPlugin interface {
 	Configure(trapexLog *zerolog.Logger, actionArgs map[string]string) error
-	ProcessTrap(trap *pluginMeta.Trap) error
-	SigUsr1() error
-	SigUsr2() error
+	GenerateTrap() (*pluginMeta.Trap, error)
 	Close() error
 }
 
-func LoadActionPlugin(pluginPathExpr string, plugin_name string) (ActionPlugin, error) {
-	plugin_filename := fmt.Sprintf(pluginPathExpr, plugin_name)
+func LoadGeneratorPlugin(pluginPathExpr string, pluginName string) (GeneratorPlugin, error) {
+	plugin_filename := fmt.Sprintf(pluginPathExpr, pluginName)
 
 	plug, err := plugin.Open(plugin_filename)
 	if err != nil {
@@ -32,16 +29,16 @@ func LoadActionPlugin(pluginPathExpr string, plugin_name string) (ActionPlugin, 
 	}
 
 	// Load the class from the plugin
-	symAction, err := plug.Lookup("ActionPlugin")
+	symAction, err := plug.Lookup("GeneratorPlugin")
 	if err != nil {
 		return nil, err
 	}
 
-	var initializer ActionPlugin
+	var initializer GeneratorPlugin
 	// Instantiate the class from the plugin
-	initializer, ok := symAction.(ActionPlugin)
+	initializer, ok := symAction.(GeneratorPlugin)
 	if !ok {
-		return nil, errors.New("Unable to load plugin " + plugin_name)
+		return nil, errors.New("Unable to load plugin " + pluginName)
 	}
 
 	return initializer, nil

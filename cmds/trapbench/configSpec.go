@@ -14,8 +14,18 @@ type ReplayArgType struct {
 	Value string `default:"" yaml:"value"`
 }
 
+type GeneratorType struct {
+		PluginName       string `default:"replay" yaml:"plugin"`
+		PluginPathExpr string `default:"txPlugins/generators/%s.so" yaml:"plugin_path"`
+		Stream       bool `default:"false" yaml:"stream"`
+		Count       int `default:"0" yaml:"count"`
+	Args []ReplayArgType `default:"[]" yaml:"args"`
+	plugin     pluginLoader.GeneratorPlugin
+}
+
 type DestinationType struct {
 	Name       string
+		PluginPathExpr string `default:"txPlugins/actions/%s.so" yaml:"plugin_path"`
 	PluginName     string `yaml:"plugin"`
 	ReplayArgs []ReplayArgType `default:"[]" yaml:"replay_args"`
 	plugin     pluginLoader.ActionPlugin
@@ -24,16 +34,10 @@ type DestinationType struct {
 type replayConfig struct {
 	General struct {
 		Hostname       string `yaml:"hostname"`
-		PluginPathExpr string `default:"txPlugins/filter_actions/%s.so" yaml:"plugin_path"`
 		LogLevel       string `default:"debug" yaml:"log_level"`
 	}
 
-	Generator struct {
-		PluginName       string `default:"replay" yaml:"plugin"`
-		Stream       bool `default:"false" yaml:"stream"`
-		Count       int `default:"0" yaml:"count"`
-	Args []ReplayArgType `default:"[]" yaml:"args"`
-        }
+	Generator GeneratorType `default:"{}" yaml:"generator"`
 
 	Destination DestinationType `default:"{}" yaml:"destination"`
 }

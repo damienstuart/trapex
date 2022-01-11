@@ -125,7 +125,10 @@ func getConfig() error {
 	}
 	applyCliOverrides(&newConfig)
 
-                if err = setAction(&newConfig.Destination, newConfig.General.PluginPathExpr); err != nil {
+                if err = setGenerator(&newConfig.Generator, newConfig.Generator.PluginPathExpr); err != nil {
+                        return err
+                }
+                if err = setAction(&newConfig.Destination, newConfig.Destination.PluginPathExpr); err != nil {
                         return err
                 }
 
@@ -153,6 +156,21 @@ func args2map(data []ReplayArgType) map[string]string {
 	return pluginDataMapping
 }
 
+func setGenerator(generator *GeneratorType, pluginPathExpr string) error {
+        var err error
+
+        generator.plugin, err = pluginLoader.LoadGeneratorPlugin(pluginPathExpr, generator.PluginName)
+        if err != nil {
+                return fmt.Errorf("Unable to load generator plugin %s: %s", generator.PluginName, err)
+        }
+        pluginDataMapping := args2map(generator.Args)
+        if err = generator.plugin.Configure(&replayLog, pluginDataMapping); err != nil {
+                return fmt.Errorf("Unable to configure generator plugin %s: %s", generator.PluginName, err)
+        }
+        return nil
+}
+
+
 func setAction(destination *DestinationType, pluginPathExpr string) error {
 	var err error
 
@@ -162,7 +180,7 @@ func setAction(destination *DestinationType, pluginPathExpr string) error {
 	}
 	pluginDataMapping := args2map(destination.ReplayArgs)
 	if err = destination.plugin.Configure(&replayLog, pluginDataMapping); err != nil {
-		return fmt.Errorf("Unable to configure %s plugin %s: %s", destination.Name, destination.PluginName, err)
+		return fmt.Errorf("Unable to configure action %s plugin %s: %s", destination.Name, destination.PluginName, err)
 	}
 	return nil
 }
