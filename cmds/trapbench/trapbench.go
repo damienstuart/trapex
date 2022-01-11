@@ -33,20 +33,15 @@ func main() {
 	}
 	var count int
 
-for i:= 0; i < count ; i++ {
-    trap, err := teConfig.Generator.plugin.(pluginLoader.GeneratorPlugin).GenerateTrap()
-    if err != nil {
-		replayLog.Fatal().Err(err).Msg("Unable to load capture file")
-    }
-    err = teConfig.Destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
+if teConfig.Generator.Stream {
+for { // infinte loop
+genAndActionTrap() 
 }
-/*
-		for _, fd := range files {
-			count++
-			filename := fd.Name()
-				replayTrap(filename)
-		}
-*/
+} else {
+for i:= 0; i < teConfig.Generator.Count ; i++ {
+genAndActionTrap() 
+}
+}
 
 	replayLog.Info().Int("replayed_traps", count).Msg("Replayed traps")
 	/*
@@ -56,5 +51,16 @@ for i:= 0; i < count ; i++ {
 	   		replayLog.Info().Int("replay_duration", duration).Msg("Replayed trap in %v seconds")
 
 	*/
+}
+
+func genAndActionTrap() {
+    trap, err := teConfig.Generator.plugin.(pluginLoader.GeneratorPlugin).GenerateTrap()
+    if err != nil {
+		replayLog.Fatal().Err(err).Msg("Unable to generate trap")
+    }
+    err = teConfig.Destination.plugin.(pluginLoader.ActionPlugin).ProcessTrap(trap)
+    if err != nil {
+		replayLog.Fatal().Err(err).Msg("Unable to forward trap")
+    }
 }
 
