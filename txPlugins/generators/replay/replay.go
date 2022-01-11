@@ -26,11 +26,10 @@ import (
 type replayData struct {
 	replayLog *zerolog.Logger
 
-	// count - if count == -1, that means to run until infinity
-	maxFiles int
-
 	// Where are we in going through out capture log?
 	cursor   int
+
+	size int
 	captured []pluginMeta.Trap
 }
 
@@ -62,40 +61,48 @@ func (p *replayData) Configure(replayLog *zerolog.Logger, actionArgs map[string]
 	if err != nil {
 		return err
 	}
-	p.maxFiles = maxFiles
 
-	err = p.preLoadTraps(actionArgs["dir"], maxFiles)
+        format := actionArgs["format"]
+       switch format {
+case "gob":
+default:
+return fmt.Errorf("Unknown file format %s", format)
+}
+
+	err = p.preLoadTraps(actionArgs["dir"], maxFiles, "." + format)
 	return err
 }
 
 func (p replayData) GenerateTrap() (*pluginMeta.Trap, error) {
 	p.replayLog.Info().Str("plugin", pluginName).Msg("Replaying trap")
 
+var trap pluginMeta.Trap
+	trap = p.captured[p.cursor]
 	p.cursor++
-	if p.cursor > p.maxFiles {
+	if p.cursor > p.size {
 		p.cursor = 0
 	}
-	return &p.captured[p.cursor], nil
+	return &trap, nil
 }
 
 func (p replayData) Close() error {
 	return nil
 }
 
-func (p *replayData) preLoadTraps(dir string, maxFiles int) error {
+func (p *replayData) preLoadTraps(dir string, maxFiles int, suffix string) error {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		p.replayLog.Fatal().Err(err).Str("dir", dir).Msg("Unable to process capture file directory")
+ return err
 	}
 
 	var i int
 	var fd os.FileInfo
 	for i, fd = range files {
-		if maxFiles != -1 && i > maxFiles {
+		if i >= maxFiles {
 			break
 		}
 		filename := fd.Name()
-		if strings.HasSuffix(".gob", filename) {
+		if strings.HasSuffix(suffix, filename) {
 
 			trap, err := loadCaptureGob(filename)
 			if err != nil {
@@ -104,9 +111,10 @@ func (p *replayData) preLoadTraps(dir string, maxFiles int) error {
 			p.captured = append(p.captured, trap)
 		}
 	}
-	if maxFiles == -1 {
-		p.maxFiles = i
-	}
+		p.size = len(p.captured)
+if p.size == 0 {
+return fmt.Errorf("No %s format capture files found in directory", suffix)
+}
 	return nil
 }
 
