@@ -34,10 +34,10 @@ var teCmdLine CommandLine
 func showUsage() {
 	usageText := `
 Usage:
-  replay -h
-  replay -v
-  replay [-c <config_file>] -f filename
-  replay [-c <config_file>] -f directory
+  traplay -h
+  traplay -v
+  traplay [-c <config_file>] -f filename
+  traplay [-c <config_file>] -f directory
 
 Usage:
   -h  - Show this help message and exit.
