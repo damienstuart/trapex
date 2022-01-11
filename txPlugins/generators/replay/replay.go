@@ -27,9 +27,9 @@ type replayData struct {
 	replayLog *zerolog.Logger
 
 	// Where are we in going through out capture log?
-	cursor   int
+	cursor int
 
-	size int
+	size     int
 	captured []pluginMeta.Trap
 }
 
@@ -62,21 +62,21 @@ func (p *replayData) Configure(replayLog *zerolog.Logger, actionArgs map[string]
 		return err
 	}
 
-        format := actionArgs["format"]
-       switch format {
-case "gob":
-default:
-return fmt.Errorf("Unknown file format %s", format)
-}
+	format := actionArgs["format"]
+	switch format {
+	case "gob":
+	default:
+		return fmt.Errorf("Unknown file format %s", format)
+	}
 
-	err = p.preLoadTraps(actionArgs["dir"], maxFiles, "." + format)
+	err = p.preLoadTraps(actionArgs["dir"], maxFiles, "."+format)
 	return err
 }
 
 func (p replayData) GenerateTrap() (*pluginMeta.Trap, error) {
 	p.replayLog.Info().Str("plugin", pluginName).Msg("Replaying trap")
 
-var trap pluginMeta.Trap
+	var trap pluginMeta.Trap
 	trap = p.captured[p.cursor]
 	p.cursor++
 	if p.cursor > p.size {
@@ -92,7 +92,7 @@ func (p replayData) Close() error {
 func (p *replayData) preLoadTraps(dir string, maxFiles int, suffix string) error {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
- return err
+		return err
 	}
 
 	var i int
@@ -111,10 +111,10 @@ func (p *replayData) preLoadTraps(dir string, maxFiles int, suffix string) error
 			p.captured = append(p.captured, trap)
 		}
 	}
-		p.size = len(p.captured)
-if p.size == 0 {
-return fmt.Errorf("No %s format capture files found in directory", suffix)
-}
+	p.size = len(p.captured)
+	if p.size == 0 {
+		return fmt.Errorf("No %s format capture files found in directory", suffix)
+	}
 	return nil
 }
 
