@@ -24,7 +24,7 @@ type DestinationType struct {
 type replayConfig struct {
 	General struct {
 		Hostname       string `yaml:"hostname"`
-		PluginPathExpr string `default:"txPlugins/filter_actions/%s.so" yaml:"plugin_path"`
+		PluginPathExpr string `default:"txPlugins/actions/%s.so" yaml:"plugin_path"`
 		LogLevel       string `default:"debug" yaml:"log_level"`
 	}
 
