@@ -29,6 +29,7 @@ fmt:
 	gofmt -w *.go
 	gofmt -w txPlugins/*.go
 	gofmt -w txPlugins/actions/*/*.go
+	gofmt -w txPlugins/generators/*/*.go
 	gofmt -w cmds/*/*.go
 	git commit -m "gofmt" -a
 

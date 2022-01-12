@@ -58,20 +58,20 @@ func (p *replayData) Configure(replayLog *zerolog.Logger, actionArgs map[string]
 	}
 
 	var maxFiles int
-        maxFilesStr := actionArgs["count"]
-        if maxFilesStr == "" {
-maxFiles = maxFilesDefault
-}else {
-	maxFiles, err = strconv.Atoi(maxFilesStr)
-	if err != nil {
-		return err
+	maxFilesStr := actionArgs["count"]
+	if maxFilesStr == "" {
+		maxFiles = maxFilesDefault
+	} else {
+		maxFiles, err = strconv.Atoi(maxFilesStr)
+		if err != nil {
+			return err
+		}
 	}
-}
 
 	format := actionArgs["format"]
 	switch format {
 	case "gob", "":
-            format = "gob"
+		format = "gob"
 	default:
 		return fmt.Errorf("Unknown file format %s", format)
 	}
@@ -110,7 +110,7 @@ func (p *replayData) preLoadTraps(dir string, maxFiles int, suffix string) error
 		}
 		filename := fd.Name()
 		if strings.HasSuffix(filename, suffix) {
-fullpath := dir + "/" + filename
+			fullpath := dir + "/" + filename
 			trap, err := loadCaptureGob(fullpath)
 			if err != nil {
 				return err
