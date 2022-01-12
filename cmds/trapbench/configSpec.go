@@ -18,7 +18,7 @@ type GeneratorType struct {
 	PluginName     string          `default:"replay" yaml:"plugin"`
 	PluginPathExpr string          `default:"txPlugins/generators/%s.so" yaml:"plugin_path"`
 	Stream         bool            `default:"false" yaml:"stream"`
-	Count          int             `default:"0" yaml:"count"`
+	Count          int             `default:"100" yaml:"count"`
 	Args           []ReplayArgType `default:"[]" yaml:"args"`
 	plugin         pluginLoader.GeneratorPlugin
 }

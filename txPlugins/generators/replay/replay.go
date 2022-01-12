@@ -34,6 +34,7 @@ type replayData struct {
 }
 
 const pluginName = "replay"
+const maxFilesDefault = 100
 
 func validateArguments(actionArgs map[string]string) error {
 	validArgs := map[string]bool{"dir": true, "count": true, "format": true}
@@ -57,14 +58,20 @@ func (p *replayData) Configure(replayLog *zerolog.Logger, actionArgs map[string]
 	}
 
 	var maxFiles int
-	maxFiles, err = strconv.Atoi(actionArgs["count"])
+        maxFilesStr := actionArgs["count"]
+        if maxFilesStr == "" {
+maxFiles = maxFilesDefault
+}else {
+	maxFiles, err = strconv.Atoi(maxFilesStr)
 	if err != nil {
 		return err
 	}
+}
 
 	format := actionArgs["format"]
 	switch format {
-	case "gob":
+	case "gob", "":
+            format = "gob"
 	default:
 		return fmt.Errorf("Unknown file format %s", format)
 	}
@@ -102,9 +109,9 @@ func (p *replayData) preLoadTraps(dir string, maxFiles int, suffix string) error
 			break
 		}
 		filename := fd.Name()
-		if strings.HasSuffix(suffix, filename) {
-
-			trap, err := loadCaptureGob(filename)
+		if strings.HasSuffix(filename, suffix) {
+fullpath := dir + "/" + filename
+			trap, err := loadCaptureGob(fullpath)
 			if err != nil {
 				return err
 			}
@@ -131,4 +138,4 @@ func loadCaptureGob(filename string) (pluginMeta.Trap, error) {
 	return trap, err
 }
 
-var ActionPlugin replayData
+var GeneratorPlugin replayData
