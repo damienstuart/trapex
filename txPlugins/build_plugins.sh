@@ -22,7 +22,7 @@ function build_plugins() {
 
 # ---  main  --------------------------------
 
-for plugin_type in "actions" ; do
+for plugin_type in actions generators ; do
     build_plugins $plugin_type
 done
 
