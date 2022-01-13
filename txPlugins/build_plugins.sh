@@ -14,7 +14,7 @@
 function build_plugins() {
     ptype=$1
     echo "Building $ptype plugins:"
-    for plugin in `ls -1 $ptype | grep -v .so`; do
+    for plugin in `ls -1 $ptype | egrep -v '\.so|\.go'`; do
         echo " - $ptype plugin: $plugin"
         (cd $ptype/$plugin && go build -buildmode=plugin -o ../$plugin.so $plugin.go)
     done

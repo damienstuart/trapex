@@ -66,7 +66,7 @@ func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]s
 	exporter := fmt.Sprintf("http://%s/%s", p.listenAddress, p.endpoint)
 	p.trapex_log.Info().Str("endpoint", exporter).Msg("Prometheus metrics exporter")
 
-        go exposeMetrics(p.endpoint, p.listenAddress) {
+        go exposeMetrics(p.endpoint, p.listenAddress)
 
 	return nil
 }

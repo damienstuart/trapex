@@ -12,7 +12,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"time"
 
 	g "github.com/gosnmp/gosnmp"
 
@@ -21,7 +20,7 @@ import (
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 )
 
-var trapRateTracker = newTrapRateTracker()
+//var trapRateTracker = newTrapRateTracker()
 var trapexLog = zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 func main() {
@@ -49,9 +48,9 @@ func main() {
 		trapexLog.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
 	*/
 
-	stats.StartTime = time.Now()
+	//stats.StartTime = time.Now()
 
-	go trapRateTracker.start()
+	//go trapRateTracker.start()
 
 	tl := g.NewTrapListener()
 
@@ -89,18 +88,18 @@ func main() {
 //
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	// Count every trap received
-	stats.TrapCount++
+	//stats.TrapCount++
 	//trapsCount.Inc()
 
 	// First thing to do is check for ignored versions
 	if isIgnoredVersion(p.Version) {
-		stats.IgnoredTraps++
+		//stats.IgnoredTraps++
 		//trapsIgnored.Inc()
 		return
 	}
 
 	// Also keep track of traps we handle
-	stats.HandledTraps++
+	//stats.HandledTraps++
 	//trapsHandled.Inc()
 
 	// Make the trap
@@ -116,7 +115,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 		SrcIP:       addr.IP,
 		SnmpVersion: p.Version,
 		Hostname:    teConfig.General.Hostname,
-		TrapNumber:  stats.TrapCount,
+		//TrapNumber:  stats.TrapCount,
 	}
 
 	if teConfig.Logging.Level == "debug" {
@@ -140,7 +139,7 @@ func processTrap(trap *pluginMeta.Trap) {
 		if filterDef.matchAll || filterDef.isFilterMatch(trap) {
 			if filterDef.actionType == actionBreak {
 				trap.Dropped = true
-				stats.DroppedTraps++
+				//stats.DroppedTraps++
 				//stats.(StatsPlugin).Inc(pluginMeta.MetricDropped)
 				continue
 			}
@@ -154,7 +153,7 @@ func processTrap(trap *pluginMeta.Trap) {
 
 			if filterDef.BreakAfter {
 				trap.Dropped = true
-				stats.DroppedTraps++
+				//stats.DroppedTraps++
 				continue
 			}
 		}

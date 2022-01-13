@@ -8,7 +8,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
 	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 )
@@ -23,36 +22,6 @@ func handleSIGHUP(sigCh chan os.Signal) {
 			if err := getConfig(); err != nil {
 				trapexLog.Info().Err(err).Msg("Error parsing configuration\nConfiguration was not changed")
 			}
-		}
-	}
-}
-
-// Use SIGUSR1 to dump current stats to STDOUT.
-//
-func handleSIGUSR1(sigCh chan os.Signal) {
-	for {
-		select {
-		case <-sigCh:
-			// Compute uptime
-			stats.UptimeInt = time.Now().Unix() - stats.StartTime.Unix()
-			trapexLog.Info().
-				Str("uptime_str", secondsToDuration(uint(stats.UptimeInt))).
-				Uint("uptime", uint(stats.UptimeInt)).
-				Uint("traps_received", stats.TrapCount).
-				Uint("traps_ignored", stats.IgnoredTraps).
-				Uint("traps_processed", stats.HandledTraps).
-				Uint("traps_dropped", stats.DroppedTraps).
-				Uint("traps_tranlated_from_v2c", stats.TranslatedFromV2c).
-				Uint("traps_tranlated_from_v3", stats.TranslatedFromV3).
-				Uint("trap_rate_1min", trapRateTracker.getRate(1)).
-				Uint("trap_rate_5min", trapRateTracker.getRate(5)).
-				Uint("trap_rate_15min", trapRateTracker.getRate(15)).
-				Uint("trap_rate_1hour", trapRateTracker.getRate(60)).
-				Uint("trap_rate_4hour", trapRateTracker.getRate(240)).
-				Uint("trap_rate_4hour", trapRateTracker.getRate(480)).
-				Uint("trap_rate_1day", trapRateTracker.getRate(1440)).
-				Uint("trap_rate_all", trapRateTracker.getRate(0)).
-				Msg("Got SIGUSR1 for trapex stats")
 		}
 	}
 }

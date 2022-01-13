@@ -5,14 +5,7 @@
 //
 package main
 
-import (
-	"math"
-	"sync"
-	"time"
-
-	"github.com/rs/zerolog"
-)
-
+/*
 const tBufSize int = 1448
 
 var stopRateTrackerChan = make(chan struct{})
@@ -113,3 +106,4 @@ func (b *tcountRingBuf) start() {
 		}
 	}
 }
+*/
