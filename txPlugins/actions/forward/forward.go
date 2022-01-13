@@ -6,7 +6,12 @@
 package main
 
 /*
-This plugin sends SNMP traps to a new destination
+ * This plugin sends SNMP traps to a new destination
+ */
+
+/*
+ TOOD:
+    - create a channel-based forwarding architecture to increase concurrency
 */
 
 import (
