@@ -28,7 +28,7 @@ type fakerData struct {
 
 	cursor int
 
-	size     int
+	size  int
 	faked []pluginMeta.Trap
 }
 
@@ -36,7 +36,7 @@ const pluginName = "faker"
 const maxFakeTrapsDefault = 100
 
 func validateArguments(actionArgs map[string]string) error {
-	validArgs := map[string]bool{"conf": true, "count": true }
+	validArgs := map[string]bool{"conf": true, "count": true}
 
 	for key, _ := range actionArgs {
 		if _, ok := validArgs[key]; !ok {
