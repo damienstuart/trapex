@@ -30,6 +30,7 @@ fmt:
 	gofmt -w txPlugins/*.go
 	gofmt -w txPlugins/actions/*/*.go
 	gofmt -w txPlugins/generators/*/*.go
+	gofmt -w txPlugins/metrics/*/*.go
 	gofmt -w cmds/*/*.go
 	git commit -m "gofmt" -a
 

@@ -7,25 +7,23 @@
 package main
 
 import (
-        pluginMeta "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 
-        "github.com/rs/zerolog"
+	"github.com/rs/zerolog"
 )
 
-
 type noopStats struct {
-     log *zerolog.Logger
+	log *zerolog.Logger
 }
 
 func (rt *noopStats) Configure(trapexLog *zerolog.Logger, args map[string]string, metric_definitions []pluginMeta.MetricDef) error {
-rt.log = trapexLog
-return nil
+	rt.log = trapexLog
+	return nil
 }
 
 func (rt noopStats) Inc(metric pluginMeta.Metric) {
 }
 
 func (rt noopStats) Report() (string, error) {
-  return "", nil
+	return "", nil
 }
-

@@ -31,7 +31,6 @@ type prometheusStats struct {
 	trapsFromV3  prometheus.Counter
 }
 
-
 func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]string, metric_definitions []pluginMeta.MetricDef) error {
 	p.trapex_log = trapexLog
 	listenIP := args["listen_ip"]
@@ -67,35 +66,35 @@ func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]s
 	exporter := fmt.Sprintf("http://%s/%s", p.listenAddress, p.endpoint)
 	p.trapex_log.Info().Str("endpoint", exporter).Msg("Prometheus metrics exporter")
 
-        go exposeMetrics(p.endpoint, p.listenAddress)
+	go exposeMetrics(p.endpoint, p.listenAddress)
 
 	return nil
 }
 
 func (p prometheusStats) Inc(metric pluginMeta.Metric) {
 
-/*
-	switch metric {
-	case pluginMeta.MetricTotal:
-		p.trapsTotal.Inc()
-	case pluginMeta.MetricHandled:
-		p.trapsHandled.Inc()
-	case pluginMeta.MetricDropped:
-		p.trapsDropped.Inc()
-	case pluginMeta.MetricIgnored:
-		p.trapsIgnored.Inc()
-	case pluginMeta.MetricFromV2c:
-		p.trapsFromV2c.Inc()
-	case pluginMeta.MetricFromV3:
-		p.trapsFromV3.Inc()
+	/*
+		switch metric {
+		case pluginMeta.MetricTotal:
+			p.trapsTotal.Inc()
+		case pluginMeta.MetricHandled:
+			p.trapsHandled.Inc()
+		case pluginMeta.MetricDropped:
+			p.trapsDropped.Inc()
+		case pluginMeta.MetricIgnored:
+			p.trapsIgnored.Inc()
+		case pluginMeta.MetricFromV2c:
+			p.trapsFromV2c.Inc()
+		case pluginMeta.MetricFromV3:
+			p.trapsFromV3.Inc()
 
-	}
-*/
+		}
+	*/
 
 }
 
-        func (p prometheusStats)Report() (string, error) {
-return "", nil
+func (p prometheusStats) Report() (string, error) {
+	return "", nil
 }
 
 // exposeMetrics
