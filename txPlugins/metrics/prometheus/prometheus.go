@@ -71,7 +71,7 @@ func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]s
 	return nil
 }
 
-func (p prometheusStats) Inc(metric pluginMeta.Metric) {
+func (p prometheusStats) Inc(metricIndex int) {
 
 	/*
 		switch metric {

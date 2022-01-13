@@ -21,7 +21,7 @@ func (rt *noopStats) Configure(trapexLog *zerolog.Logger, args map[string]string
 	return nil
 }
 
-func (rt noopStats) Inc(metric pluginMeta.Metric) {
+func (rt noopStats) Inc(metricIndex int) {
 }
 
 func (rt noopStats) Report() (string, error) {
