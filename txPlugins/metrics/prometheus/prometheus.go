@@ -31,7 +31,8 @@ type prometheusStats struct {
 	trapsFromV3  prometheus.Counter
 }
 
-func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]string) error {
+
+func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]string, metric_definitions []pluginMeta.MetricDef) error {
 	p.trapex_log = trapexLog
 	listenIP := args["listen_ip"]
 	listenPort := args["listen_port"]
@@ -71,8 +72,9 @@ func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]s
 	return nil
 }
 
-func (p prometheusStats) Inc(metric int) {
+func (p prometheusStats) Inc(metric pluginMeta.Metric) {
 
+/*
 	switch metric {
 	case pluginMeta.MetricTotal:
 		p.trapsTotal.Inc()
@@ -88,7 +90,12 @@ func (p prometheusStats) Inc(metric int) {
 		p.trapsFromV3.Inc()
 
 	}
+*/
 
+}
+
+        func (p prometheusStats)Report() (string, error) {
+return "", nil
 }
 
 // exposeMetrics
