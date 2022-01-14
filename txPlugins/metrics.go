@@ -21,7 +21,7 @@ func (m MetricDef) String() string {
   return m.Name
 }
 
-func createMetricDefs() []MetricDef {
+func CreateMetricDefs() []MetricDef {
 
 	mymetrics := []MetricDef{
 		MetricDef{Name: "incoming_traps_total",

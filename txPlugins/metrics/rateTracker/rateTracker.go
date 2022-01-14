@@ -41,12 +41,7 @@ type rateStats struct {
 	StartTime         time.Time
 	UptimeInt         int64
 	Uptime            string
-	TrapCount         uint
-	HandledTraps      uint
-	DroppedTraps      uint
-	IgnoredTraps      uint
-	TranslatedFromV2c uint
-	TranslatedFromV3  uint
+        metrics []pluginMeta.MetricDef
 	TrapsPerSecond    trapRates
 
 	countRingSize int
@@ -57,12 +52,15 @@ func (rt *rateStats) Configure(trapexLog *zerolog.Logger, args map[string]string
 	rt.trapex_log = trapexLog
 
 	rt.trapex_log.Info().Msg("Rate tracker")
+        rt.metrics = metric_definitions
 
 	return nil
 }
 
 func (rt *rateStats) Inc(metricIndex int) {
 
+name := rt.metrics[metricIndex].Name
+	rt.trapex_log.Info().Int("metric", metricIndex).Str("name", name).Msg("Counter incremented")
 	/*
 		switch metric {
 		case pluginMeta.MetricTotal:
@@ -186,3 +184,6 @@ func handleSIGUSR1(sigCh chan os.Signal) {
 	}
 }
 */
+
+var MetricPlugin rateStats
+

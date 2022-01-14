@@ -27,3 +27,6 @@ func (rt noopStats) Inc(metricIndex int) {
 func (rt noopStats) Report() (string, error) {
 	return "", nil
 }
+
+var MetricPlugin noopStats
+

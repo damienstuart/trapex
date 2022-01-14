@@ -105,4 +105,5 @@ func exposeMetrics(endpoint string, listenAddress string) {
 	http.ListenAndServe(listenAddress, server)
 }
 
-var StatsPlugin prometheusStats
+var MetricPlugin prometheusStats
+

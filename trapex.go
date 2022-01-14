@@ -18,10 +18,12 @@ import (
 	"github.com/rs/zerolog"
 
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
+	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 )
 
 //var trapRateTracker = newTrapRateTracker()
 var trapexLog = zerolog.New(os.Stdout).With().Timestamp().Logger()
+var rateTracker pluginLoader.MetricPlugin
 
 func main() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
@@ -39,6 +41,16 @@ func main() {
 		trapexLog.Fatal().Err(err).Msg("Unable to load configuration")
 		os.Exit(1)
 	}
+
+counters := pluginMeta.CreateMetricDefs()
+metricArgs := make(map[string]string)
+var err error
+rateTracker, err = pluginLoader.LoadMetricPlugin("txPlugins/metrics/%s.so" , "rateTracker")
+if err != nil  {
+		trapexLog.Fatal().Err(err).Msg("Unable to load rate tracker plugin")
+		os.Exit(1)
+}
+rateTracker.(pluginLoader.MetricPlugin).Configure(&trapexLog, metricArgs, counters)
 
 	initSigHandlers()
 	/*
@@ -78,7 +90,7 @@ func main() {
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.General.ListenAddr, teConfig.General.ListenPort)
 	trapexLog.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
-	err := tl.Listen(listenAddr)
+	err = tl.Listen(listenAddr)
 	if err != nil {
 		log.Panicf("error in listen on %s: %s", listenAddr, err)
 	}
@@ -88,19 +100,25 @@ func main() {
 //
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	// Count every trap received
-	//stats.TrapCount++
-	//trapsCount.Inc()
+rateTracker.(pluginLoader.MetricPlugin).Inc(TrapCount)
+
+switch p.Version {
+case g.Version1:
+rateTracker.(pluginLoader.MetricPlugin).Inc(V1Traps)
+case g.Version2c:
+rateTracker.(pluginLoader.MetricPlugin).Inc(V2cTraps)
+case g.Version3:
+rateTracker.(pluginLoader.MetricPlugin).Inc(V3Traps)
+}
 
 	// First thing to do is check for ignored versions
 	if isIgnoredVersion(p.Version) {
-		//stats.IgnoredTraps++
-		//trapsIgnored.Inc()
+rateTracker.(pluginLoader.MetricPlugin).Inc(IgnoredTraps)
 		return
 	}
 
 	// Also keep track of traps we handle
-	//stats.HandledTraps++
-	//trapsHandled.Inc()
+rateTracker.(pluginLoader.MetricPlugin).Inc(HandledTraps)
 
 	// Make the trap
 	trap := pluginMeta.Trap{
@@ -139,8 +157,7 @@ func processTrap(trap *pluginMeta.Trap) {
 		if filterDef.matchAll || filterDef.isFilterMatch(trap) {
 			if filterDef.actionType == actionBreak {
 				trap.Dropped = true
-				//stats.DroppedTraps++
-				//stats.(StatsPlugin).Inc(pluginMeta.MetricDropped)
+rateTracker.(pluginLoader.MetricPlugin).Inc(DroppedTraps)
 				continue
 			}
 
@@ -153,7 +170,7 @@ func processTrap(trap *pluginMeta.Trap) {
 
 			if filterDef.BreakAfter {
 				trap.Dropped = true
-				//stats.DroppedTraps++
+rateTracker.(pluginLoader.MetricPlugin).Inc(DroppedTraps)
 				continue
 			}
 		}
