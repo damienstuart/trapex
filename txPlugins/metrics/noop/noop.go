@@ -6,22 +6,34 @@
 
 package main
 
+/*
+ * This plugin is used for testing and performance benchmarking
+ */
+
 import (
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 
 	"github.com/rs/zerolog"
 )
 
+const pluginName = "noop"
+
 type noopStats struct {
 	log *zerolog.Logger
+metrics []pluginMeta.MetricDef
 }
 
-func (rt *noopStats) Configure(trapexLog *zerolog.Logger, args map[string]string, metric_definitions []pluginMeta.MetricDef) error {
-	rt.log = trapexLog
+func (rt *noopStats) Configure(mainLog *zerolog.Logger, args map[string]string, metric_definitions []pluginMeta.MetricDef) error {
+	rt.log = mainLog
+        rt.log.Info().Str("plugin", pluginName).Msg("Configured metric plugin")
+        rt.metrics = metric_definitions
 	return nil
 }
 
 func (rt noopStats) Inc(metricIndex int) {
+name := rt.metrics[metricIndex].Name
+        rt.log.Info().Str("plugin", pluginName).Str("metric", name).Msg("Counter incremented")
+
 }
 
 func (rt noopStats) Report() (string, error) {

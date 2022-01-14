@@ -60,7 +60,6 @@ rateTracker.(pluginLoader.MetricPlugin).Configure(&trapexLog, metricArgs, counte
 		trapexLog.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
 	*/
 
-	//stats.StartTime = time.Now()
 
 	//go trapRateTracker.start()
 

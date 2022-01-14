@@ -6,7 +6,11 @@
 package main
 
 /*
- * Capture internal metrics and rates
+ * Capture internal definitions and rates
+ *
+ * Note:
+ *   This plugin ***ASSUMES*** that the very first counter (index 0) is the total
+ *   number of incoming things (ie traps).
  */
 
 import (
@@ -14,15 +18,15 @@ import (
 	"sync"
 	"time"
 
-	//	"fmt"
-
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 
 	"github.com/rs/zerolog"
 )
 
-const countRingMax_default int = 1448
-const countRingMax int = 1448
+const pluginName = "rate tracker"
+
+// 60 minutes/hour * 24 hours = 1440
+const maxHistoryBins int = 1440
 
 type trapRates struct {
 	Last1min   uint
@@ -35,75 +39,22 @@ type trapRates struct {
 	SinceStart uint
 }
 
-type rateStats struct {
-	trapex_log *zerolog.Logger
-
-	StartTime         time.Time
-	UptimeInt         int64
-	Uptime            string
-        metrics []pluginMeta.MetricDef
-	TrapsPerSecond    trapRates
-
-	countRingSize int
-	countRing     tcountRingBuf
-}
-
-func (rt *rateStats) Configure(trapexLog *zerolog.Logger, args map[string]string, metric_definitions []pluginMeta.MetricDef) error {
-	rt.trapex_log = trapexLog
-
-	rt.trapex_log.Info().Msg("Rate tracker")
-        rt.metrics = metric_definitions
-
-	return nil
-}
-
-func (rt *rateStats) Inc(metricIndex int) {
-
-name := rt.metrics[metricIndex].Name
-	rt.trapex_log.Info().Int("metric", metricIndex).Str("name", name).Msg("Counter incremented")
-	/*
-		switch metric {
-		case pluginMeta.MetricTotal:
-			rt.TrapCount++
-		case pluginMeta.MetricHandled:
-			rt.HandledTraps++
-		case pluginMeta.MetricDropped:
-			rt.DroppedTraps++
-		case pluginMeta.MetricIgnored:
-			rt.IgnoredTraps++
-		case pluginMeta.MetricFromV2c:
-			rt.TranslatedFromV2c++
-		case pluginMeta.MetricFromV3:
-			rt.TranslatedFromV3++
-		}
-	*/
-}
-
-func (rt rateStats) Report() (string, error) {
-	return "", nil
-}
-
-var StatsPlugin rateStats
-
 var stopRateTrackerChan = make(chan struct{})
 
-type tcountRingBuf struct {
+type rateBin struct {
 	mu     sync.Mutex
 	cursor int
-	buf    [countRingMax]uint
+	buf    [maxHistoryBins]uint
 
-	// Below are junk for migration purposes
-	TrapCount uint
-	UptimeInt uint
 }
 
-func newTrapRateTracker() *tcountRingBuf {
-	tbuf := tcountRingBuf{}
+func newTrapRateTracker() *rateBin {
+	tbuf := rateBin{}
 	tbuf.init()
 	return &tbuf
 }
 
-func (b *tcountRingBuf) init() {
+func (b *rateBin) init() {
 	b.mu.Lock()
 	b.cursor = 0
 	for i := 0; i < len(b.buf); i++ {
@@ -112,35 +63,35 @@ func (b *tcountRingBuf) init() {
 	b.mu.Unlock()
 }
 
-func (rt *tcountRingBuf) setNextCount() {
+func (rt *rateBin) setNextCount() {
 	rt.mu.Lock()
 	rt.cursor++
-	if rt.cursor >= countRingMax {
+	if rt.cursor >= maxHistoryBins {
 		rt.cursor = 0
 	}
-	rt.buf[rt.cursor] = rt.TrapCount
+	rt.buf[rt.cursor] = MetricPlugin.counters[0]
 	rt.mu.Unlock()
 }
 
-func (rt *tcountRingBuf) getRate(interval int) uint {
+func (rt *rateBin) getRate(interval int) uint {
 	if interval == 0 {
-		if rt.TrapCount == 0 {
+		if MetricPlugin.counters[0] == 0 {
 			return 0
 		}
-		return uint(math.Ceil(float64(rt.TrapCount) / float64(rt.UptimeInt)))
+		return uint(math.Ceil(float64(MetricPlugin.counters[0]) / float64(MetricPlugin.UptimeInt)))
 	}
 	rt.mu.Lock()
 	e := rt.cursor
 	s := e - interval
 	if s < 0 {
-		s += countRingMax
+		s += maxHistoryBins
 	}
 	rate := uint(math.Ceil(float64(rt.buf[e]-rt.buf[s]) / float64(interval*60)))
 	rt.mu.Unlock()
 	return rate
 }
 
-func (rt *tcountRingBuf) start() {
+func (rt *rateBin) start() {
 	ticker := time.NewTicker(60 * time.Second)
 	for {
 		select {
@@ -161,13 +112,13 @@ func handleSIGUSR1(sigCh chan os.Signal) {
 		select {
 		case <-sigCh:
 			// Compute uptime
-			stats.UptimeInt = time.Now().Unix() - stats.StartTime.Unix()
-			trapexLog.Info().
-				Str("uptime_str", secondsToDuration(uint(stats.UptimeInt))).
-				Uint("uptime", uint(stats.UptimeInt)).
-				Uint("traps_received", stats.TrapCount).
+			MetricPlugin.UptimeInt = time.Now().Unix() - MetricPlugin.StartTime.Unix()
+			MetricPlugin.log.Info().
+				Str("uptime_str", secondsToDuration(uint(MetricPlugin.UptimeInt))).
+				Uint("uptime", uint(MetricPlugin.UptimeInt)).
+				Uint("traps_received", MetricPlugin.counters[0]).
 				Uint("traps_ignored", stats.IgnoredTraps).
-				Uint("traps_processed", stats.HandledTraps).
+				Uint("traps_processed", MetricPlugin.HandledTraps).
 				Uint("traps_dropped", stats.DroppedTraps).
 				Uint("traps_tranlated_from_v2c", stats.TranslatedFromV2c).
 				Uint("traps_tranlated_from_v3", stats.TranslatedFromV3).
@@ -179,11 +130,49 @@ func handleSIGUSR1(sigCh chan os.Signal) {
 				Uint("trap_rate_4hour", trapRateTracker.getRate(480)).
 				Uint("trap_rate_1day", trapRateTracker.getRate(1440)).
 				Uint("trap_rate_all", trapRateTracker.getRate(0)).
-				Msg("Got SIGUSR1 for trapex stats")
 		}
 	}
 }
 */
 
-var MetricPlugin rateStats
+type stats struct {
+	log *zerolog.Logger
+
+	StartTime         time.Time
+	UptimeInt         int64
+	Uptime            string
+
+        definitions []pluginMeta.MetricDef
+        counters []uint
+
+	TrapsPerSecond    trapRates
+
+	rateBins     *rateBin
+}
+
+func (rt *stats) Configure(mainLog *zerolog.Logger, args map[string]string, metric_definitions []pluginMeta.MetricDef) error {
+	rt.log = mainLog
+
+        rt.definitions = metric_definitions
+        rt.counters = make([]uint, len(rt.definitions))
+        rt.StartTime = time.Now()
+
+rt.rateBins = newTrapRateTracker()
+	rt.log.Info().Str("plugin", pluginName).Msg("Configured metric plugin")
+
+	return nil
+}
+
+func (rt *stats) Inc(metricIndex int) {
+
+name := rt.definitions[metricIndex].Name
+	rt.log.Debug().Str("plugin", pluginName).Str("name", name).Msg("Counter incremented")
+}
+
+func (rt stats) Report() (string, error) {
+	return "", nil
+}
+
+
+var MetricPlugin stats
 
