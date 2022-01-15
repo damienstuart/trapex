@@ -40,17 +40,27 @@ func main() {
 	}
 
 	initSigHandlers()
+	startTrapListener()
+}
 
+// startTrapListener configures the SNMP service information and starts actively
+// processing traps via callback function (trapHandler)
+// The listener will be able to receive SNMP v1/v2c traps, and if SNMP v3 information
+// is configured correctly, SNMP v3 traps.
+//
+func startTrapListener() {
 	tl := g.NewTrapListener()
 
+	// Callback: trapHandler
 	tl.OnNewTrap = trapHandler
-	tl.Params = g.Default
-	tl.Params.Community = ""
 
 	if teConfig.General.GoSnmpDebug {
 		trapexLog.Info().Msg("gosnmp debug mode enabled")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}
+
+	tl.Params = g.Default
+	tl.Params.Community = ""
 
 	// SNMP v3 stuff
 	tl.Params.SecurityModel = g.UserSecurityModel
