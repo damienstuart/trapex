@@ -13,12 +13,12 @@ package pluginMeta
 // MetricDef defines the help text for the metrics
 type MetricDef struct {
 	Name string
-	Help       string
+	Help string
 }
 
 // String helper to return the name of the metric
 func (m MetricDef) String() string {
-  return m.Name
+	return m.Name
 }
 
 func CreateMetricDefs() []MetricDef {

@@ -23,7 +23,7 @@ type prometheusStats struct {
 	listenAddress string
 	endpoint      string
 
-        counters []prometheus.Counter
+	counters []prometheus.Counter
 }
 
 func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]string, metric_definitions []pluginMeta.MetricDef) error {
@@ -33,12 +33,12 @@ func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]s
 	p.listenAddress = listenIP + ":" + listenPort
 	p.endpoint = args["endpoint"]
 
-        for i, definition := range metric_definitions {
-	p.counters[i] = promauto.NewCounter(prometheus.CounterOpts{
-		Name: definition.Name,
-		Help: definition.Help,
-	})
-}
+	for i, definition := range metric_definitions {
+		p.counters[i] = promauto.NewCounter(prometheus.CounterOpts{
+			Name: definition.Name,
+			Help: definition.Help,
+		})
+	}
 
 	exporter := fmt.Sprintf("http://%s/%s", p.listenAddress, p.endpoint)
 	p.trapex_log.Info().Str("endpoint", exporter).Msg("Prometheus metrics exporter")
@@ -50,7 +50,7 @@ func (p *prometheusStats) Configure(trapexLog *zerolog.Logger, args map[string]s
 
 func (p prometheusStats) Inc(metricIndex int) {
 
-p.counters[metricIndex].Inc()
+	p.counters[metricIndex].Inc()
 
 }
 
@@ -67,4 +67,3 @@ func exposeMetrics(endpoint string, listenAddress string) {
 }
 
 var MetricPlugin prometheusStats
-

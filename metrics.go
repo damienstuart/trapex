@@ -6,20 +6,19 @@
 package main
 
 import (
-pluginMeta "github.com/damienstuart/trapex/txPlugins"
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
 )
 
 // These constants should be in the same order as the createMetricDefs function returns them
 const (
-        TrapCount int = iota
-        HandledTraps
-        DroppedTraps
-        IgnoredTraps
-        V1Traps
-        V2cTraps
-        V3Traps
+	TrapCount int = iota
+	HandledTraps
+	DroppedTraps
+	IgnoredTraps
+	V1Traps
+	V2cTraps
+	V3Traps
 )
-
 
 func createMetricDefs() []pluginMeta.MetricDef {
 
