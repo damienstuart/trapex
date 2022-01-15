@@ -17,9 +17,13 @@ type trapListenerConfig struct {
 	ListenAddr string `default:"0.0.0.0" yaml:"listen_address"`
 	ListenPort string `default:"162" yaml:"listen_port"`
 
-	GoSnmpDebug        bool            `default:"false" yaml:"gosnmp_debug"`
+	GoSnmpDebug        bool   `default:"false" yaml:"gosnmp_debug"`
+	GoSnmpDebugLogName string `default:"" yaml:"gosnmp_debug_logfile_name`
+
 	IgnoreVersions_str []string        `default:"[]" yaml:"ignore_versions"`
 	IgnoreVersions     []g.SnmpVersion `default:"[]"`
+
+	Community string `default:"" yaml:"snmp_community"`
 
 	// SNMP v3 settings
 	MsgFlags_str     string               `default:"NoAuthNoPriv" yaml:"msg_flags"`

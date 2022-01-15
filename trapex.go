@@ -49,24 +49,33 @@ func main() {
 // is configured correctly, SNMP v3 traps.
 //
 func startTrapListener() {
-	tl := g.NewTrapListener()
+	trapListener := g.NewTrapListener()
 
 	// Callback: trapHandler
-	tl.OnNewTrap = trapHandler
+	trapListener.OnNewTrap = trapHandler
 
 	if teConfig.TrapReceiverSettings.GoSnmpDebug {
 		trapexLog.Info().Msg("gosnmp debug mode enabled")
-		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
+		if teConfig.TrapReceiverSettings.GoSnmpDebugLogName == "" {
+			trapListener.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
+		} else {
+			fd, err := os.Open(teConfig.TrapReceiverSettings.GoSnmpDebugLogName)
+			if err != nil {
+				trapexLog.Fatal().Err(err).Str("filename", teConfig.TrapReceiverSettings.GoSnmpDebugLogName).Msg("Unable to open up debug log")
+				os.Exit(1)
+			}
+			trapListener.Params.Logger = g.NewLogger(log.New(fd, "", 0))
+		}
 	}
 
-	tl.Params = g.Default
-	tl.Params.Community = ""
+	trapListener.Params = g.Default
+	trapListener.Params.Community = teConfig.TrapReceiverSettings.Community
 
 	// SNMP v3 stuff
-	tl.Params.SecurityModel = g.UserSecurityModel
-	tl.Params.MsgFlags = teConfig.TrapReceiverSettings.MsgFlags
-	tl.Params.Version = g.Version3
-	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
+	trapListener.Params.SecurityModel = g.UserSecurityModel
+	trapListener.Params.MsgFlags = teConfig.TrapReceiverSettings.MsgFlags
+	trapListener.Params.Version = g.Version3
+	trapListener.Params.SecurityParameters = &g.UsmSecurityParameters{
 		UserName:                 teConfig.TrapReceiverSettings.Username,
 		AuthenticationProtocol:   teConfig.TrapReceiverSettings.AuthProto,
 		AuthenticationPassphrase: teConfig.TrapReceiverSettings.AuthPassword,
@@ -76,7 +85,7 @@ func startTrapListener() {
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.TrapReceiverSettings.ListenAddr, teConfig.TrapReceiverSettings.ListenPort)
 	trapexLog.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
-	err := tl.Listen(listenAddr)
+	err := trapListener.Listen(listenAddr)
 	if err != nil {
 		log.Panicf("error in listen on %s: %s", listenAddr, err)
 	}
