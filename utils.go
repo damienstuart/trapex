@@ -56,7 +56,7 @@ func makeTrapLogEntry(trap *pluginMeta.Trap) string {
 // SnmpVersion value is being ignored.
 //
 func isIgnoredVersion(ver g.SnmpVersion) bool {
-	for _, v := range teConfig.General.IgnoreVersions {
+	for _, v := range teConfig.TrapReceiverSettings.IgnoreVersions {
 		if ver == v {
 			return true
 		}

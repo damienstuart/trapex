@@ -107,20 +107,20 @@ func applyCliOverrides(newConfig *trapexConfig) {
 	// command line.  If not and the listener values were not set in
 	// the config file, fallback to defaults.
 	if teCmdLine.bindAddr != "" {
-		newConfig.General.ListenAddr = teCmdLine.bindAddr
+		newConfig.TrapReceiverSettings.ListenAddr = teCmdLine.bindAddr
 	}
 	if teCmdLine.listenPort != "" {
-		newConfig.General.ListenPort = teCmdLine.listenPort
+		newConfig.TrapReceiverSettings.ListenPort = teCmdLine.listenPort
 	}
 	if teCmdLine.debugMode {
 		newConfig.Logging.Level = "debug"
 	}
-	if newConfig.General.Hostname == "" {
+	if newConfig.TrapReceiverSettings.Hostname == "" {
 		myName, err := os.Hostname()
 		if err != nil {
-			newConfig.General.Hostname = "_undefined"
+			newConfig.TrapReceiverSettings.Hostname = "_undefined"
 		} else {
-			newConfig.General.Hostname = myName
+			newConfig.TrapReceiverSettings.Hostname = myName
 		}
 	}
 }
@@ -145,7 +145,7 @@ func getConfig() error {
 	if err = validateIgnoreVersions(&newConfig); err != nil {
 		return err
 	}
-	if err = validateSnmpV3Args(&newConfig.V3Params); err != nil {
+	if err = validateSnmpV3Args(&newConfig.TrapReceiverSettings); err != nil {
 		return err
 	}
 	if err = addIpSets(&newConfig); err != nil {
@@ -177,34 +177,34 @@ func getConfig() error {
 
 func validateIgnoreVersions(newConfig *trapexConfig) error {
 	var ignorev1, ignorev2c, ignorev3 bool = false, false, false
-	for _, candidate := range newConfig.General.IgnoreVersions_str {
+	for _, candidate := range newConfig.TrapReceiverSettings.IgnoreVersions_str {
 		switch strings.ToLower(candidate) {
 		case "v1", "1":
 			if ignorev1 != true {
-				newConfig.General.IgnoreVersions = append(newConfig.General.IgnoreVersions, g.Version1)
+				newConfig.TrapReceiverSettings.IgnoreVersions = append(newConfig.TrapReceiverSettings.IgnoreVersions, g.Version1)
 				ignorev1 = true
 			}
 		case "v2c", "2c", "2":
 			if ignorev2c != true {
-				newConfig.General.IgnoreVersions = append(newConfig.General.IgnoreVersions, g.Version2c)
+				newConfig.TrapReceiverSettings.IgnoreVersions = append(newConfig.TrapReceiverSettings.IgnoreVersions, g.Version2c)
 				ignorev2c = true
 			}
 		case "v3", "3":
 			if ignorev3 != true {
-				newConfig.General.IgnoreVersions = append(newConfig.General.IgnoreVersions, g.Version3)
+				newConfig.TrapReceiverSettings.IgnoreVersions = append(newConfig.TrapReceiverSettings.IgnoreVersions, g.Version3)
 				ignorev3 = true
 			}
 		default:
-			return fmt.Errorf("unsupported or invalid value (%s) for general:ignore_version", candidate)
+			return fmt.Errorf("Unsupported or invalid value (%s) for general:ignore_version", candidate)
 		}
 	}
-	if len(newConfig.General.IgnoreVersions) > 2 {
+	if len(newConfig.TrapReceiverSettings.IgnoreVersions) > 2 {
 		return fmt.Errorf("All three SNMP versions are ignored -- there will be no traps to process")
 	}
 	return nil
 }
 
-func validateSnmpV3Args(params *v3Params) error {
+func validateSnmpV3Args(params *trapListenerConfig) error {
 	switch strings.ToLower(params.MsgFlags_str) {
 	case "noauthnopriv":
 		params.MsgFlags = g.NoAuthNoPriv
@@ -213,7 +213,7 @@ func validateSnmpV3Args(params *v3Params) error {
 	case "authpriv":
 		params.MsgFlags = g.AuthPriv
 	default:
-		return fmt.Errorf("unsupported or invalid value (%s) for snmpv3:msg_flags", params.MsgFlags_str)
+		return fmt.Errorf("Unsupported or invalid value (%s) for snmpv3:msg_flags", params.MsgFlags_str)
 	}
 
 	switch strings.ToLower(params.AuthProto_str) {
@@ -224,7 +224,7 @@ func validateSnmpV3Args(params *v3Params) error {
 	case "md5":
 		params.AuthProto = g.MD5
 	default:
-		return fmt.Errorf("invalid value for snmpv3:auth_protocol: %s", params.AuthProto_str)
+		return fmt.Errorf("Invalid value for snmpv3:auth_protocol: %s", params.AuthProto_str)
 	}
 
 	var err error
@@ -243,7 +243,7 @@ func validateSnmpV3Args(params *v3Params) error {
 	case "des":
 		params.PrivacyProto = g.DES
 	default:
-		return fmt.Errorf("invalid value for snmpv3:privacy_protocol: %s", params.PrivacyProto_str)
+		return fmt.Errorf("Invalid value for snmpv3:privacy_protocol: %s", params.PrivacyProto_str)
 	}
 
 	plaintext, err = pluginMeta.GetSecret(params.PrivacyPassword)
@@ -286,7 +286,7 @@ func addFilters(newConfig *trapexConfig) error {
 		if err = addFilterObjs(&newConfig.Filters[i], newConfig.IpSets, i); err != nil {
 			return err
 		}
-		if err = setAction(&newConfig.Filters[i], newConfig.General.PluginPathExpr, i); err != nil {
+		if err = setAction(&newConfig.Filters[i], newConfig.General.PluginPath, i); err != nil {
 			return err
 		}
 	}
@@ -300,7 +300,7 @@ func addPluginErrorActions(newConfig *trapexConfig) error {
 		if err = addFilterObjs(&newConfig.PluginErrorActions[i], newConfig.IpSets, i); err != nil {
 			return err
 		}
-		if err = setAction(&newConfig.PluginErrorActions[i], newConfig.General.PluginPathExpr, i); err != nil {
+		if err = setAction(&newConfig.PluginErrorActions[i], newConfig.General.PluginPath, i); err != nil {
 			return err
 		}
 	}
@@ -491,9 +491,10 @@ func addReportingPlugins(newConfig *trapexConfig) error {
 	var err error
 
 	counters := pluginMeta.CreateMetricDefs()
+	pluginPath := teConfig.General.PluginPath + "/metrics/%s.so"
 
 	for i, config := range newConfig.Reporting {
-		config.plugin, err = pluginLoader.LoadMetricPlugin("txPlugins/metrics/%s.so", config.PluginName)
+		config.plugin, err = pluginLoader.LoadMetricPlugin(pluginPath, config.PluginName)
 		if err != nil {
 			trapexLog.Fatal().Err(err).Str("plugin_name", config.PluginName).Msg("Unable to load metric reporting plugin")
 			return err

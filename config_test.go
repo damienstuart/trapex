@@ -15,32 +15,22 @@ func init() {
 	zerolog.SetGlobalLevel(zerolog.WarnLevel)
 }
 
-func TestGeneralSection(t *testing.T) {
+func TestTrapReceiverSection(t *testing.T) {
 	var testConfig trapexConfig
 	loadConfig("tests/config/general.yml", &testConfig)
 
-	if testConfig.General.Hostname != "trapex_test1" {
-		t.Errorf("Hostname is not set correctly: %s", testConfig.General.Hostname)
+	if testConfig.TrapReceiverSettings.Hostname != "trapex_test1" {
+		t.Errorf("Hostname is not set correctly: %s", testConfig.TrapReceiverSettings.Hostname)
 	}
-	if testConfig.General.ListenAddr != "127.0.0.1" {
-		t.Errorf("Listen address is not set correctly: %s", testConfig.General.ListenAddr)
+	if testConfig.TrapReceiverSettings.ListenAddr != "127.0.0.1" {
+		t.Errorf("Listen address is not set correctly: %s", testConfig.TrapReceiverSettings.ListenAddr)
 	}
-	if testConfig.General.ListenPort != "168" {
-		t.Errorf("Listen port is not set correctly: %s", testConfig.General.ListenPort)
-	}
-
-	if len(testConfig.General.IgnoreVersions_str) != 2 {
-		t.Errorf("Ignore versions is not set correctly: %s", testConfig.General.IgnoreVersions_str)
+	if testConfig.TrapReceiverSettings.ListenPort != "168" {
+		t.Errorf("Listen port is not set correctly: %s", testConfig.TrapReceiverSettings.ListenPort)
 	}
 
-	if testConfig.General.PrometheusIp != "127.10.0.1" {
-		t.Errorf("Prometheus host is not set correctly: %s", testConfig.General.PrometheusIp)
-	}
-	if testConfig.General.PrometheusPort != "8080" {
-		t.Errorf("Prometheus port is not set correctly: %s", testConfig.General.PrometheusPort)
-	}
-	if testConfig.General.PrometheusEndpoint != "statistics" {
-		t.Errorf("Prometheus endpoint is not set correctly: %s", testConfig.General.PrometheusEndpoint)
+	if len(testConfig.TrapReceiverSettings.IgnoreVersions_str) != 2 {
+		t.Errorf("Ignore versions is not set correctly: %s", testConfig.TrapReceiverSettings.IgnoreVersions_str)
 	}
 }
 
@@ -51,19 +41,19 @@ func TestIgnoreVersions(t *testing.T) {
 	loadConfig("tests/config/ignore_versions_bad.yml", &testConfig)
 	err = validateIgnoreVersions(&testConfig)
 	if err == nil {
-		t.Errorf("general:ignore_versions did not detect invalid version: %s", testConfig.General.IgnoreVersions_str)
+		t.Errorf("general:ignore_versions did not detect invalid version: %s", testConfig.TrapReceiverSettings.IgnoreVersions_str)
 	}
 
 	loadConfig("tests/config/ignore_versions_multiple.yml", &testConfig)
 	err = validateIgnoreVersions(&testConfig)
-	if len(testConfig.General.IgnoreVersions) != 2 {
-		t.Errorf("general:ignore_versions unable to deduplicate versions: %s", testConfig.General.IgnoreVersions_str)
+	if len(testConfig.TrapReceiverSettings.IgnoreVersions) != 2 {
+		t.Errorf("general:ignore_versions unable to deduplicate versions: %s", testConfig.TrapReceiverSettings.IgnoreVersions_str)
 	}
 
 	loadConfig("tests/config/ignore_versions_all.yml", &testConfig)
 	err = validateIgnoreVersions(&testConfig)
 	if err == nil {
-		t.Errorf("general:ignore_versions did not detect all versions: %s", testConfig.General.IgnoreVersions_str)
+		t.Errorf("general:ignore_versions did not detect all versions: %s", testConfig.TrapReceiverSettings.IgnoreVersions_str)
 	}
 }
 
@@ -92,23 +82,23 @@ func TestSnmpv3(t *testing.T) {
 	var testConfig trapexConfig
 	loadConfig("tests/config/snmpv3.yml", &testConfig)
 
-	if testConfig.V3Params.MsgFlags_str != "AuthPriv" {
-		t.Errorf("username is not set correctly: %s", testConfig.V3Params.MsgFlags_str)
+	if testConfig.TrapReceiverSettings.MsgFlags_str != "AuthPriv" {
+		t.Errorf("username is not set correctly: %s", testConfig.TrapReceiverSettings.MsgFlags_str)
 	}
-	if testConfig.V3Params.Username != "myuser" {
-		t.Errorf("username is not set correctly: %s", testConfig.V3Params.Username)
+	if testConfig.TrapReceiverSettings.Username != "myuser" {
+		t.Errorf("username is not set correctly: %s", testConfig.TrapReceiverSettings.Username)
 	}
-	if testConfig.V3Params.AuthProto_str != "SHA" {
-		t.Errorf("auth proto is not set correctly: %s", testConfig.V3Params.AuthProto_str)
+	if testConfig.TrapReceiverSettings.AuthProto_str != "SHA" {
+		t.Errorf("auth proto is not set correctly: %s", testConfig.TrapReceiverSettings.AuthProto_str)
 	}
-	if testConfig.V3Params.AuthPassword != "v3authPass" {
-		t.Errorf("auth password is not set correctly: %s", testConfig.V3Params.AuthPassword)
+	if testConfig.TrapReceiverSettings.AuthPassword != "v3authPass" {
+		t.Errorf("auth password is not set correctly: %s", testConfig.TrapReceiverSettings.AuthPassword)
 	}
-	if testConfig.V3Params.PrivacyProto_str != "AES" {
-		t.Errorf("Privacy proto is not set correctly: %s", testConfig.V3Params.PrivacyProto_str)
+	if testConfig.TrapReceiverSettings.PrivacyProto_str != "AES" {
+		t.Errorf("Privacy proto is not set correctly: %s", testConfig.TrapReceiverSettings.PrivacyProto_str)
 	}
-	if testConfig.V3Params.PrivacyPassword != "v3privPW" {
-		t.Errorf("Privacy password is not set correctly: %s", testConfig.V3Params.PrivacyPassword)
+	if testConfig.TrapReceiverSettings.PrivacyPassword != "v3privPW" {
+		t.Errorf("Privacy password is not set correctly: %s", testConfig.TrapReceiverSettings.PrivacyPassword)
 	}
 }
 

@@ -11,7 +11,17 @@ import (
 	g "github.com/gosnmp/gosnmp"
 )
 
-type v3Params struct {
+type trapListenerConfig struct {
+	Hostname string `yaml:"hostname"`
+
+	ListenAddr string `default:"0.0.0.0" yaml:"listen_address"`
+	ListenPort string `default:"162" yaml:"listen_port"`
+
+	GoSnmpDebug        bool            `default:"false" yaml:"gosnmp_debug"`
+	IgnoreVersions_str []string        `default:"[]" yaml:"ignore_versions"`
+	IgnoreVersions     []g.SnmpVersion `default:"[]"`
+
+	// SNMP v3 settings
 	MsgFlags_str     string               `default:"NoAuthNoPriv" yaml:"msg_flags"`
 	MsgFlags         g.SnmpV3MsgFlags     `default:"g.NoAuthNoPriv"`
 	Username         string               `default:"XXv3Username" yaml:"username"`
@@ -88,16 +98,7 @@ type trapexConfig struct {
 	teConfigured bool
 
 	General struct {
-		Hostname   string `yaml:"hostname"`
-		ListenAddr string `default:"0.0.0.0" yaml:"listen_address"`
-		ListenPort string `default:"162" yaml:"listen_port"`
-
-		GoSnmpDebug bool `default:"false" yaml:"gosnmp_debug"`
-
-		PluginPathExpr string `default:"txPlugins/actions/%s.so" yaml:"plugin_path"`
-
-		IgnoreVersions_str []string        `default:"[]" yaml:"ignore_versions"`
-		IgnoreVersions     []g.SnmpVersion `default:"[]"`
+		PluginPath string `default:"txPlugins/actions/%s.so" yaml:"plugin_path"`
 	}
 
 	Reporting []MetricConfig `default:"[]" yaml:"metric_reporting"`
@@ -110,7 +111,7 @@ type trapexConfig struct {
 		LogCompress   bool   `default:"false" yaml:"compress_rotated_logs"`
 	}
 
-	V3Params v3Params `yaml:"snmpv3"`
+	TrapReceiverSettings trapListenerConfig `yaml:"trap_receiver_settings"`
 
 	IpSets_str []map[string][]string `default:"{}" yaml:"ip_sets"`
 	IpSets     map[string]IpSet      `default:"{}"`

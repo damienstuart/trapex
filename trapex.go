@@ -54,7 +54,7 @@ func startTrapListener() {
 	// Callback: trapHandler
 	tl.OnNewTrap = trapHandler
 
-	if teConfig.General.GoSnmpDebug {
+	if teConfig.TrapReceiverSettings.GoSnmpDebug {
 		trapexLog.Info().Msg("gosnmp debug mode enabled")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
 	}
@@ -64,17 +64,17 @@ func startTrapListener() {
 
 	// SNMP v3 stuff
 	tl.Params.SecurityModel = g.UserSecurityModel
-	tl.Params.MsgFlags = teConfig.V3Params.MsgFlags
+	tl.Params.MsgFlags = teConfig.TrapReceiverSettings.MsgFlags
 	tl.Params.Version = g.Version3
 	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
-		UserName:                 teConfig.V3Params.Username,
-		AuthenticationProtocol:   teConfig.V3Params.AuthProto,
-		AuthenticationPassphrase: teConfig.V3Params.AuthPassword,
-		PrivacyProtocol:          teConfig.V3Params.PrivacyProto,
-		PrivacyPassphrase:        teConfig.V3Params.PrivacyPassword,
+		UserName:                 teConfig.TrapReceiverSettings.Username,
+		AuthenticationProtocol:   teConfig.TrapReceiverSettings.AuthProto,
+		AuthenticationPassphrase: teConfig.TrapReceiverSettings.AuthPassword,
+		PrivacyProtocol:          teConfig.TrapReceiverSettings.PrivacyProto,
+		PrivacyPassphrase:        teConfig.TrapReceiverSettings.PrivacyPassword,
 	}
 
-	listenAddr := fmt.Sprintf("%s:%s", teConfig.General.ListenAddr, teConfig.General.ListenPort)
+	listenAddr := fmt.Sprintf("%s:%s", teConfig.TrapReceiverSettings.ListenAddr, teConfig.TrapReceiverSettings.ListenPort)
 	trapexLog.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
 	err := tl.Listen(listenAddr)
 	if err != nil {
@@ -130,7 +130,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 		},
 		SrcIP:       addr.IP,
 		SnmpVersion: p.Version,
-		Hostname:    teConfig.General.Hostname,
+		Hostname:    teConfig.TrapReceiverSettings.Hostname,
 		TrapNumber:  uint(totalTraps),
 	}
 
