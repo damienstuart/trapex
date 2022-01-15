@@ -80,11 +80,15 @@ func counterInc(counter int) {
 	}
 }
 
+// Keep track of total number of traps received
+var totalTraps int
+
 // trapHandler is the callback for handling traps received by the listener.
 //
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	// Count every trap received
 	counterInc(TrapCount)
+	totalTraps++
 
 	switch p.Version {
 	case g.Version1:
@@ -117,7 +121,7 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 		SrcIP:       addr.IP,
 		SnmpVersion: p.Version,
 		Hostname:    teConfig.General.Hostname,
-		//TrapNumber:  stats.TrapCount,
+		TrapNumber:  uint(totalTraps),
 	}
 
 	if teConfig.Logging.Level == "debug" {

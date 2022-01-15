@@ -22,8 +22,7 @@ func initSigHandlers() {
 	signal.Notify(sigUsr1Ch, syscall.SIGUSR1)
 	go handleSIGUSR1(sigUsr1Ch)
 
-	// For USR2
-	sigUsr2Ch := make(chan os.Signal, 1)
-	signal.Notify(sigUsr2Ch, syscall.SIGUSR2)
-	go handleSIGUSR2(sigUsr2Ch)
+	for _, reporter := range teConfig.Reporting {
+		reporter.plugin.(pluginLoader.MetricPlugin).Report()
+	}
 }
