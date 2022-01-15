@@ -27,6 +27,7 @@ import (
 const pluginName = "rate tracker"
 
 const (
+	sinceStart    = 0
 	pastMinute    = 1
 	past5Minutes  = 5
 	past15Minutes = 15
@@ -36,15 +37,16 @@ const (
 	pastDay       = 1440
 )
 
-type trapRates struct {
-	LastMinute    uint
-	Last5Minutes  uint
-	Last15Minutes uint
-	LastHour      uint
-	Last4Hours    uint
-	Last8Hours    uint
-	LastDay       uint
-	SinceStart    uint
+type stats struct {
+	log *zerolog.Logger
+
+	StartTime time.Time
+	UptimeInt int64
+
+	definitions []pluginMeta.MetricDef
+	counters    []uint
+
+	rollingDay *rateTracker
 }
 
 var stopRateTrackerChan = make(chan struct{})
@@ -76,16 +78,22 @@ func (today *rateTracker) init() {
 	today.lock.Unlock()
 }
 
-// rollup sets the value of 'now' minute-interval bin to the current total
+// getCurrentTotal returns the current global counter 'total'
+//
+func getCurrentTotal() uint {
+	return MetricPlugin.counters[0]
+}
+
+// setThisMinutesTotal sets the value of 'now' minute-interval bin to the current total
 // and advances 'now' to the next minute
 //
-func (rt *rateTracker) rollup() {
+func (rt *rateTracker) setThisMinutesTotal() {
 	rt.lock.Lock()
 	rt.now++
 	if rt.now >= pastDay {
 		rt.now = 0
 	}
-	rt.totalsByMinute[rt.now] = MetricPlugin.counters[0]
+	rt.totalsByMinute[rt.now] = getCurrentTotal()
 	rt.lock.Unlock()
 }
 
@@ -94,11 +102,13 @@ func (rt *rateTracker) rollup() {
 //
 func (rt *rateTracker) getRate(interval int) uint {
 	if interval == 0 {
-		if MetricPlugin.counters[0] == 0 {
+		currentTotal := getCurrentTotal()
+		if currentTotal == 0 {
 			return 0
 		}
-		return uint(math.Ceil(float64(MetricPlugin.counters[0]) / float64(MetricPlugin.UptimeInt)))
+		return uint(math.Ceil(float64(currentTotal) / float64(MetricPlugin.UptimeInt)))
 	}
+
 	rt.lock.Lock()
 	beginIntervalMinute := rt.now
 
@@ -107,8 +117,11 @@ func (rt *rateTracker) getRate(interval int) uint {
 	if endIntervalMinute < 0 {
 		endIntervalMinute += pastDay
 	}
-	rate := uint(math.Ceil(float64(rt.totalsByMinute[beginIntervalMinute]-rt.totalsByMinute[endIntervalMinute]) / float64(interval*60)))
+
+	periodTotal := float64(rt.totalsByMinute[beginIntervalMinute] - rt.totalsByMinute[endIntervalMinute])
 	rt.lock.Unlock()
+	periodInterval := float64(interval * 60)
+	rate := uint(math.Ceil(periodTotal / periodInterval))
 	return rate
 }
 
@@ -119,40 +132,12 @@ func (rt *rateTracker) startTicker() {
 	for {
 		select {
 		case <-ticker.C:
-			rt.rollup()
+			rt.setThisMinutesTotal()
 		case <-stopRateTrackerChan:
 			ticker.Stop()
 			return
 		}
 	}
-}
-
-/*
-// Use SIGUSR1 to dump current stats to STDOUT.
-//
-func handleSIGUSR1(sigCh chan os.Signal) {
-	for {
-		select {
-		case <-sigCh:
-			// Compute uptime
-
-	}
-}
-*/
-
-type stats struct {
-	log *zerolog.Logger
-
-	StartTime time.Time
-	UptimeInt int64
-	Uptime    string
-
-	definitions []pluginMeta.MetricDef
-	counters    []uint
-
-	TrapsPerSecond trapRates
-
-	rollingDay *rateTracker
 }
 
 func (rt *stats) Configure(mainLog *zerolog.Logger, args map[string]string, metric_definitions []pluginMeta.MetricDef) error {
@@ -177,31 +162,38 @@ func (rt *stats) Inc(metricIndex int) {
 // secondsToDuration converts the given number of seconds into a more
 // human-readable formatted string.
 //
-func secondsToDuration(s uint) string {
-	var d uint
-	var h uint
-	var m uint
-	if s >= 86400 {
-		d = s / 86400
-		s %= 86400
+func secondsToDuration(seconds uint) string {
+	var days, hours, minutes uint
+
+	if seconds >= 86400 {
+		days = seconds / 86400
+		seconds %= 86400
 	}
-	if s >= 3600 {
-		h = s / 3600
-		s %= 3600
+	if seconds >= 3600 {
+		hours = seconds / 3600
+		seconds %= 3600
 	}
-	if s >= 60 {
-		m = s / 60
-		s %= 60
+	if seconds >= 60 {
+		minutes = seconds / 60
+		seconds %= 60
 	}
-	return fmt.Sprintf("%vd-%vh-%vm-%vs", d, h, m, s)
+	return fmt.Sprintf("%vd-%vh-%vm-%vs", days, hours, minutes, seconds)
 }
 
 func (rt stats) Report() (string, error) {
+	// Only calculate uptime when we need to do so
 	MetricPlugin.UptimeInt = time.Now().Unix() - MetricPlugin.StartTime.Unix()
+
+	// Report on counters
 	for i, counter := range rt.definitions {
 		MetricPlugin.log.Info().
 			Uint(counter.Name, rt.counters[i]).Msg("Counter value")
 	}
+
+	// Report on the rates
+	// FIXME: Because we get the rates one at a time, which lock/unlock operations one at a time,
+	// FIXME: there will be differences between the 'now' which is used to calculate the rates.
+	// FIXME: The ticker can update between the various calls got getRate()
 	MetricPlugin.log.Info().
 		Str("uptime_str", secondsToDuration(uint(MetricPlugin.UptimeInt))).
 		Uint("uptime", uint(MetricPlugin.UptimeInt)).
@@ -212,7 +204,7 @@ func (rt stats) Report() (string, error) {
 		Uint("rate_4hour", rt.rollingDay.getRate(past4Hours)).
 		Uint("rate_8hour", rt.rollingDay.getRate(past8Hours)).
 		Uint("rate_1day", rt.rollingDay.getRate(pastDay)).
-		Uint("rate_all", rt.rollingDay.getRate(0)).Msg("Current rates")
+		Uint("rate_all", rt.rollingDay.getRate(sinceStart)).Msg("Current rates")
 
 	return "", nil
 }
