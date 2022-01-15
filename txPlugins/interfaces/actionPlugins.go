@@ -7,7 +7,6 @@ package pluginLoader
 
 import (
 	"errors"
-	"fmt"
 	"plugin"
 
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
@@ -23,8 +22,8 @@ type ActionPlugin interface {
 	Close() error
 }
 
-func LoadActionPlugin(pluginPathExpr string, plugin_name string) (ActionPlugin, error) {
-	plugin_filename := fmt.Sprintf(pluginPathExpr, plugin_name)
+func LoadActionPlugin(pluginPath string, plugin_name string) (ActionPlugin, error) {
+	plugin_filename := pluginPath + "/actions/" + plugin_name + ".so"
 
 	plug, err := plugin.Open(plugin_filename)
 	if err != nil {

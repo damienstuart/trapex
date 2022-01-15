@@ -7,7 +7,6 @@ package pluginLoader
 
 import (
 	"errors"
-	"fmt"
 	"plugin"
 
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
@@ -20,8 +19,8 @@ type GeneratorPlugin interface {
 	Close() error
 }
 
-func LoadGeneratorPlugin(pluginPathExpr string, pluginName string) (GeneratorPlugin, error) {
-	plugin_filename := fmt.Sprintf(pluginPathExpr, pluginName)
+func LoadGeneratorPlugin(pluginPath string, pluginName string) (GeneratorPlugin, error) {
+        plugin_filename := pluginPath + "/generators/" + pluginName + ".so"
 
 	plug, err := plugin.Open(plugin_filename)
 	if err != nil {

@@ -7,7 +7,6 @@ package pluginLoader
 
 import (
 	"errors"
-	"fmt"
 	"plugin"
 
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"
@@ -20,8 +19,8 @@ type MetricPlugin interface {
 	Report() (string, error)
 }
 
-func LoadMetricPlugin(pluginPathExpr string, pluginName string) (MetricPlugin, error) {
-	plugin_filename := fmt.Sprintf(pluginPathExpr, pluginName)
+func LoadMetricPlugin(pluginPath string, pluginName string) (MetricPlugin, error) {
+        plugin_filename := pluginPath + "/metrics/" + pluginName + ".so"
 
 	plug, err := plugin.Open(plugin_filename)
 	if err != nil {

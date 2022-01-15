@@ -180,26 +180,26 @@ func validateIgnoreVersions(newConfig *trapexConfig) error {
 	for _, candidate := range newConfig.TrapReceiverSettings.IgnoreVersions_str {
 		switch strings.ToLower(candidate) {
 		case "v1", "1":
-			if ignorev1 != true {
+			if !ignorev1 {
 				newConfig.TrapReceiverSettings.IgnoreVersions = append(newConfig.TrapReceiverSettings.IgnoreVersions, g.Version1)
 				ignorev1 = true
 			}
 		case "v2c", "2c", "2":
-			if ignorev2c != true {
+			if !ignorev2c {
 				newConfig.TrapReceiverSettings.IgnoreVersions = append(newConfig.TrapReceiverSettings.IgnoreVersions, g.Version2c)
 				ignorev2c = true
 			}
 		case "v3", "3":
-			if ignorev3 != true {
+			if !ignorev3 {
 				newConfig.TrapReceiverSettings.IgnoreVersions = append(newConfig.TrapReceiverSettings.IgnoreVersions, g.Version3)
 				ignorev3 = true
 			}
 		default:
-			return fmt.Errorf("Unsupported or invalid value (%s) for general:ignore_version", candidate)
+			return fmt.Errorf("unsupported or invalid value (%s) for general:ignore_version", candidate)
 		}
 	}
 	if len(newConfig.TrapReceiverSettings.IgnoreVersions) > 2 {
-		return fmt.Errorf("All three SNMP versions are ignored -- there will be no traps to process")
+		return fmt.Errorf("all three SNMP versions are ignored -- there will be no traps to process")
 	}
 	return nil
 }
@@ -213,7 +213,7 @@ func validateSnmpV3Args(params *trapListenerConfig) error {
 	case "authpriv":
 		params.MsgFlags = g.AuthPriv
 	default:
-		return fmt.Errorf("Unsupported or invalid value (%s) for snmpv3:msg_flags", params.MsgFlags_str)
+		return fmt.Errorf("unsupported or invalid value (%s) for snmpv3:msg_flags", params.MsgFlags_str)
 	}
 
 	switch strings.ToLower(params.AuthProto_str) {
@@ -224,14 +224,14 @@ func validateSnmpV3Args(params *trapListenerConfig) error {
 	case "md5":
 		params.AuthProto = g.MD5
 	default:
-		return fmt.Errorf("Invalid value for snmpv3:auth_protocol: %s", params.AuthProto_str)
+		return fmt.Errorf("invalid value for snmpv3:auth_protocol: %s", params.AuthProto_str)
 	}
 
 	var err error
 	var plaintext string
 	plaintext, err = pluginMeta.GetSecret(params.AuthPassword)
 	if err != nil {
-		return fmt.Errorf("Unable to decode secret for auth password: %s", params.AuthPassword)
+		return fmt.Errorf("unable to decode secret for auth password: %s", params.AuthPassword)
 	}
 	params.AuthPassword = plaintext
 
@@ -243,12 +243,12 @@ func validateSnmpV3Args(params *trapListenerConfig) error {
 	case "des":
 		params.PrivacyProto = g.DES
 	default:
-		return fmt.Errorf("Invalid value for snmpv3:privacy_protocol: %s", params.PrivacyProto_str)
+		return fmt.Errorf("invalid value for snmpv3:privacy_protocol: %s", params.PrivacyProto_str)
 	}
 
 	plaintext, err = pluginMeta.GetSecret(params.PrivacyPassword)
 	if err != nil {
-		return fmt.Errorf("Unable to decode secret for privacy password: %s", params.PrivacyPassword)
+		return fmt.Errorf("unable to decode secret for privacy password: %s", params.PrivacyPassword)
 	}
 	params.PrivacyPassword = plaintext
 
@@ -272,7 +272,7 @@ func addIpSets(newConfig *trapexConfig) error {
 					newConfig.IpSets[ipsName][ip] = true
 					trapexLog.Debug().Str("ipset", ipsName).Str("ip", ip).Msg("Adding IP to IpSet")
 				} else {
-					return fmt.Errorf("Invalid IP address (%s) in ipset: %s", ip, ipsName)
+					return fmt.Errorf("invalid IP address (%s) in ipset: %s", ip, ipsName)
 				}
 			}
 		}
@@ -354,27 +354,25 @@ func setAction(filter *trapexFilter, pluginPathExpr string, lineNumber int) erro
 			if ok {
 				filter.ActionArg = natIp
 			} else {
-				return fmt.Errorf("Missing NAT argument at line %v", lineNumber)
+				return fmt.Errorf("missing NAT argument at line %v", lineNumber)
 			}
 		}
 	default:
 		filter.actionType = actionPlugin
 		filter.plugin, err = pluginLoader.LoadActionPlugin(pluginPathExpr, filter.ActionName)
 		if err != nil {
-			return fmt.Errorf("Unable to load plugin %s at line %v: %s", filter.ActionName, lineNumber, err)
+			return fmt.Errorf("unable to load plugin %s at line %v: %s", filter.ActionName, lineNumber, err)
 		}
 		pluginDataMapping := args2map(filter.ActionArgs)
 		if err = filter.plugin.Configure(&trapexLog, pluginDataMapping); err != nil {
-			return fmt.Errorf("Unable to configure plugin %s at line %v: %s", filter.ActionName, lineNumber, err)
+			return fmt.Errorf("unable to configure plugin %s at line %v: %s", filter.ActionName, lineNumber, err)
 		}
 	}
 	return nil
 }
 
 func args2map(data []ActionArgType) map[string]string {
-	var pluginDataMapping map[string]string
-
-	pluginDataMapping = make(map[string]string)
+	pluginDataMapping := make(map[string]string)
 	for _, pair := range data {
 		if strings.Contains(pair.Key, "secret") ||
 			strings.Contains(pair.Key, "password") {
@@ -403,7 +401,7 @@ func addSnmpFilterObj(filter *trapexFilter, lineNumber int) error {
 		case "v3", "3":
 			fObj.filterValue = g.Version3
 		default:
-			return fmt.Errorf("Unsupported or invalid SNMP version (%s) on line %v", candidate, lineNumber)
+			return fmt.Errorf("unsupported or invalid SNMP version (%s) on line %v", candidate, lineNumber)
 		}
 		fObj.filterType = parseTypeInt
 		filter.matchAll = false
@@ -430,19 +428,19 @@ func addIpFilterObj(filter *trapexFilter, source int, networkEntry string, ipSet
 		if _, ok := ipSets[ipSetName]; ok {
 			fObj.filterValue = ipSetName
 		} else {
-			return fmt.Errorf("Invalid IP set name specified on for %v on line %v: %s", source, lineNumber, networkEntry)
+			return fmt.Errorf("invalid IP set name specified on for %v on line %v: %s", source, lineNumber, networkEntry)
 		}
 	} else if strings.HasPrefix(networkEntry, "/") {
 		fObj.filterType = parseTypeRegex
 		fObj.filterValue, err = regexp.Compile(networkEntry[1:])
 		if err != nil {
-			return fmt.Errorf("Unable to compile regular expressions for IP for %v on line %v: %s: %s", source, lineNumber, networkEntry, err)
+			return fmt.Errorf("unable to compile regular expressions for IP for %v on line %v: %s: %s", source, lineNumber, networkEntry, err)
 		}
 	} else if strings.Contains(networkEntry, "/") {
 		fObj.filterType = parseTypeCIDR
 		fObj.filterValue, err = newNetwork(networkEntry)
 		if err != nil {
-			return fmt.Errorf("Invalid IP/CIDR for %v at line %v: %s", source, lineNumber, networkEntry)
+			return fmt.Errorf("invalid IP/CIDR for %v at line %v: %s", source, lineNumber, networkEntry)
 		}
 	} else {
 		fObj.filterType = parseTypeString
@@ -473,7 +471,7 @@ func addOidFilterObj(filter *trapexFilter, oid string, lineNumber int) error {
 	fObj := filterObj{filterItem: filterByOid, filterType: parseTypeRegex}
 	fObj.filterValue, err = regexp.Compile(oid)
 	if err != nil {
-		return fmt.Errorf("Unable to compile regular expression at line %v for OID: %s: %s", lineNumber, oid, err)
+		return fmt.Errorf("unable to compile regular expression at line %v for OID: %s: %s", lineNumber, oid, err)
 	}
 	filter.matchers = append(filter.matchers, fObj)
 	return nil
@@ -482,7 +480,7 @@ func addOidFilterObj(filter *trapexFilter, oid string, lineNumber int) error {
 func closeTrapexHandles() {
 	for _, f := range teConfig.Filters {
 		if f.actionType == actionPlugin {
-			f.plugin.(pluginLoader.ActionPlugin).Close()
+			f.plugin.Close()
 		}
 	}
 }
@@ -491,17 +489,15 @@ func addReportingPlugins(newConfig *trapexConfig) error {
 	var err error
 
 	counters := pluginMeta.CreateMetricDefs()
-	pluginPath := teConfig.General.PluginPath + "/metrics/%s.so"
-
 	for i, config := range newConfig.Reporting {
-		config.plugin, err = pluginLoader.LoadMetricPlugin(pluginPath, config.PluginName)
+		config.plugin, err = pluginLoader.LoadMetricPlugin(teConfig.General.PluginPath, config.PluginName)
 		if err != nil {
 			trapexLog.Fatal().Err(err).Str("plugin_name", config.PluginName).Msg("Unable to load metric reporting plugin")
 			return err
 		}
 		pluginDataMapping := args2map(config.Args)
 		if err = config.plugin.Configure(&trapexLog, pluginDataMapping, counters); err != nil {
-			return fmt.Errorf("Unable to configure plugin %s at line %v: %s", config.PluginName, i, err)
+			return fmt.Errorf("unable to configure plugin %s at line %v: %s", config.PluginName, i, err)
 		}
 	}
 	trapexLog.Info().Int("num_reporters", len(newConfig.Reporting)).Msg("Configured metric reporting plugins")
