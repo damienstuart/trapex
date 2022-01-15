@@ -78,6 +78,12 @@ func (s *trapexFilter) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+type MetricConfig struct {
+	PluginName string          `default:"" yaml:"plugin"`
+	Args       []ActionArgType `default:"[]" yaml:"args"`
+	plugin     pluginLoader.MetricPlugin
+}
+
 type trapexConfig struct {
 	teConfigured bool
 
@@ -92,11 +98,9 @@ type trapexConfig struct {
 
 		IgnoreVersions_str []string        `default:"[]" yaml:"ignore_versions"`
 		IgnoreVersions     []g.SnmpVersion `default:"[]"`
-
-		PrometheusIp       string `default:"0.0.0.0" yaml:"prometheus_ip"`
-		PrometheusPort     string `default:"80" yaml:"prometheus_port"`
-		PrometheusEndpoint string `default:"metrics" yaml:"prometheus_endpoint"`
 	}
+
+	Reporting []MetricConfig `default:"[]" yaml:"metric_reporting"`
 
 	Logging struct {
 		Level         string `default:"debug" yaml:"level"`

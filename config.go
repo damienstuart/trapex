@@ -160,6 +160,10 @@ func getConfig() error {
 		return err
 	}
 
+	if err = addReportingPlugins(&newConfig); err != nil {
+		return err
+	}
+
 	// If this is a reconfigure, close the old handles here
 	if teConfig != nil && teConfig.teConfigured {
 		closeTrapexHandles()
@@ -481,4 +485,24 @@ func closeTrapexHandles() {
 			f.plugin.(pluginLoader.ActionPlugin).Close()
 		}
 	}
+}
+
+func addReportingPlugins(newConfig *trapexConfig) error {
+	var err error
+
+	counters := pluginMeta.CreateMetricDefs()
+
+	for i, config := range newConfig.Reporting {
+		config.plugin, err = pluginLoader.LoadMetricPlugin("txPlugins/metrics/%s.so", config.PluginName)
+		if err != nil {
+			trapexLog.Fatal().Err(err).Str("plugin_name", config.PluginName).Msg("Unable to load metric reporting plugin")
+			return err
+		}
+		pluginDataMapping := args2map(config.Args)
+		if err = config.plugin.Configure(&trapexLog, pluginDataMapping, counters); err != nil {
+			return fmt.Errorf("Unable to configure plugin %s at line %v: %s", config.PluginName, i, err)
+		}
+	}
+	trapexLog.Info().Int("num_reporters", len(newConfig.Reporting)).Msg("Configured metric reporting plugins")
+	return nil
 }

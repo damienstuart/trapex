@@ -7,7 +7,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net"
 
 	pluginMeta "github.com/damienstuart/trapex/txPlugins"

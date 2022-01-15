@@ -21,9 +21,7 @@ import (
 	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 )
 
-//var trapRateTracker = newTrapRateTracker()
 var trapexLog = zerolog.New(os.Stdout).With().Timestamp().Logger()
-var rateTracker pluginLoader.MetricPlugin
 
 func main() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
@@ -34,7 +32,6 @@ func main() {
 	}
 
 	// Process the command-line and get the configuration.
-	//
 	processCommandLine()
 
 	if err := getConfig(); err != nil {
@@ -42,26 +39,7 @@ func main() {
 		os.Exit(1)
 	}
 
-counters := pluginMeta.CreateMetricDefs()
-metricArgs := make(map[string]string)
-var err error
-rateTracker, err = pluginLoader.LoadMetricPlugin("txPlugins/metrics/%s.so" , "rateTracker")
-if err != nil  {
-		trapexLog.Fatal().Err(err).Msg("Unable to load rate tracker plugin")
-		os.Exit(1)
-}
-rateTracker.(pluginLoader.MetricPlugin).Configure(&trapexLog, metricArgs, counters)
-
 	initSigHandlers()
-	/*
-		go exposeMetrics()
-		var exporter = fmt.Sprintf("http://%s:%s/%s\n",
-			teConfig.General.PrometheusIp, teConfig.General.PrometheusPort, teConfig.General.PrometheusEndpoint)
-		trapexLog.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
-	*/
-
-
-	//go trapRateTracker.start()
 
 	tl := g.NewTrapListener()
 
@@ -69,7 +47,6 @@ rateTracker.(pluginLoader.MetricPlugin).Configure(&trapexLog, metricArgs, counte
 	tl.Params = g.Default
 	tl.Params.Community = ""
 
-	// Uncomment for debugging gosnmp
 	if teConfig.General.GoSnmpDebug {
 		trapexLog.Info().Msg("gosnmp debug mode enabled")
 		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
@@ -89,9 +66,17 @@ rateTracker.(pluginLoader.MetricPlugin).Configure(&trapexLog, metricArgs, counte
 
 	listenAddr := fmt.Sprintf("%s:%s", teConfig.General.ListenAddr, teConfig.General.ListenPort)
 	trapexLog.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
-	err = tl.Listen(listenAddr)
+	err := tl.Listen(listenAddr)
 	if err != nil {
 		log.Panicf("error in listen on %s: %s", listenAddr, err)
+	}
+}
+
+// counterInc increment the specified counter (reference to counter defintions)
+//
+func counterInc(counter int) {
+	for _, reporter := range teConfig.Reporting {
+		reporter.plugin.(pluginLoader.MetricPlugin).Inc(counter)
 	}
 }
 
@@ -99,25 +84,25 @@ rateTracker.(pluginLoader.MetricPlugin).Configure(&trapexLog, metricArgs, counte
 //
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	// Count every trap received
-rateTracker.(pluginLoader.MetricPlugin).Inc(TrapCount)
+	counterInc(TrapCount)
 
-switch p.Version {
-case g.Version1:
-rateTracker.(pluginLoader.MetricPlugin).Inc(V1Traps)
-case g.Version2c:
-rateTracker.(pluginLoader.MetricPlugin).Inc(V2cTraps)
-case g.Version3:
-rateTracker.(pluginLoader.MetricPlugin).Inc(V3Traps)
-}
+	switch p.Version {
+	case g.Version1:
+		counterInc(V1Traps)
+	case g.Version2c:
+		counterInc(V2cTraps)
+	case g.Version3:
+		counterInc(V3Traps)
+	}
 
 	// First thing to do is check for ignored versions
 	if isIgnoredVersion(p.Version) {
-rateTracker.(pluginLoader.MetricPlugin).Inc(IgnoredTraps)
+		counterInc(IgnoredTraps)
 		return
 	}
 
 	// Also keep track of traps we handle
-rateTracker.(pluginLoader.MetricPlugin).Inc(HandledTraps)
+	counterInc(HandledTraps)
 
 	// Make the trap
 	trap := pluginMeta.Trap{
@@ -156,7 +141,7 @@ func processTrap(trap *pluginMeta.Trap) {
 		if filterDef.matchAll || filterDef.isFilterMatch(trap) {
 			if filterDef.actionType == actionBreak {
 				trap.Dropped = true
-rateTracker.(pluginLoader.MetricPlugin).Inc(DroppedTraps)
+				counterInc(DroppedTraps)
 				continue
 			}
 
@@ -169,7 +154,7 @@ rateTracker.(pluginLoader.MetricPlugin).Inc(DroppedTraps)
 
 			if filterDef.BreakAfter {
 				trap.Dropped = true
-rateTracker.(pluginLoader.MetricPlugin).Inc(DroppedTraps)
+				counterInc(DroppedTraps)
 				continue
 			}
 		}
