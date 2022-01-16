@@ -13,11 +13,15 @@
 
 trapex
 log
+*.log
 # DSS Misc
 *.[0-9]
 *-dss.*
 # Ignore vi swap files
 *.swp
+
+# Capture files
+*.gob
 
 # Unit test output
 tests/tmp/*.csv

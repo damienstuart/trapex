@@ -12,28 +12,16 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"time"
 
 	g "github.com/gosnmp/gosnmp"
 
 	"github.com/rs/zerolog"
-	//zlog "github.com/rs/zerolog/log"
+
+	pluginMeta "github.com/damienstuart/trapex/txPlugins"
+	pluginLoader "github.com/damienstuart/trapex/txPlugins/interfaces"
 )
 
-// sgTrap holds a pointer to a trap and the source IP of
-// the incoming trap.
-//
-type sgTrap struct {
-	trapNumber uint64
-	data       g.SnmpTrap
-	trapVer    g.SnmpVersion
-	srcIP      net.IP
-	translated bool
-	dropped    bool
-}
-
-var trapRateTracker = newTrapRateTracker()
-var logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+var trapexLog = zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 func main() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
@@ -44,77 +32,104 @@ func main() {
 	}
 
 	// Process the command-line and get the configuration.
-	//
 	processCommandLine()
 
 	if err := getConfig(); err != nil {
-		logger.Fatal().Err(err).Msg("Unable to load configuration")
+		trapexLog.Fatal().Err(err).Msg("Unable to load configuration")
 		os.Exit(1)
 	}
 
 	initSigHandlers()
-	go exposeMetrics()
-	var exporter = fmt.Sprintf("http://%s:%s/%s\n",
-		teConfig.General.PrometheusIp, teConfig.General.PrometheusPort, teConfig.General.PrometheusEndpoint)
-	logger.Info().Str("endpoint", exporter).Msg("Prometheus metrics exported")
+	startTrapListener()
+}
 
-	stats.StartTime = time.Now()
+// startTrapListener configures the SNMP service information and starts actively
+// processing traps via callback function (trapHandler)
+// The listener will be able to receive SNMP v1/v2c traps, and if SNMP v3 information
+// is configured correctly, SNMP v3 traps.
+//
+func startTrapListener() {
+	trapListener := g.NewTrapListener()
 
-	go trapRateTracker.start()
+	// Callback: trapHandler
+	trapListener.OnNewTrap = trapHandler
 
-	tl := g.NewTrapListener()
-
-	tl.OnNewTrap = trapHandler
-	tl.Params = g.Default
-	tl.Params.Community = ""
-
-	// Uncomment for debugging gosnmp
-	if teConfig.Logging.Level == "debug" {
-		logger.Info().Msg("gosnmp debug mode enabled")
-		tl.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
+	if teConfig.TrapReceiverSettings.GoSnmpDebug {
+		trapexLog.Info().Msg("gosnmp debug mode enabled")
+		if teConfig.TrapReceiverSettings.GoSnmpDebugLogName == "" {
+			trapListener.Params.Logger = g.NewLogger(log.New(os.Stdout, "", 0))
+		} else {
+			fd, err := os.Open(teConfig.TrapReceiverSettings.GoSnmpDebugLogName)
+			if err != nil {
+				trapexLog.Fatal().Err(err).Str("filename", teConfig.TrapReceiverSettings.GoSnmpDebugLogName).Msg("Unable to open up debug log")
+				os.Exit(1)
+			}
+			trapListener.Params.Logger = g.NewLogger(log.New(fd, "", 0))
+		}
 	}
+
+	trapListener.Params = g.Default
+	trapListener.Params.Community = teConfig.TrapReceiverSettings.Community
 
 	// SNMP v3 stuff
-	tl.Params.SecurityModel = g.UserSecurityModel
-	tl.Params.MsgFlags = teConfig.V3Params.msgFlags
-	tl.Params.Version = g.Version3
-	tl.Params.SecurityParameters = &g.UsmSecurityParameters{
-		UserName:                 teConfig.V3Params.Username,
-		AuthenticationProtocol:   teConfig.V3Params.authProto,
-		AuthenticationPassphrase: teConfig.V3Params.AuthPassword,
-		PrivacyProtocol:          teConfig.V3Params.privacyProto,
-		PrivacyPassphrase:        teConfig.V3Params.PrivacyPassword,
+	trapListener.Params.SecurityModel = g.UserSecurityModel
+	trapListener.Params.MsgFlags = teConfig.TrapReceiverSettings.MsgFlags
+	trapListener.Params.Version = g.Version3
+	trapListener.Params.SecurityParameters = &g.UsmSecurityParameters{
+		UserName:                 teConfig.TrapReceiverSettings.Username,
+		AuthenticationProtocol:   teConfig.TrapReceiverSettings.AuthProto,
+		AuthenticationPassphrase: teConfig.TrapReceiverSettings.AuthPassword,
+		PrivacyProtocol:          teConfig.TrapReceiverSettings.PrivacyProto,
+		PrivacyPassphrase:        teConfig.TrapReceiverSettings.PrivacyPassword,
 	}
 
-	listenAddr := fmt.Sprintf("%s:%s", teConfig.General.ListenAddr, teConfig.General.ListenPort)
-	logger.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
-	err := tl.Listen(listenAddr)
+	listenAddr := fmt.Sprintf("%s:%s", teConfig.TrapReceiverSettings.ListenAddr, teConfig.TrapReceiverSettings.ListenPort)
+	trapexLog.Info().Str("listen_address", listenAddr).Msg("Start trapex listener")
+	err := trapListener.Listen(listenAddr)
 	if err != nil {
 		log.Panicf("error in listen on %s: %s", listenAddr, err)
 	}
 }
 
+// counterInc increment the specified counter (reference to counter defintions)
+//
+func counterInc(counter int) {
+	for _, reporter := range teConfig.Reporting {
+		reporter.plugin.(pluginLoader.MetricPlugin).Inc(counter)
+	}
+}
+
+// Keep track of total number of traps received
+var totalTraps int
+
 // trapHandler is the callback for handling traps received by the listener.
 //
 func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 	// Count every trap received
-	stats.TrapCount++
-	trapsCount.Inc()
+	counterInc(TrapCount)
+	totalTraps++
+
+	switch p.Version {
+	case g.Version1:
+		counterInc(V1Traps)
+	case g.Version2c:
+		counterInc(V2cTraps)
+	case g.Version3:
+		counterInc(V3Traps)
+	}
 
 	// First thing to do is check for ignored versions
 	if isIgnoredVersion(p.Version) {
-		stats.IgnoredTraps++
-		trapsIgnored.Inc()
+		counterInc(IgnoredTraps)
 		return
 	}
 
 	// Also keep track of traps we handle
-	stats.HandledTraps++
-	trapsHandled.Inc()
+	counterInc(HandledTraps)
 
 	// Make the trap
-	trap := sgTrap{
-		data: g.SnmpTrap{
+	trap := pluginMeta.Trap{
+		Data: g.SnmpTrap{
 			Variables:    p.Variables,
 			Enterprise:   p.Enterprise,
 			AgentAddress: p.AgentAddress,
@@ -122,26 +137,16 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 			SpecificTrap: p.SpecificTrap,
 			Timestamp:    p.Timestamp,
 		},
-		srcIP:   addr.IP,
-		trapVer: p.Version,
-	}
-
-	// Translate to v1 if needed
-	/*
-	 */
-	if p.Version > g.Version1 {
-		err := translateToV1(&trap)
-		if err != nil {
-			var info string
-			info = makeTrapLogEntry(&trap)
-			logger.Warn().Err(err).Str("trap", info).Msg("Error translating to v1")
-		}
+		SrcIP:       addr.IP,
+		SnmpVersion: p.Version,
+		Hostname:    teConfig.TrapReceiverSettings.Hostname,
+		TrapNumber:  uint(totalTraps),
 	}
 
 	if teConfig.Logging.Level == "debug" {
 		var info string
 		info = makeTrapLogEntry(&trap)
-		logger.Debug().Str("trap", info).Msg("Raw trap info")
+		trapexLog.Debug().Str("trap", info).Msg("Raw trap info")
 	}
 
 	processTrap(&trap)
@@ -150,45 +155,30 @@ func trapHandler(p *g.SnmpPacket, addr *net.UDPAddr) {
 // processTrap is the entry point to code that checks the incoming trap
 // against the filter list and processes the trap accordingly.
 //
-func processTrap(sgt *sgTrap) {
-	for _, f := range teConfig.filters {
-		// If this trap is tagged to drop, then continue.
-		if sgt.dropped {
+func processTrap(trap *pluginMeta.Trap) {
+	for _, filterDef := range teConfig.Filters {
+		if trap.Dropped {
 			continue
 		}
-		// If matchAll is true, just process the action.
-		if f.matchAll == true {
-			// We don't expect to see this here (set a wide open filter for
-			// drop).... (but...)
-			if f.actionType == actionBreak {
-				sgt.dropped = true
-				stats.DroppedTraps++
-				trapsDropped.Inc()
+
+		if filterDef.matchAll || filterDef.isFilterMatch(trap) {
+			if filterDef.actionType == actionBreak {
+				trap.Dropped = true
+				counterInc(DroppedTraps)
 				continue
 			}
-			f.processAction(sgt)
-			if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
-				sgt.dropped = true
-				stats.DroppedTraps++
-				trapsDropped.Inc()
-				continue
+
+			err := filterDef.processAction(trap)
+			if err != nil {
+				for _, pluginErrorFilters := range teConfig.PluginErrorActions {
+					go pluginErrorFilters.processAction(trap)
+				}
 			}
-		} else {
-			// Determine if this trap matches this filter
-			if f.isFilterMatch(sgt) {
-				if f.actionType == actionBreak {
-					sgt.dropped = true
-					stats.DroppedTraps++
-					trapsDropped.Inc()
-					continue
-				}
-				f.processAction(sgt)
-				if f.actionType == actionForwardBreak || f.actionType == actionLogBreak || f.actionType == actionCsvBreak {
-					sgt.dropped = true
-					stats.DroppedTraps++
-					trapsDropped.Inc()
-					continue
-				}
+
+			if filterDef.BreakAfter {
+				trap.Dropped = true
+				counterInc(DroppedTraps)
+				continue
 			}
 		}
 	}

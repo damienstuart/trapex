@@ -17,10 +17,12 @@ func initSigHandlers() {
 	signal.Notify(sigHupCh, syscall.SIGHUP)
 	go handleSIGHUP(sigHupCh)
 
-	// For USR1
-	sigUsr1Ch := make(chan os.Signal, 1)
-	signal.Notify(sigUsr1Ch, syscall.SIGUSR1)
-	go handleSIGUSR1(sigUsr1Ch)
+	/*
+		// For USR1
+		sigUsr1Ch := make(chan os.Signal, 1)
+		signal.Notify(sigUsr1Ch, syscall.SIGUSR1)
+		go handleSIGUSR1(sigUsr1Ch)
+	*/
 
 	// For USR2
 	sigUsr2Ch := make(chan os.Signal, 1)

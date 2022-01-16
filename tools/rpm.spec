@@ -11,10 +11,6 @@ Trapex is an SNMP Trap proxy/forwarder.  It can receive, filter, manipulate,
 log, and forward SNMP traps to zero or mulitple destinations.  It can receive 
 and process SNMP v1, v2c, or v3 traps.  
 
-Presently, v2c and v3 traps are converted to v1 before they are
-logged and/or forwarded.  Support for sending other versions may be added in
-a future release.
-
 %build
 # Ummm..... We'll do that outside for the moment
 
@@ -33,11 +29,23 @@ mkdir -p %{buildroot}/opt/%{name}/bin
 install -m 644 README.md %{buildroot}/opt/%{name}
 install -m 750 trapex %{buildroot}/opt/%{name}/bin
 install -m 750 tools/process_csv_data.sh %{buildroot}/opt/%{name}/bin
+install -m 750 cmds/traplay/traplay %{buildroot}/opt/%{name}/bin
+install -m 750 cmds/trapbench/trapbench %{buildroot}/opt/%{name}/bin
 
 mkdir -p %{buildroot}/opt/%{name}/etc
 install -m 644 tools/trapex.yml %{buildroot}/opt/%{name}/etc
 
 mkdir -p %{buildroot}/opt/%{name}/log
+
+mkdir -p %{buildroot}/opt/%{name}/plugins/actions
+for plugin in `ls -1 plugins/actions/*/*.so`; do
+    install -m 750 $pluginsh %{buildroot}/opt/%{name}/plugins/actions
+done
+
+mkdir -p %{buildroot}/opt/%{name}/plugins/generators
+for plugin in `ls -1 plugins/generators/*/*.so`; do
+    install -m 750 $pluginsh %{buildroot}/opt/%{name}/plugins/generators
+done
 
 %files
 %defattr(-,root,root)
@@ -46,10 +54,17 @@ mkdir -p %{buildroot}/opt/%{name}/log
 %dir /opt/%{name}/bin
 %dir /opt/%{name}/etc
 %dir /opt/%{name}/log
+%dir /opt/%{name}/clickhouse
+%dir /opt/%{name}/clickhouse/exported
+%dir /opt/%{name}/plugins
+%dir /opt/%{name}/plugins/actions
+%dir /opt/%{name}/plugins/generators
+%dir /opt/%{name}/captured
 /opt/%{name}/bin/trapex
-/opt/%{name}/etc/trapex.conf
-/opt/%{name}/etc/trapex.conf.example
+%config(noreplace) /opt/%{name}/etc/trapex.yml
 /opt/%{name}/README.md
+/opt/%{name}/plugins/actions/*.so
+/opt/%{name}/plugins/generators/*.so
 
 %pre
 # Check for upgrades
