@@ -11,38 +11,20 @@ container_clickhouse = clickhouse
 
 
 build:
-	go build
-
-build_all: plugins build
-
-plugins:
-	cd txPlugins && ./build_plugins.sh
+	go build ./...
 
 deps:
 	go get ./...
 
 test: build
 	go test
-	cd txPlugins && go test
-
-fmt:
-	gofmt -w *.go
-	gofmt -w txPlugins/*.go
-	gofmt -w txPlugins/actions/*/*.go
-	gofmt -w txPlugins/generators/*/*.go
-	gofmt -w txPlugins/metrics/*/*.go
-	gofmt -w cmds/*/*.go
-	git commit -m "gofmt" -a
 
 rpm: build
 	rpmbuild -ba tools/rpm.spec
 
-clean: clean_plugins
+clean:
 	rm -rf ~/rpmbuild/BUILD/${TARGET} ~/rpmbuild/BUILD/${BUILDARCH}/*
 	go clean
-
-clean_plugins:
-	find txPlugins -name \*.so -delete
 
 install:
 	cd ~/rpmbuild/RPMS/${BUILDARCH} && sudo yum install -y `ls -1rt | tail -1`

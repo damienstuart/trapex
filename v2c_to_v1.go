@@ -3,7 +3,7 @@
 // Use of this source code is governed by the MIT License that can be found
 // in the LICENSE file.
 //
-package pluginMeta
+package main
 
 import (
 	"fmt"
@@ -24,15 +24,15 @@ const (
 
 // translateToV1 converts a trap from v2c/v3 to v1 per RFC-3584
 //
-func TranslateToV1(t *Trap) error {
+func translateToV1(t *sgTrap) error {
 	// If this is already a v1 trap, there is nothing to do.
-	if t.SnmpVersion == g.Version1 {
+	if t.trapVer == g.Version1 {
 		return nil
 	}
 
-	trap := &t.Data
+	trap := &t.data
 	if len(trap.Variables) < 2 {
-		return fmt.Errorf("Got invalid v2 trap with less than 2 varbinds: %v", trap)
+		return fmt.Errorf("got invalid v2 trap with less than 2 varbinds: %v", trap)
 	}
 	vb0 := trap.Variables[0]
 	vb1 := trap.Variables[1]
@@ -49,7 +49,7 @@ func TranslateToV1(t *Trap) error {
 	}
 
 	// Use the sysUpTime varbind value for v1 timestamp, but we do have to account
-	// for some systems that send that value as an int vs a timetick.
+	// for some systems that send that value as an int vs an timetick.
 	ts, ok := vb0.Value.(int)
 	if ok == true {
 		if ts < 0 {
@@ -143,21 +143,19 @@ func TranslateToV1(t *Trap) error {
 	if len(agentAddress) > 0 {
 		trap.AgentAddress = agentAddress
 	} else {
-		trap.AgentAddress = t.SrcIP.String()
+		trap.AgentAddress = t.srcIP.String()
 	}
 
-	t.Translated = true
+	t.translated = true
 
-	/*
-		// Update the translate stats
-		if t.SnmpVersion == g.Version2c {
-			stats.TranslatedFromV2c++
-			//trapsFromV2c.Inc()
-		} else if t.SnmpVersion == g.Version3 {
-			stats.TranslatedFromV3++
-			//trapsFromV3.Inc()
-		}
-	*/
+	// Update the translate stats
+	if t.trapVer == g.Version2c {
+		stats.TranslatedFromV2c++
+		trapsFromV2c.Inc()
+	} else if t.trapVer == g.Version3 {
+		stats.TranslatedFromV3++
+		trapsFromV3.Inc()
+	}
 
 	return nil
 }
